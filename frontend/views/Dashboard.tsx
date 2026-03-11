@@ -376,7 +376,7 @@ const Dashboard: React.FC = () => {
         <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Select 
              label={t('qi.kitchen')}
-             options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: k.id, label: k.name }))]}
+             options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: String(k.id), label: k.name }))]}
              value={selectedKitchen}
              onChange={e => setSelectedKitchen(e.target.value)}
              icon={<Filter size={16} />}
@@ -515,7 +515,7 @@ const Dashboard: React.FC = () => {
                   <div className="w-full sm:w-64">
                       <Select
                           label={t('qi.product')}
-                          options={[{ value: '', label: t('qi.product_ph') }, ...products.map(p => ({ value: p.id, label: p.name }))]}
+                          options={[{ value: '', label: t('qi.product_ph') }, ...products.map(p => ({ value: String(p.id), label: p.name }))]}
                           value={selectedProductId}
                           onChange={e => setSelectedProductId(e.target.value)}
                       />
@@ -523,7 +523,7 @@ const Dashboard: React.FC = () => {
                   <div className="w-full sm:w-48">
                       <Select
                           label={t('qi.kitchen')}
-                          options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: k.id, label: k.name }))]}
+                          options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: String(k.id), label: k.name }))]}
                           value={prodHistKitchen}
                           onChange={e => setProdHistKitchen(e.target.value)}
                       />

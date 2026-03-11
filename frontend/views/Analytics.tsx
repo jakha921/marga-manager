@@ -97,7 +97,7 @@ const Analytics: React.FC = () => {
             <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
                <Select 
                  label={t('anl.kitchen_branch')}
-                 options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: k.id, label: k.name }))]}
+                 options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: String(k.id), label: k.name }))]}
                  value={selectedKitchen}
                  onChange={e => setSelectedKitchen(e.target.value)}
                  icon={<Filter size={16} />}

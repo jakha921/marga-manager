@@ -9,7 +9,7 @@ import Button from '../components/Button';
 
 const Reports: React.FC = () => {
   const { t } = useLanguage();
-  const { products, operations, kitchens, currentOrganization } = useData();
+  const { products, operations, kitchens, categories, currentOrganization } = useData();
   
   // Helper to get current month range
   const getCurrentMonthRange = () => {
@@ -98,14 +98,14 @@ const Reports: React.FC = () => {
         code: product.code,
         name: product.name,
         unit: product.unit,
-        category: product.category,
+        categoryName: product.categoryName || categories.find(c => c.id === product.category)?.name || '',
         incoming: { qty: incomingQty, val: incomingVal },
         sales: { qty: salesQty, val: salesVal },
         transfers: { qty: transferInQty - transferOutQty },
         balance: { qty: balanceQty, val: balanceVal }
       };
     });
-  }, [products, operations, selectedKitchen, searchTerm, startDate, endDate]);
+  }, [products, operations, categories, selectedKitchen, searchTerm, startDate, endDate]);
 
   const formatMoney = (amount: number) => {
     // Format with spaces for thousands (common in CIS)
@@ -118,7 +118,7 @@ const Reports: React.FC = () => {
         <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-4 gap-6">
           <Select 
              label={t('qi.kitchen')}
-             options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: k.id, label: k.name }))]}
+             options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: String(k.id), label: k.name }))]}
              value={selectedKitchen}
              onChange={e => setSelectedKitchen(e.target.value)}
              icon={<Filter size={16} />}
@@ -198,7 +198,7 @@ const Reports: React.FC = () => {
                           <div className="flex flex-col">
                              <span className="font-bold text-sm text-slate-800 mb-0.5">{item.name}</span>
                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 rounded-md w-fit">
-                               {item.category}
+                               {item.categoryName}
                              </span>
                           </div>
                        </td>

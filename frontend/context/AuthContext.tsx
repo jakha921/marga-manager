@@ -71,14 +71,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data } = await authService.getMe();
         setIsAuthenticated(true);
         setUserRole(data.role as UserRole);
-        setOrganizationId(data.organization_id ? String(data.organization_id) : null);
+        setOrganizationId(data.organizationId ? String(data.organizationId) : null);
         setUsername(data.username);
 
         localStorage.setItem('km_auth', 'true');
         localStorage.setItem('km_role', data.role);
         localStorage.setItem('km_username', data.username);
-        if (data.organization_id) {
-          localStorage.setItem('km_org_id', String(data.organization_id));
+        if (data.organizationId) {
+          localStorage.setItem('km_org_id', String(data.organizationId));
         }
       } catch {
         // Token invalid, clear auth state

@@ -545,7 +545,7 @@ const QuickInput: React.FC = () => {
             <Select 
               ref={kitchenRef}
               label={opType === 'TRANSFER' ? t('qi.from_kitchen') : t('qi.kitchen')}
-              options={kitchens.map(k => ({ value: k.id, label: k.name }))}
+              options={kitchens.map(k => ({ value: String(k.id), label: k.name }))}
               value={selectedKitchen}
               onChange={e => setSelectedKitchen(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'kitchen')}
@@ -556,7 +556,7 @@ const QuickInput: React.FC = () => {
               <Select 
                 ref={targetKitchenRef}
                 label={t('qi.to_kitchen')}
-                options={kitchens.filter(k => k.id !== selectedKitchen).map(k => ({ value: k.id, label: k.name }))}
+                options={kitchens.filter(k => String(k.id) !== selectedKitchen).map(k => ({ value: String(k.id), label: k.name }))}
                 value={targetKitchen}
                 onChange={e => setTargetKitchen(e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, 'targetKitchen')}
