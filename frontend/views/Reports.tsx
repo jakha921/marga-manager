@@ -43,15 +43,15 @@ const Reports: React.FC = () => {
     ).map(product => {
       // Filter ops for this product and selected kitchen(s) AND Date Range
       const prodOps = operations.filter(op => {
-        const matchesKitchen = selectedKitchen === 'all' || op.kitchenId === selectedKitchen;
-        
+        const matchesKitchen = selectedKitchen === 'all' || String(op.kitchenId) === selectedKitchen;
+
         // Date Check
         const opDate = new Date(op.date);
         const start = new Date(startDate);
         const end = new Date(endDate);
         const matchesDate = opDate >= start && opDate <= end;
 
-        return op.productId === product.id && matchesKitchen && matchesDate;
+        return String(op.productId) === String(product.id) && matchesKitchen && matchesDate;
       });
 
       // Calculate totals (Quantity AND Value)
@@ -67,7 +67,7 @@ const Reports: React.FC = () => {
       const salesVal = salesOps.reduce((acc, op) => acc + (op.price || 0), 0);
       
       // Transfers Out
-      const transferOutOps = prodOps.filter(op => op.type === 'TRANSFER' && (selectedKitchen === 'all' || op.kitchenId === selectedKitchen));
+      const transferOutOps = prodOps.filter(op => op.type === 'TRANSFER' && (selectedKitchen === 'all' || String(op.kitchenId) === selectedKitchen));
       const transferOutQty = transferOutOps.reduce((acc, op) => acc + op.quantity, 0);
       
       // Transfers In
@@ -78,9 +78,9 @@ const Reports: React.FC = () => {
          const end = new Date(endDate);
          const matchesDate = opDate >= start && opDate <= end;
          
-         return op.productId === product.id && 
-                op.type === 'TRANSFER' && 
-                (selectedKitchen === 'all' || op.toKitchenId === selectedKitchen) &&
+         return String(op.productId) === String(product.id) &&
+                op.type === 'TRANSFER' &&
+                (selectedKitchen === 'all' || String(op.toKitchenId) === selectedKitchen) &&
                 matchesDate;
       });
       const transferInQty = transferInOps.reduce((acc, op) => acc + op.quantity, 0);

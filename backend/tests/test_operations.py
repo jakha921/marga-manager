@@ -15,15 +15,15 @@ class TestOperationCRUD:
                 "type": "INCOMING",
                 "date": str(date.today()),
                 "time": "09:00:00",
-                "kitchen": kitchen.id,
-                "product": product.id,
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
                 "quantity": "100.000",
                 "unit": "kg",
                 "price": "90000.00",
             },
         )
         assert response.status_code == 201
-        assert response.data["organization"] == org.id
+        assert response.data["organization_id"] == org.id
         assert response.data["kitchen_name"] == "Main Kitchen"
         assert response.data["product_name"] == "Beef"
 
@@ -34,8 +34,8 @@ class TestOperationCRUD:
                 "type": "SALE",
                 "date": str(date.today()),
                 "time": "14:00:00",
-                "kitchen": kitchen.id,
-                "product": product.id,
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
                 "quantity": "5.000",
                 "unit": "kg",
                 "price": "120000.00",
@@ -223,4 +223,4 @@ class TestOperationTenantIsolation:
         assert response.status_code == 200
         # Should only see own org operations
         for op in response.data["results"]:
-            assert op["organization"] != org2.id
+            assert op["organization_id"] != org2.id

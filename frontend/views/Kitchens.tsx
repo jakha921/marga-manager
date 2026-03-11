@@ -15,7 +15,7 @@ const Kitchens: React.FC = () => {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | number | null>(null);
   const [formData, setFormData] = useState({ name: '', isActive: true });
   const [error, setError] = useState<string | null>(null);
 
@@ -47,14 +47,14 @@ const Kitchens: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name) return; // Simple validation
 
     if (editingId) {
-      updateKitchen(editingId, formData);
+      await updateKitchen(editingId, formData);
       setIsModalOpen(false);
     } else {
-      const result = addKitchen(formData);
+      const result = await addKitchen(formData);
       if (result.success) {
         setIsModalOpen(false);
       } else {
@@ -63,7 +63,7 @@ const Kitchens: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string | number) => {
     if (confirm(t('kit.delete_confirm'))) {
       deleteKitchen(id);
     }
@@ -160,7 +160,7 @@ const Kitchens: React.FC = () => {
                       </div>
                       <div>
                          <span className="block font-bold text-sm text-slate-900">{kitchen.name}</span>
-                         <span className="text-[11px] text-slate-400 font-medium">ID: {kitchen.id.substring(0,6)}</span>
+                         <span className="text-[11px] text-slate-400 font-medium">ID: {String(kitchen.id).substring(0,6)}</span>
                       </div>
                     </div>
                   </td>

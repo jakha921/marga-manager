@@ -215,7 +215,7 @@ const QuickInput: React.FC = () => {
     if (opType !== 'SALE' && (!productSearch || !quantity || isProductError || !selectedProduct)) return;
     if (opType === 'SALE' && !unitPrice) return;
 
-    let prodId = 'gen-sales';
+    let prodId: number | null = null;
     let prodName = 'Direct Sales';
     let prodUnit = 'unit';
     let qtyNum = 1;
@@ -238,9 +238,9 @@ const QuickInput: React.FC = () => {
       date,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       kitchenId: selectedKitchen,
-      kitchenName: kitchens.find(k => k.id === selectedKitchen)?.name || 'Unknown',
+      kitchenName: kitchens.find(k => String(k.id) === selectedKitchen)?.name || 'Unknown',
       toKitchenId: opType === 'TRANSFER' ? targetKitchen : undefined,
-      toKitchenName: opType === 'TRANSFER' ? kitchens.find(k => k.id === targetKitchen)?.name : undefined,
+      toKitchenName: opType === 'TRANSFER' ? kitchens.find(k => String(k.id) === targetKitchen)?.name : undefined,
       productId: prodId,
       productName: prodName,
       quantity: qtyNum,
@@ -380,7 +380,7 @@ const QuickInput: React.FC = () => {
 
   const filteredHistory = operations.filter(op => {
       const matchesSearch = op.productName.toLowerCase().includes(histSearch.toLowerCase());
-      const matchesKitchen = histKitchen === 'all' || op.kitchenId === histKitchen;
+      const matchesKitchen = histKitchen === 'all' || String(op.kitchenId) === histKitchen;
       const matchesType = op.type === histType;
       const opDate = new Date(op.date);
       const matchesFrom = !histDateFrom || opDate >= new Date(histDateFrom);
@@ -405,7 +405,7 @@ const QuickInput: React.FC = () => {
   const handleExportExcel = () => {
     const kitchenName = histKitchen === 'all' 
         ? 'Barcha oshxonalar' 
-        : kitchens.find(k => k.id === histKitchen)?.name || 'Noma\'lum';
+        : kitchens.find(k => String(k.id) === histKitchen)?.name || 'Noma\'lum';
     
     // Determine report title based on history type filter
     let reportTitle = 'Hisobot';

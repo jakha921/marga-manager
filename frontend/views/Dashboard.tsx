@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
       const start = new Date(startDate);
       const end = new Date(endDate);
       const matchesDate = opDate >= start && opDate <= end;
-      const matchesKitchen = selectedKitchen === 'all' || op.kitchenId === selectedKitchen;
+      const matchesKitchen = selectedKitchen === 'all' || String(op.kitchenId) === selectedKitchen;
       return matchesDate && matchesKitchen;
     });
 
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
       };
     });
 
-    const displayedTableStats = selectedKitchen === 'all' ? kitchenStats : kitchenStats.filter(k => k.id === selectedKitchen);
+    const displayedTableStats = selectedKitchen === 'all' ? kitchenStats : kitchenStats.filter(k => String(k.id) === selectedKitchen);
 
     // 4. Calculate Table Totals
     const totals = displayedTableStats.reduce((acc, curr) => ({
@@ -204,10 +204,10 @@ const Dashboard: React.FC = () => {
         // Helper to get balance for a specific date
         const getBalance = (dateStr: string) => {
             const ops = operations.filter(op => 
-                op.productId === selectedProductId && 
+                String(op.productId) === selectedProductId && 
                 op.type === 'DAILY' && 
                 op.date === dateStr &&
-                (prodHistKitchen === 'all' || op.kitchenId === prodHistKitchen)
+                (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
             );
             // If 'all', sum up balances of all kitchens. If specific, take that kitchen's balance.
             // Note: If multiple entries for same kitchen/date, we should ideally take the latest. 
@@ -218,10 +218,10 @@ const Dashboard: React.FC = () => {
         const getIncoming = (dateStr: string) => {
             return operations
                 .filter(op => 
-                    op.productId === selectedProductId && 
+                    String(op.productId) === selectedProductId && 
                     op.type === 'INCOMING' && 
                     op.date === dateStr &&
-                    (prodHistKitchen === 'all' || op.kitchenId === prodHistKitchen)
+                    (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
                 )
                 .reduce((acc, curr) => acc + curr.quantity, 0);
         };
@@ -230,10 +230,10 @@ const Dashboard: React.FC = () => {
             if (prodHistKitchen === 'all') return 0; // Transfers don't affect global consumption
             return operations
                 .filter(op => 
-                    op.productId === selectedProductId && 
+                    String(op.productId) === selectedProductId && 
                     op.type === 'TRANSFER' && 
                     op.date === dateStr &&
-                    op.kitchenId === prodHistKitchen
+                    String(op.kitchenId) === prodHistKitchen
                 )
                 .reduce((acc, curr) => acc + curr.quantity, 0);
         };
@@ -242,10 +242,10 @@ const Dashboard: React.FC = () => {
             if (prodHistKitchen === 'all') return 0; // Transfers don't affect global consumption
             return operations
                 .filter(op => 
-                    op.productId === selectedProductId && 
+                    String(op.productId) === selectedProductId && 
                     op.type === 'TRANSFER' && 
                     op.date === dateStr &&
-                    op.toKitchenId === prodHistKitchen
+                    String(op.toKitchenId) === prodHistKitchen
                 )
                 .reduce((acc, curr) => acc + curr.quantity, 0);
         };
@@ -289,7 +289,7 @@ const Dashboard: React.FC = () => {
   const handleExport = () => {
      const kitchenName = selectedKitchen === 'all' 
         ? 'Barcha oshxonalar' 
-        : kitchens.find(k => k.id === selectedKitchen)?.name || 'Noma\'lum';
+        : kitchens.find(k => String(k.id) === selectedKitchen)?.name || 'Noma\'lum';
      
      const reportTitle = "Asosiy Moliyaviy Hisobot"; // Main Financial Report
 

@@ -18,7 +18,7 @@ class TestKitchenTenantAdmin:
         assert response.status_code == 201
         assert response.data["name"] == "New Kitchen"
         # organization should be auto-set from user
-        assert response.data["organization"] == org.id
+        assert response.data["organization_id"] == org.id
 
     def test_retrieve_kitchen(self, tenant_admin_client, kitchen):
         response = tenant_admin_client.get(f"/api/kitchens/{kitchen.id}/")

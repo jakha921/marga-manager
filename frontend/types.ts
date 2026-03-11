@@ -6,8 +6,8 @@ export type SubscriptionPlan = 'BASIC' | 'PRO' | 'ENTERPRISE';
 export type UserRole = 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'KITCHEN_USER';
 
 export interface User {
-  id: string;
-  organizationId: string;
+  id: number;
+  organizationId: number;
   username: string;
   password: string; // Stored for mock purposes
   fullName: string;
@@ -16,7 +16,7 @@ export interface User {
 }
 
 export interface Organization {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   plan: SubscriptionPlan;
@@ -27,7 +27,7 @@ export interface Organization {
   // Billing info
   mrr: number; // Monthly Recurring Revenue from this client
   contactName: string;
-  
+
   // Extended Settings
   phone?: string;
   email?: string;
@@ -38,43 +38,44 @@ export interface Organization {
 }
 
 export interface Category {
-  id: string;
+  id: number;
   name: string;
-  organizationId: string;
+  organizationId: number;
 }
 
 export interface Kitchen {
-  id: string;
+  id: number;
   name: string;
   isActive: boolean;
   createdAt: string;
-  organizationId: string;
+  organizationId: number;
 }
 
 export interface Product {
-  id: string;
+  id: number;
   code: string;
   name: string;
-  category: string;
+  category: number;
+  categoryName?: string;
   unit: string;
-  organizationId: string;
+  organizationId: number;
 }
 
 export interface OperationEntry {
-  id: string;
+  id: number;
   type: OperationType;
   date: string;
   time: string;
-  kitchenId: string;
+  kitchenId: number;
   kitchenName: string;
-  toKitchenId?: string;
+  toKitchenId?: number;
   toKitchenName?: string;
-  productId: string;
+  productId: number | null;
   productName: string;
   quantity: number;
   unit: string;
   price?: number;
-  organizationId: string;
+  organizationId: number;
 }
 
 export interface DashboardStats {

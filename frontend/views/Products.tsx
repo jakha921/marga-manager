@@ -14,7 +14,7 @@ const Products: React.FC = () => {
   const { t } = useLanguage();
   const { userRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [error, setError] = useState<string | null>(null);
 
   // Modals
@@ -22,18 +22,18 @@ const Products: React.FC = () => {
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   
   // Forms
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ code: '', name: '', category: '', unit: 'kg' });
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+  const [formData, setFormData] = useState<{ code: string; name: string; category: number | ''; unit: string }>({ code: '', name: '', category: '', unit: 'kg' });
   const [newCatName, setNewCatName] = useState('');
-  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editingCatId, setEditingCatId] = useState<string | number | null>(null);
 
   useEffect(() => {
     if (categories.length > 0 && !formData.category) {
-      setFormData(prev => ({ ...prev, category: categories[0].name }));
+      setFormData(prev => ({ ...prev, category: categories[0].id }));
     }
   }, [categories]);
 
-  const categoryFilterOptions = ['All', ...categories.map(c => c.name)];
+  const categoryFilterOptions = [{ value: 'All', label: t('prod.cat.all') }, ...categories.map(c => ({ value: String(c.id), label: c.name }))];
 
   const unitOptions = [
     { value: 'kg', label: 'Kilogram (kg)' },
@@ -47,7 +47,7 @@ const Products: React.FC = () => {
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           p.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'All' || String(p.category) === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -60,11 +60,11 @@ const Products: React.FC = () => {
   const handleOpenCreate = () => {
     setEditingId(null);
     setError(null);
-    setFormData({ 
-      code: generateNextCode(), 
-      name: '', 
-      category: categories[0]?.name || '', 
-      unit: 'kg' 
+    setFormData({
+      code: generateNextCode(),
+      name: '',
+      category: categories[0]?.id || '',
+      unit: 'kg'
     });
     setIsModalOpen(true);
   };
@@ -81,15 +81,15 @@ const Products: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError(null);
     if (!formData.name || !formData.unit || !formData.code || !formData.category) return;
 
     let result;
     if (editingId) {
-      result = updateProduct(editingId, formData);
+      result = await updateProduct(editingId, formData);
     } else {
-      result = addProduct(formData);
+      result = await addProduct(formData);
     }
 
     if (result.success) {
@@ -101,9 +101,9 @@ const Products: React.FC = () => {
 
   // Delete Confirmation
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<string | number | null>(null);
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = (id: string | number) => {
     setProductToDelete(id);
     setIsDeleteModalOpen(true);
   };
@@ -145,7 +145,7 @@ const Products: React.FC = () => {
                value={categoryFilter}
                onChange={e => setCategoryFilter(e.target.value)}
              >
-                {categoryFilterOptions.map(c => <option key={c} value={c}>{c === 'All' ? t('prod.cat.all') : c}</option>)}
+                {categoryFilterOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
              </select>
              <Filter size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
            </div>
@@ -185,7 +185,7 @@ const Products: React.FC = () => {
                   </td>
                   <td className="py-5 px-8">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold uppercase tracking-wider border border-slate-200">
-                       {product.category}
+                       {product.categoryName || categories.find(c => c.id === product.category)?.name || product.category}
                     </span>
                   </td>
                   <td className="py-5 px-8 text-right font-mono text-sm font-medium text-slate-500">
@@ -250,11 +250,11 @@ const Products: React.FC = () => {
              </div>
           </div>
          
-          <Select 
+          <Select
             label={t('prod.category')}
-            value={formData.category} 
-            onChange={e => setFormData({...formData, category: e.target.value})} 
-            options={categories.map(c => ({ value: c.name, label: c.name }))}
+            value={String(formData.category)}
+            onChange={e => setFormData({...formData, category: Number(e.target.value)})}
+            options={categories.map(c => ({ value: String(c.id), label: c.name }))}
           />
           
           <Select

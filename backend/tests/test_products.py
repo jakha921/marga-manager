@@ -17,7 +17,7 @@ class TestCategoryTenantAdmin:
         )
         assert response.status_code == 201
         assert response.data["name"] == "Vegetables"
-        assert response.data["organization"] == org.id
+        assert response.data["organization_id"] == org.id
 
     def test_update_category(self, tenant_admin_client, category):
         response = tenant_admin_client.patch(
@@ -52,7 +52,7 @@ class TestProductTenantAdmin:
         )
         assert response.status_code == 201
         assert response.data["name"] == "Tomato"
-        assert response.data["organization"] == org.id
+        assert response.data["organization_id"] == org.id
         assert response.data["category_name"] == "Raw Materials"
 
     def test_retrieve_product(self, tenant_admin_client, product):

@@ -110,8 +110,8 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const orgUsers = users.filter(u => u.organizationId === selectedOrgId);
-  const selectedOrgName = organizations.find(o => o.id === selectedOrgId)?.name;
+  const orgUsers = users.filter(u => String(u.organizationId) === selectedOrgId);
+  const selectedOrgName = organizations.find(o => String(o.id) === selectedOrgId)?.name;
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-body">

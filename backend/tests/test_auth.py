@@ -81,7 +81,7 @@ class TestMeEndpoint:
         assert response.status_code == 200
         assert response.data["username"] == "tenantadmin"
         assert response.data["role"] == "TENANT_ADMIN"
-        assert response.data["organization"] == org.id
+        assert response.data["organization_id"] == org.id
         assert response.data["organization_name"] == "Test Org"
         assert response.data["full_name"] == "Tenant Admin"
 
@@ -93,4 +93,4 @@ class TestMeEndpoint:
         response = super_admin_client.get("/api/auth/me/")
         assert response.status_code == 200
         assert response.data["role"] == "SUPER_ADMIN"
-        assert response.data["organization"] is None
+        assert response.data["organization_id"] is None

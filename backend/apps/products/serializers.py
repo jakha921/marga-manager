@@ -6,16 +6,19 @@ from .models import Category, Product
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категории."""
 
+    organization_id = serializers.IntegerField(source="organization.id", read_only=True)
+
     class Meta:
         model = Category
-        fields = ["id", "name", "organization", "created_at"]
-        read_only_fields = ["created_at", "organization"]
+        fields = ["id", "name", "organization_id", "created_at"]
+        read_only_fields = ["created_at"]
 
 
 class ProductSerializer(serializers.ModelSerializer):
     """Сериализатор продукта."""
 
     category_name = serializers.CharField(source="category.name", read_only=True, default=None)
+    organization_id = serializers.IntegerField(source="organization.id", read_only=True)
 
     class Meta:
         model = Product
@@ -26,10 +29,10 @@ class ProductSerializer(serializers.ModelSerializer):
             "category",
             "category_name",
             "unit",
-            "organization",
+            "organization_id",
             "created_at",
         ]
-        read_only_fields = ["created_at", "organization"]
+        read_only_fields = ["created_at"]
 
     def validate_code(self, value: str) -> str:
         """Проверка уникальности кода в рамках организации."""

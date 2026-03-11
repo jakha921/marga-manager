@@ -19,6 +19,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор пользователя."""
 
+    organization_id = serializers.IntegerField(
+        source="organization.id", read_only=True, default=None
+    )
+
     class Meta:
         model = User
         fields = [
@@ -26,7 +30,7 @@ class UserSerializer(serializers.ModelSerializer):
             "username",
             "full_name",
             "role",
-            "organization",
+            "organization_id",
             "is_active",
             "date_joined",
         ]
@@ -61,6 +65,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
 class MeSerializer(serializers.ModelSerializer):
     """Сериализатор текущего пользователя."""
 
+    organization_id = serializers.IntegerField(
+        source="organization.id", read_only=True, default=None
+    )
     organization_name = serializers.CharField(
         source="organization.name", read_only=True, default=None
     )
@@ -72,6 +79,6 @@ class MeSerializer(serializers.ModelSerializer):
             "username",
             "full_name",
             "role",
-            "organization",
+            "organization_id",
             "organization_name",
         ]

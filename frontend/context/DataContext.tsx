@@ -13,13 +13,13 @@ interface DataContextType {
   // SaaS Admin Data
   organizations: Organization[];
   addOrganization: (org: Omit<Organization, 'id' | 'createdAt'>) => void;
-  updateOrganization: (id: string, updates: Partial<Organization>) => void;
+  updateOrganization: (id: string | number, updates: Partial<Organization>) => void;
 
   // User Management Data
   users: User[];
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
-  updateUser: (id: string, updates: Partial<User>) => void;
-  deleteUser: (id: string) => void;
+  updateUser: (id: string | number, updates: Partial<User>) => void;
+  deleteUser: (id: string | number) => void;
 
   // Tenant Data (Filtered)
   currentOrganization: Organization | null;
@@ -34,17 +34,17 @@ interface DataContextType {
   // Actions
   upgradeSubscription: (plan: SubscriptionPlan) => void;
   addKitchen: (kitchen: Omit<Kitchen, 'id' | 'createdAt' | 'organizationId'>) => Promise<{ success: boolean; error?: string }>;
-  updateKitchen: (id: string, updates: Partial<Kitchen>) => void;
-  deleteKitchen: (id: string) => void;
+  updateKitchen: (id: string | number, updates: Partial<Kitchen>) => void;
+  deleteKitchen: (id: string | number) => void;
   addProduct: (product: Omit<Product, 'id' | 'organizationId'>) => Promise<{ success: boolean; error?: string }>;
-  updateProduct: (id: string, updates: Partial<Product>) => Promise<{ success: boolean; error?: string }>;
-  deleteProduct: (id: string) => void;
+  updateProduct: (id: string | number, updates: Partial<Product>) => Promise<{ success: boolean; error?: string }>;
+  deleteProduct: (id: string | number) => void;
   addCategory: (name: string) => void;
-  updateCategory: (id: string, name: string) => void;
-  deleteCategory: (id: string) => void;
+  updateCategory: (id: string | number, name: string) => void;
+  deleteCategory: (id: string | number) => void;
   addOperation: (operation: Omit<OperationEntry, 'id' | 'organizationId'>) => void;
-  updateOperation: (id: string, updates: Partial<OperationEntry>) => void;
-  deleteOperation: (id: string) => void;
+  updateOperation: (id: string | number, updates: Partial<OperationEntry>) => void;
+  deleteOperation: (id: string | number) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -85,10 +85,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       try {
         // Fetch data based on role
+        const bigPage = { page_size: '1000' };
+
         if (userRole === 'SUPER_ADMIN') {
           const [orgsRes, usersRes] = await Promise.all([
-            organizationsService.getAll().catch(() => ({ data: { results: [] } })),
-            usersService.getAll().catch(() => ({ data: { results: [] } })),
+            organizationsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
+            usersService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
           ]);
           setAllOrgs(orgsRes.data.results || orgsRes.data || []);
           setAllUsers(usersRes.data.results || usersRes.data || []);
@@ -96,10 +98,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Fetch tenant data (for all authenticated users)
         const [kitchensRes, categoriesRes, productsRes, operationsRes] = await Promise.all([
-          kitchensService.getAll().catch(() => ({ data: { results: [] } })),
-          categoriesService.getAll().catch(() => ({ data: { results: [] } })),
-          productsService.getAll().catch(() => ({ data: { results: [] } })),
-          operationsService.getAll().catch(() => ({ data: { results: [] } })),
+          kitchensService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
+          categoriesService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
+          productsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
+          operationsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
         ]);
 
         setAllKitchens(kitchensRes.data.results || kitchensRes.data || []);

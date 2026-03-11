@@ -39,7 +39,7 @@ const Analytics: React.FC = () => {
       const start = new Date(startDate);
       const end = new Date(endDate);
       const inDateRange = opDate >= start && opDate <= end;
-      const inKitchen = selectedKitchen === 'all' || op.kitchenId === selectedKitchen;
+      const inKitchen = selectedKitchen === 'all' || String(op.kitchenId) === selectedKitchen;
       return inDateRange && inKitchen;
     });
 
@@ -51,7 +51,7 @@ const Analytics: React.FC = () => {
       const salesRevenue = kOps.filter(op => op.type === 'SALE').reduce((acc, curr) => acc + (curr.price || 0), 0);
       const dailyExpense = kOps.filter(op => op.type === 'DAILY').reduce((acc, curr) => acc + curr.quantity, 0);
       const transfers = kOps.filter(op => op.type === 'TRANSFER').reduce((acc, curr) => acc + curr.quantity, 0);
-      const beginningBalance = 50 + (k.id.charCodeAt(0) % 10); 
+      const beginningBalance = 50 + (Number(k.id) % 10);
       const actualExpense = dailyExpense + salesQty; 
       const endBalance = beginningBalance + incoming - actualExpense + transfers;
       const estimatedCost = salesRevenue * 0.4;
@@ -61,7 +61,7 @@ const Analytics: React.FC = () => {
       return { id: k.id, name: k.name, beginningBalance, incoming, salesRevenue, actualExpense, endBalance, markupVal, markupPercent, transfers };
     });
 
-    const displayedStats = selectedKitchen === 'all' ? kitchenStats : kitchenStats.filter(k => k.id === selectedKitchen);
+    const displayedStats = selectedKitchen === 'all' ? kitchenStats : kitchenStats.filter(k => String(k.id) === selectedKitchen);
     const chartMap = new Map<string, number>();
     const start = new Date(startDate);
     const end = new Date(endDate);
