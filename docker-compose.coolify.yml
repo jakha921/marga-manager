@@ -14,9 +14,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: .
-      dockerfile: docker/backend/Dockerfile
+    image: jakha921/marga-backend:latest
     expose:
       - "8000"
     environment:
@@ -37,9 +35,7 @@ services:
       - static_files:/app/staticfiles
 
   frontend:
-    build:
-      context: .
-      dockerfile: docker/frontend/Dockerfile
+    image: jakha921/marga-frontend:latest
     expose:
       - "80"
     depends_on:
