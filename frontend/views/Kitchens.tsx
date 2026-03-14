@@ -91,7 +91,7 @@ const Kitchens: React.FC = () => {
                <h2 className="font-display font-bold text-lg">{subscription} PLAN</h2>
             </div>
             <p className="text-slate-400 text-sm mt-0.5">
-              {currentOrganization?.name} Organization
+              {currentOrganization?.name || ''}
             </p>
           </div>
         </div>

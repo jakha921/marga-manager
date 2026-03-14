@@ -57,6 +57,20 @@ export const useData = () => {
   return context;
 };
 
+const normalizeOperation = (op: OperationEntry): OperationEntry => ({
+  ...op,
+  quantity: Number(op.quantity) || 0,
+  price: op.price != null ? Number(op.price) : undefined,
+});
+
+const normalizeOrg = (o: Organization): Organization => ({
+  ...o,
+  mrr: Number(o.mrr) || 0,
+  taxRate: o.taxRate != null ? Number(o.taxRate) : undefined,
+  maxKitchens: Number(o.maxKitchens) || 1,
+  maxUsers: Number(o.maxUsers) || 5,
+});
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { organizationId, userRole, isAuthenticated } = useAuth();
 
@@ -92,7 +106,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             organizationsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
             usersService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
           ]);
-          setAllOrgs(orgsRes.data.results || orgsRes.data || []);
+          const rawOrgs = orgsRes.data.results || orgsRes.data || [];
+          setAllOrgs(rawOrgs.map(normalizeOrg));
+          setAllUsers(usersRes.data.results || usersRes.data || []);
+        }
+
+        if (userRole === 'TENANT_ADMIN') {
+          const usersRes = await usersService.getAll(bigPage).catch(() => ({ data: { results: [] } }));
           setAllUsers(usersRes.data.results || usersRes.data || []);
         }
 
@@ -107,7 +127,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAllKitchens(kitchensRes.data.results || kitchensRes.data || []);
         setAllCategories(categoriesRes.data.results || categoriesRes.data || []);
         setAllProducts(productsRes.data.results || productsRes.data || []);
-        setAllOperations(operationsRes.data.results || operationsRes.data || []);
+        const rawOps = operationsRes.data.results || operationsRes.data || [];
+        setAllOperations(rawOps.map(normalizeOperation));
       } catch (err) {
         console.error('Failed to fetch data:', err);
       } finally {
@@ -140,7 +161,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addOrganization = useCallback(async (data: Omit<Organization, 'id' | 'createdAt'>) => {
     try {
       const { data: newOrg } = await organizationsService.create(data as Record<string, unknown>);
-      setAllOrgs(prev => [...prev, newOrg]);
+      setAllOrgs(prev => [...prev, normalizeOrg(newOrg)]);
     } catch (err) {
       console.error('Failed to create organization:', err);
     }
@@ -149,7 +170,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateOrganization = useCallback(async (id: string, updates: Partial<Organization>) => {
     try {
       const { data: updated } = await organizationsService.update(id, updates as Record<string, unknown>);
-      setAllOrgs(prev => prev.map(o => String(o.id) === String(id) ? updated : o));
+      setAllOrgs(prev => prev.map(o => String(o.id) === String(id) ? normalizeOrg(updated) : o));
     } catch (err) {
       console.error('Failed to update organization:', err);
     }
@@ -284,7 +305,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addOperation = useCallback(async (data: Omit<OperationEntry, 'id' | 'organizationId'>) => {
     try {
       const { data: newOp } = await operationsService.create(data as Record<string, unknown>);
-      setAllOperations(prev => [newOp, ...prev]);
+      setAllOperations(prev => [normalizeOperation(newOp), ...prev]);
     } catch (err) {
       console.error('Failed to create operation:', err);
     }
@@ -293,7 +314,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateOperation = useCallback(async (id: string, updates: Partial<OperationEntry>) => {
     try {
       const { data: updated } = await operationsService.update(id, updates as Record<string, unknown>);
-      setAllOperations(prev => prev.map(op => String(op.id) === String(id) ? updated : op));
+      setAllOperations(prev => prev.map(op => String(op.id) === String(id) ? normalizeOperation(updated) : op));
     } catch (err) {
       console.error('Failed to update operation:', err);
     }

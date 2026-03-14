@@ -58,7 +58,7 @@ const QuickInput: React.FC = () => {
   // History Filter State with Persistence
   const [histSearch, setHistSearch] = useState('');
   const [histKitchen, setHistKitchen] = useState(() => localStorage.getItem('qi_hist_kitchen') || 'all');
-  const [histType, setHistType] = useState<string>(opType);
+  const [histType, setHistType] = useState<string>('all');
   const [histDateFrom, setHistDateFrom] = useState(() => localStorage.getItem('qi_hist_from') || getYesterday());
   const [histDateTo, setHistDateTo] = useState(() => localStorage.getItem('qi_hist_to') || getFutureDate());
 
@@ -381,7 +381,7 @@ const QuickInput: React.FC = () => {
   const filteredHistory = operations.filter(op => {
       const matchesSearch = op.productName.toLowerCase().includes(histSearch.toLowerCase());
       const matchesKitchen = histKitchen === 'all' || String(op.kitchenId) === histKitchen;
-      const matchesType = op.type === histType;
+      const matchesType = histType === 'all' || op.type === histType;
       const opDate = new Date(op.date);
       const matchesFrom = !histDateFrom || opDate >= new Date(histDateFrom);
       const matchesTo = !histDateTo || opDate <= new Date(histDateTo);
@@ -702,6 +702,7 @@ const QuickInput: React.FC = () => {
                             value={histType}
                             onChange={e => setHistType(e.target.value)}
                         >
+                            <option value="all">{t('qi.all_types')}</option>
                             {OPERATION_TYPES.map(t_op => <option key={t_op.id} value={t_op.id}>{getOpTypeLabel(t_op.id)}</option>)}
                         </select>
                         <Filter size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-600" />

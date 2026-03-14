@@ -143,7 +143,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Login
     'auth.welcome': 'Welcome Back',
-    'auth.subtitle': 'MARGA MENEGER',
+    'auth.subtitle': 'MARGA MANAGER',
     'auth.username': 'Username',
     'auth.password': 'Password',
     'auth.signin': 'Sign In',
@@ -360,7 +360,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Login
     'auth.welcome': 'С возвращением',
-    'auth.subtitle': 'MARGA MENEGER',
+    'auth.subtitle': 'MARGA MANAGER',
     'auth.username': 'Имя пользователя',
     'auth.password': 'Пароль',
     'auth.signin': 'Войти',
@@ -577,7 +577,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Login
     'auth.welcome': 'Xush kelibsiz',
-    'auth.subtitle': 'MARGA MENEGER',
+    'auth.subtitle': 'MARGA MANAGER',
     'auth.username': 'Foydalanuvchi nomi',
     'auth.password': 'Parol',
     'auth.signin': 'Kirish',

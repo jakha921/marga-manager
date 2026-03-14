@@ -80,7 +80,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div>
               <span className="font-display font-bold text-lg tracking-tight block leading-none">MARGA</span>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mt-0.5">MENEGER</span>
+              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mt-0.5">MANAGER</span>
             </div>
           </div>
         </div>
