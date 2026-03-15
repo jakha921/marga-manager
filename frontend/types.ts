@@ -83,3 +83,35 @@ export interface DashboardStats {
   incomingKg: number;
   salesCount: number;
 }
+
+export interface KitchenReportEntry {
+  kitchenId: number;
+  kitchenName: string;
+  beginningBalance: number;
+  incoming: number;
+  endBalance: number;
+  transfersOut: number;
+  transfersIn: number;
+  actualExpense: number;
+  salesRevenue: number;
+  markupVal: number;
+  markupPercent: number;
+}
+
+export interface KitchenReportResponse {
+  kitchens: KitchenReportEntry[];
+  totals: Omit<KitchenReportEntry, 'kitchenId' | 'kitchenName'>;
+}
+
+export interface OperationsSummaryResponse {
+  totalAmount: number;
+  totalQuantities: Record<string, number>;
+  count: number;
+}
+
+export interface LastIncomingResponse {
+  price: string | null;
+  unitPrice: string | null;
+  quantity: string | null;
+  unit: string | null;
+}

@@ -46,25 +46,34 @@ class TestOrganizationSuperAdmin:
 
 @pytest.mark.django_db
 class TestOrganizationTenantAdmin:
-    def test_list_forbidden(self, tenant_admin_client):
+    def test_list_own_org(self, tenant_admin_client, org, org2):
         response = tenant_admin_client.get("/api/organizations/")
-        assert response.status_code == 403
+        assert response.status_code == 200
+        # TENANT_ADMIN видит только свою организацию
+        assert response.data["count"] == 1
+        assert response.data["results"][0]["id"] == org.id
+
+    def test_retrieve_own_org(self, tenant_admin_client, org):
+        response = tenant_admin_client.get(f"/api/organizations/{org.id}/")
+        assert response.status_code == 200
+        assert response.data["name"] == org.name
+
+    def test_retrieve_other_org_forbidden(self, tenant_admin_client, org2):
+        response = tenant_admin_client.get(f"/api/organizations/{org2.id}/")
+        assert response.status_code == 404
+
+    def test_update_own_org(self, tenant_admin_client, org):
+        response = tenant_admin_client.patch(
+            f"/api/organizations/{org.id}/",
+            {"name": "Updated Name"},
+        )
+        assert response.status_code == 200
+        assert response.data["name"] == "Updated Name"
 
     def test_create_forbidden(self, tenant_admin_client):
         response = tenant_admin_client.post(
             "/api/organizations/",
             {"name": "X", "slug": "x"},
-        )
-        assert response.status_code == 403
-
-    def test_retrieve_forbidden(self, tenant_admin_client, org):
-        response = tenant_admin_client.get(f"/api/organizations/{org.id}/")
-        assert response.status_code == 403
-
-    def test_update_forbidden(self, tenant_admin_client, org):
-        response = tenant_admin_client.patch(
-            f"/api/organizations/{org.id}/",
-            {"name": "Hack"},
         )
         assert response.status_code == 403
 

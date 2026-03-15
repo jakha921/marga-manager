@@ -66,8 +66,10 @@ class TestSuperAdminFullAccess:
 class TestTenantAdminPermissions:
     """TENANT_ADMIN: own org CRUD, no organization management."""
 
-    def test_organizations_forbidden(self, tenant_admin_client, org):
-        assert tenant_admin_client.get("/api/organizations/").status_code == 403
+    def test_organizations_read_only(self, tenant_admin_client, org):
+        # TENANT_ADMIN может читать свою организацию
+        assert tenant_admin_client.get("/api/organizations/").status_code == 200
+        # Но не может создавать новые
         assert (
             tenant_admin_client.post("/api/organizations/", {"name": "X", "slug": "x"}).status_code
             == 403
@@ -122,6 +124,7 @@ class TestTenantAdminPermissions:
                 "product_id": product.id,
                 "quantity": "10.000",
                 "unit": "kg",
+                "price": "90000.00",
             },
         )
         assert resp.status_code == 201

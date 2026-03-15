@@ -8,4 +8,6 @@ export const operationsService = {
   delete: (id: string | number) => apiClient.delete(`/operations/${id}/`),
   getLastIncoming: (productId: string | number) =>
     apiClient.get(`/operations/last-incoming/${productId}/`),
+  exportExcel: (params?: Record<string, string>) =>
+    apiClient.get('/operations/export/', { params, responseType: 'blob' }),
 };

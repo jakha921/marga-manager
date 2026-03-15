@@ -12,9 +12,12 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDate, formatNumber, parseNumber } from '../utils';
 import { Clock, CheckCircle2, Zap, Search, Filter, ScanLine, Edit2, Trash2, Calendar, MapPin, DollarSign, Package, Sigma, ChevronDown, Download } from 'lucide-react';
+import { operationsService } from '../api/services/operations';
+import { analyticsService } from '../api/services/analytics';
+import { OperationsSummaryResponse } from '../types';
 
 const QuickInput: React.FC = () => {
-  const { products, kitchens, operations, addOperation, updateOperation, deleteOperation, fetchFilteredOperations } = useData();
+  const { products, kitchens, addOperation, updateOperation, deleteOperation, fetchFilteredOperations } = useData();
   const { t } = useLanguage();
   const { userRole } = useAuth();
   
@@ -67,6 +70,13 @@ const QuickInput: React.FC = () => {
   const [histLoading, setHistLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Server-side summary
+  const [summary, setSummary] = useState<OperationsSummaryResponse>({
+    totalAmount: 0,
+    totalQuantities: {},
+    count: 0,
+  });
+
   // Save persisted filters
   useEffect(() => localStorage.setItem('qi_hist_kitchen', histKitchen), [histKitchen]);
   useEffect(() => localStorage.setItem('qi_hist_from', histDateFrom), [histDateFrom]);
@@ -112,46 +122,41 @@ const QuickInput: React.FC = () => {
     }, 100);
   }, [opType]);
 
-  // --- REQUIREMENT 1: Auto-fill Price from last INCOMING ---
+  // --- Auto-fill Price from last INCOMING via API ---
   useEffect(() => {
     if (selectedProduct && opType !== 'SALE') {
-        // Find the latest INCOMING operation for this product
-        // We sort operations by date descending to get the newest one
-        const lastIncoming = operations
-            .filter(op => op.productId === selectedProduct.id && op.type === 'INCOMING')
-            .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime())[0];
-
-        let newPrice = '';
-        if (lastIncoming && lastIncoming.price && lastIncoming.quantity) {
-            const calculatedUnit = lastIncoming.price / lastIncoming.quantity;
-            newPrice = formatNumber(calculatedUnit);
-        }
-        
-        // Prevent infinite loop by checking if value actually changed
-        setUnitPrice(prev => {
-            if (prev !== newPrice) {
-                // Also update total sum if quantity exists
-                if (quantity) {
-                    const sum = parseNumber(quantity) * parseNumber(newPrice);
-                    setTotalSum(sum ? formatNumber(sum) : '');
+        operationsService.getLastIncoming(selectedProduct.id).then(({ data }) => {
+            let newPrice = '';
+            if (data.unitPrice) {
+                const unitPriceNum = parseFloat(data.unitPrice);
+                if (!isNaN(unitPriceNum)) {
+                    newPrice = formatNumber(unitPriceNum);
                 }
-                return newPrice;
             }
-            return prev;
-        });
+            setUnitPrice(prev => {
+                if (prev !== newPrice) {
+                    if (quantity) {
+                        const sum = Math.round(parseNumber(quantity) * parseNumber(newPrice) * 100) / 100;
+                        setTotalSum(sum ? formatNumber(sum) : '');
+                    }
+                    return newPrice;
+                }
+                return prev;
+            });
+        }).catch(() => {});
     }
-  }, [selectedProduct, opType, operations]);
+  }, [selectedProduct, opType]);
 
   const handleQuantityChange = (val: string) => {
       // Allow only numbers and decimal point
       const rawVal = val.replace(/[^0-9.]/g, '');
       setQuantity(rawVal);
-      
+
       const parsedQty = parseFloat(rawVal);
       const parsedPrice = parseNumber(unitPrice);
-      
+
       if (parsedPrice && !isNaN(parsedQty)) {
-          const sum = parsedQty * parsedPrice;
+          const sum = Math.round(parsedQty * parsedPrice * 100) / 100;
           setTotalSum(sum ? formatNumber(sum) : '');
       }
   };
@@ -187,7 +192,7 @@ const QuickInput: React.FC = () => {
       const parsedPrice = parseFloat(raw);
       
       if (!isNaN(parsedQty) && !isNaN(parsedPrice)) {
-          const sum = parsedQty * parsedPrice;
+          const sum = Math.round(parsedQty * parsedPrice * 100) / 100;
           setTotalSum(formatNumber(sum));
       }
   };
@@ -234,9 +239,9 @@ const QuickInput: React.FC = () => {
         qtyNum = Number(quantity);
     }
 
-    // Calculate Total Price (Quantity * Unit Price)
+    // Calculate Total Price (Quantity * Unit Price), rounded to 2 decimals
     const parsedPrice = parseNumber(unitPrice);
-    const finalPrice = parsedPrice ? parsedPrice * qtyNum : undefined;
+    const finalPrice = parsedPrice ? Math.round(parsedPrice * qtyNum * 100) / 100 : undefined;
 
     await addOperation({
       type: opType,
@@ -386,9 +391,9 @@ const QuickInput: React.FC = () => {
     }
   };
 
-  // Fetch filtered history from server
+  // Fetch filtered history + summary from server in parallel
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchData = async () => {
       setHistLoading(true);
       const params: Record<string, string> = { page_size: '200' };
       if (histType !== 'all') params.type = histType;
@@ -397,12 +402,26 @@ const QuickInput: React.FC = () => {
       if (histDateTo) params.date_to = histDateTo;
       if (histSearch) params.search = histSearch;
 
-      const ops = await fetchFilteredOperations(params);
+      const summaryParams: Record<string, string> = {};
+      if (histType !== 'all') summaryParams.type = histType;
+      if (histKitchen !== 'all') summaryParams.kitchen = histKitchen;
+      if (histDateFrom) summaryParams.date_from = histDateFrom;
+      if (histDateTo) summaryParams.date_to = histDateTo;
+      if (histSearch) summaryParams.search = histSearch;
+
+      const [ops, summaryRes] = await Promise.all([
+        fetchFilteredOperations(params),
+        analyticsService.getOperationsSummary(summaryParams).then(r => r.data).catch(() => null),
+      ]);
+
       setFilteredHistory(ops);
+      if (summaryRes) {
+        setSummary(summaryRes);
+      }
       setHistLoading(false);
     };
 
-    const timer = setTimeout(fetchHistory, histSearch ? 300 : 0);
+    const timer = setTimeout(fetchData, histSearch ? 300 : 0);
     return () => clearTimeout(timer);
   }, [histType, histKitchen, histDateFrom, histDateTo, histSearch, refreshTrigger, fetchFilteredOperations]);
 
@@ -419,97 +438,42 @@ const QuickInput: React.FC = () => {
     }
   };
 
-  // --- REQUIREMENT 2: Styled Excel Export (Uzbek) ---
-  const handleExportExcel = () => {
-    const kitchenName = histKitchen === 'all' 
-        ? 'Barcha oshxonalar' 
-        : kitchens.find(k => String(k.id) === histKitchen)?.name || 'Noma\'lum';
-    
-    // Determine report title based on history type filter
-    let reportTitle = 'Hisobot';
-    if (histType === 'INCOMING') reportTitle = 'Kirim Hisoboti';
-    else if (histType === 'DAILY') reportTitle = 'Qoldiq Hisoboti';
-    else if (histType === 'TRANSFER') reportTitle = 'O\'tkazma Hisoboti';
-    else if (histType === 'SALE') reportTitle = 'Sotuv Hisoboti';
+  // Excel Export via server
+  const handleExportExcel = async () => {
+    try {
+      const params: Record<string, string> = {};
+      if (histType !== 'all') params.type = histType;
+      if (histKitchen !== 'all') params.kitchen = histKitchen;
+      if (histDateFrom) params.date_from = histDateFrom;
+      if (histDateTo) params.date_to = histDateTo;
+      if (histSearch) params.search = histSearch;
 
-    const totalSum = filteredHistory.reduce((sum, op) => sum + (op.price || 0), 0);
+      const response = await operationsService.exportExcel(params);
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
 
-    // Construct HTML Table
-    let tableHTML = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-        <meta charset="utf-8" />
-        <style>
-            .header { font-size: 16px; font-weight: bold; text-align: center; height: 40px; }
-            .subheader { font-weight: bold; }
-            .table-head { background-color: #f0f0f0; font-weight: bold; text-align: center; border: 1px solid #000; }
-            .cell { border: 1px solid #000; padding: 5px; }
-            .num { mso-number-format:"\#\,\#\#0"; }
-        </style>
-      </head>
-      <body>
-        <table border="1">
-           <tr>
-              <td colspan="6" class="header" style="font-size: 18px; text-align: center; background-color: #e2e8f0;">${reportTitle}</td>
-           </tr>
-           <tr>
-              <td colspan="2" class="subheader"><b>Oshxona:</b> ${kitchenName}</td>
-              <td colspan="2" class="subheader"><b>Sana:</b> ${formatDate(new Date())}</td>
-              <td colspan="2" class="subheader"><b>Davr:</b> ${formatDate(histDateFrom)} - ${formatDate(histDateTo)}</td>
-           </tr>
-           <tr><td colspan="6"></td></tr>
-           <tr style="background-color: #cbd5e1;">
-              <th class="table-head">Sana</th>
-              <th class="table-head">Mahsulot (Xom ashyo)</th>
-              <th class="table-head">O'lchov</th>
-              <th class="table-head">Miqdor (Kol-vo)</th>
-              <th class="table-head">Narx (Tsena)</th>
-              <th class="table-head">Summa</th>
-           </tr>
-    `;
+      let reportTitle = 'Hisobot';
+      if (histType === 'INCOMING') reportTitle = 'Kirim_Hisoboti';
+      else if (histType === 'DAILY') reportTitle = 'Qoldiq_Hisoboti';
+      else if (histType === 'TRANSFER') reportTitle = 'Otkazma_Hisoboti';
+      else if (histType === 'SALE') reportTitle = 'Sotuv_Hisoboti';
 
-    filteredHistory.forEach(op => {
-       const unitPrice = (op.price && op.quantity) ? (op.price / op.quantity) : 0;
-       tableHTML += `
-         <tr>
-            <td class="cell">${formatDate(op.date)}</td>
-            <td class="cell">${op.productName}</td>
-            <td class="cell" style="text-align: center;">${op.unit}</td>
-            <td class="cell num" style="text-align: center;">${formatNumber(Number(op.quantity))}</td>
-            <td class="cell num" style="text-align: right;">${formatNumber(unitPrice)}</td>
-            <td class="cell num" style="text-align: right;">${formatNumber(Number(op.price) || 0)}</td>
-         </tr>
-       `;
-    });
-
-    tableHTML += `
-           <tr>
-              <td colspan="4"></td>
-              <td class="subheader" style="text-align: right;"><b>JAMI (ITOGO):</b></td>
-              <td class="subheader num" style="text-align: right; background-color: #f1f5f9;"><b>${formatNumber(totalSum)}</b></td>
-           </tr>
-        </table>
-      </body>
-      </html>
-    `;
-
-    const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${reportTitle}_${formatDate(new Date())}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      link.download = `${reportTitle}_${formatDate(new Date())}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail
+    }
   };
 
-  const totalAmount = filteredHistory.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
-  
-  const totalQuantities = filteredHistory.reduce((acc, op) => {
-    const unit = op.unit || 'units';
-    acc[unit] = (acc[unit] || 0) + Number(op.quantity);
-    return acc;
-  }, {} as Record<string, number>);
+  const totalAmount = summary.totalAmount;
+  const totalQuantities = summary.totalQuantities;
 
   const config = {
     DAILY: { title: t('qi.op.daily'), qtyLabel: t('qi.balance'), showPrice: true, priceLabel: t('qi.price'), showTargetKitchen: false, qtyPlaceholder: '0' },

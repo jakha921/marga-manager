@@ -213,7 +213,7 @@ const AdminDashboard: React.FC = () => {
                           </span>
                        </td>
                        <td className="p-5 text-right font-mono text-slate-300">
-                          ${org.mrr}
+                          ${Number(org.mrr).toLocaleString()}
                        </td>
                        <td className="p-5 text-right">
                           <div className="flex justify-end gap-2">

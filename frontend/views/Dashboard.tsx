@@ -1,19 +1,20 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { formatDate, formatNumber, formatCompactNumber } from '../utils';
-import { MoreHorizontal, Filter, Download, TrendingUp, Calendar as CalendarIcon, BarChart3, LineChart, PieChart } from 'lucide-react';
+import { Filter, Download, TrendingUp, Calendar as CalendarIcon, BarChart3, LineChart, PieChart } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import Select from '../components/Select';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import DateFilter from '../components/DateFilter';
+import { analyticsService } from '../api/services/analytics';
+import { KitchenReportEntry, KitchenReportResponse } from '../types';
 
 const Dashboard: React.FC = () => {
   const { stats, operations, kitchens, products } = useData();
   const { t } = useLanguage();
-  
+
   // Helper to get current month range
   const getCurrentMonthRange = () => {
     const now = new Date();
@@ -25,7 +26,6 @@ const Dashboard: React.FC = () => {
   const { start: currentStart, end: currentEnd } = getCurrentMonthRange();
 
   // Unified Filters with Persistence
-  // Default to current month if storage is empty
   const [selectedKitchen, setSelectedKitchen] = useState(() => localStorage.getItem('dash_kitchen') || 'all');
   const [startDate, setStartDate] = useState(() => localStorage.getItem('dash_start') || currentStart);
   const [endDate, setEndDate] = useState(() => localStorage.getItem('dash_end') || currentEnd);
@@ -37,6 +37,10 @@ const Dashboard: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState(() => localStorage.getItem('dash_prod_id') || '');
   const [prodHistKitchen, setProdHistKitchen] = useState(() => localStorage.getItem('dash_prod_kitchen') || 'all');
 
+  // Server-side kitchen report state
+  const [reportData, setReportData] = useState<KitchenReportResponse | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+
   // Save filters to localStorage
   useEffect(() => localStorage.setItem('dash_kitchen', selectedKitchen), [selectedKitchen]);
   useEffect(() => localStorage.setItem('dash_start', startDate), [startDate]);
@@ -46,11 +50,36 @@ const Dashboard: React.FC = () => {
   useEffect(() => localStorage.setItem('dash_prod_id', selectedProductId), [selectedProductId]);
   useEffect(() => localStorage.setItem('dash_prod_kitchen', prodHistKitchen), [prodHistKitchen]);
 
-  // Combined Data Calculation
-  const dashboardData = useMemo(() => {
-    // ... (existing code for cardStats, displayedTableStats, tableTotals, dailyChartData, cumulativeChartData) ...
+  // Fetch kitchen report from server
+  useEffect(() => {
+    const fetchReport = async () => {
+      setReportLoading(true);
+      try {
+        const params: Record<string, string> = {
+          date_from: startDate,
+          date_to: endDate,
+        };
+        if (selectedKitchen !== 'all') params.kitchen = selectedKitchen;
+        const { data } = await analyticsService.getKitchenReport(params);
+        setReportData(data);
+      } catch {
+        setReportData(null);
+      } finally {
+        setReportLoading(false);
+      }
+    };
+    fetchReport();
+  }, [startDate, endDate, selectedKitchen]);
 
-    // 1. Filter Operations for General Charts/Cards (using date range)
+  // Displayed table data from server
+  const displayedTableStats = reportData?.kitchens ?? [];
+  const tableTotals = reportData?.totals ?? {
+    beginningBalance: 0, incoming: 0, actualExpense: 0, endBalance: 0,
+    salesRevenue: 0, markupVal: 0, markupPercent: 0, transfersIn: 0, transfersOut: 0,
+  };
+
+  // Charts still computed on client (use operations from context)
+  const chartData = useMemo(() => {
     const filteredOps = operations.filter(op => {
       const opDate = new Date(op.date);
       const start = new Date(startDate);
@@ -60,112 +89,15 @@ const Dashboard: React.FC = () => {
       return matchesDate && matchesKitchen;
     });
 
-    // 2. Calculate High-Level Stats (Cards)
-    const cardStats = {
-      totalOps: filteredOps.length,
-      incomingVol: filteredOps.filter(op => op.type === 'INCOMING').reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0),
-      salesCount: filteredOps.filter(op => op.type === 'SALE').reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0),
-      salesRevenue: filteredOps.filter(op => op.type === 'SALE').reduce((acc, curr) => acc + (Number(curr.price) || 0), 0),
-    };
-
-    // 3. Calculate Detailed Kitchen/Dept Stats (Table)
-    const kitchenStats = kitchens.map(k => {
-      const startBalanceOps = operations.filter(op => 
-        op.kitchenId === k.id && 
-        op.type === 'DAILY' && 
-        op.date === startDate
-      );
-      const beginningBalance = startBalanceOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
-
-      const incomingOps = operations.filter(op => {
-        const opDate = new Date(op.date);
-        const s = new Date(startDate);
-        const e = new Date(endDate);
-        return op.kitchenId === k.id && op.type === 'INCOMING' && opDate >= s && opDate <= e;
-      });
-      const incoming = incomingOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
-
-      const endBalanceOps = operations.filter(op =>
-        op.kitchenId === k.id &&
-        op.type === 'DAILY' &&
-        op.date === endDate
-      );
-      const endBalance = endBalanceOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
-
-      // Transfers Logic
-      const transferOutOps = operations.filter(op => {
-        const opDate = new Date(op.date);
-        const s = new Date(startDate);
-        const e = new Date(endDate);
-        return op.kitchenId === k.id && op.type === 'TRANSFER' && opDate >= s && opDate <= e;
-      });
-      const transfersOut = transferOutOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
-
-      const transferInOps = operations.filter(op => {
-        const opDate = new Date(op.date);
-        const s = new Date(startDate);
-        const e = new Date(endDate);
-        return op.toKitchenId === k.id && op.type === 'TRANSFER' && opDate >= s && opDate <= e;
-      });
-      const transfersIn = transferInOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
-
-      // Actual Expense (Consumption) calculation:
-      const actualExpense = beginningBalance + incoming + transfersIn - transfersOut - endBalance;
-
-      const salesOps = operations.filter(op => {
-        const opDate = new Date(op.date);
-        const s = new Date(startDate);
-        const e = new Date(endDate);
-        return op.kitchenId === k.id && op.type === 'SALE' && opDate >= s && opDate <= e;
-      });
-      const salesRevenue = salesOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
-
-      const markupVal = salesRevenue - actualExpense;
-      const markupPercent = actualExpense > 0 ? ((markupVal / actualExpense) * 100).toFixed(1) : '0.0';
-
-      return { 
-        id: k.id, 
-        name: k.name, 
-        beginningBalance, 
-        incoming, 
-        salesRevenue, 
-        actualExpense, 
-        endBalance, 
-        markupVal, 
-        markupPercent, 
-        transfersIn,
-        transfersOut
-      };
-    });
-
-    const displayedTableStats = selectedKitchen === 'all' ? kitchenStats : kitchenStats.filter(k => String(k.id) === selectedKitchen);
-
-    // 4. Calculate Table Totals
-    const totals = displayedTableStats.reduce((acc, curr) => ({
-        beginningBalance: acc.beginningBalance + curr.beginningBalance,
-        incoming: acc.incoming + curr.incoming,
-        actualExpense: acc.actualExpense + curr.actualExpense,
-        endBalance: acc.endBalance + curr.endBalance,
-        salesRevenue: acc.salesRevenue + curr.salesRevenue,
-        markupVal: acc.markupVal + curr.markupVal,
-        transfersIn: acc.transfersIn + curr.transfersIn,
-        transfersOut: acc.transfersOut + curr.transfersOut
-    }), { beginningBalance: 0, incoming: 0, actualExpense: 0, endBalance: 0, salesRevenue: 0, markupVal: 0, transfersIn: 0, transfersOut: 0 });
-
-    const tableTotals = {
-      ...totals,
-      markupPercent: totals.actualExpense > 0 ? ((totals.markupVal / totals.actualExpense) * 100).toFixed(1) : '0.0'
-    };
-
-    // 5. Calculate Chart Data (Daily Sales vs Cost)
+    // Daily Sales vs Cost chart
     const chartMap = new Map<string, { sales: number; cost: number }>();
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         chartMap.set(d.toISOString().split('T')[0], { sales: 0, cost: 0 });
     }
-    
+
     filteredOps.filter(op => op.type === 'SALE').forEach(op => {
        const curr = chartMap.get(op.date) || { sales: 0, cost: 0 };
        chartMap.set(op.date, { ...curr, sales: curr.sales + (Number(op.price) || 0) });
@@ -187,39 +119,32 @@ const Dashboard: React.FC = () => {
     const cumulativeChartData = dailyChartData.map(item => {
         runningSales += item.sales;
         runningCost += item.cost;
-        return {
-            date: item.date,
-            sales: runningSales,
-            cost: runningCost
-        };
+        return { date: item.date, sales: runningSales, cost: runningCost };
     });
 
-    // 6. Calculate Product Expense Chart Data (Consumption in Units)
+    // Product Expense Chart Data
     const productChartData: { date: string; value: number }[] = [];
-    
+
     if (selectedProductId) {
         const pStart = new Date(prodHistStart);
         const pEnd = new Date(prodHistEnd);
-        
-        // Helper to get balance for a specific date
+
         const getBalance = (dateStr: string) => {
-            const ops = operations.filter(op => 
-                String(op.productId) === selectedProductId && 
-                op.type === 'DAILY' && 
-                op.date === dateStr &&
-                (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
-            );
-            // If 'all', sum up balances of all kitchens. If specific, take that kitchen's balance.
-            // Note: If multiple entries for same kitchen/date, we should ideally take the latest. 
-            // Assuming one daily entry per kitchen per day for simplicity or summing them if multiple (which implies corrections).
-            return ops.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
+            return operations
+                .filter(op =>
+                    String(op.productId) === selectedProductId &&
+                    op.type === 'DAILY' &&
+                    op.date === dateStr &&
+                    (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
+                )
+                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
         };
 
         const getIncoming = (dateStr: string) => {
             return operations
-                .filter(op => 
-                    String(op.productId) === selectedProductId && 
-                    op.type === 'INCOMING' && 
+                .filter(op =>
+                    String(op.productId) === selectedProductId &&
+                    op.type === 'INCOMING' &&
                     op.date === dateStr &&
                     (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
                 )
@@ -227,7 +152,7 @@ const Dashboard: React.FC = () => {
         };
 
         const getTransferOut = (dateStr: string) => {
-            if (prodHistKitchen === 'all') return 0; // Transfers don't affect global consumption
+            if (prodHistKitchen === 'all') return 0;
             return operations
                 .filter(op =>
                     String(op.productId) === selectedProductId &&
@@ -239,7 +164,7 @@ const Dashboard: React.FC = () => {
         };
 
         const getTransferIn = (dateStr: string) => {
-            if (prodHistKitchen === 'all') return 0; // Transfers don't affect global consumption
+            if (prodHistKitchen === 'all') return 0;
             return operations
                 .filter(op =>
                     String(op.productId) === selectedProductId &&
@@ -252,8 +177,6 @@ const Dashboard: React.FC = () => {
 
         for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
             const dateStr = d.toISOString().split('T')[0];
-            
-            // Previous day date string
             const prevD = new Date(d);
             prevD.setDate(prevD.getDate() - 1);
             const prevDateStr = prevD.toISOString().split('T')[0];
@@ -264,130 +187,64 @@ const Dashboard: React.FC = () => {
             const transferOut = getTransferOut(dateStr);
             const transferIn = getTransferIn(dateStr);
 
-            // Formula: Prev + In - Curr + Out - In_Transfer
-            // Note: If balances are missing (0), the result might be negative or inaccurate.
-            // We display it as is.
             let consumption = prevBalance + incoming - currBalance;
-            
             if (prodHistKitchen !== 'all') {
                 consumption = consumption + transferOut - transferIn;
             }
 
-            productChartData.push({
-                date: formatDate(dateStr),
-                value: consumption
-            });
+            productChartData.push({ date: formatDate(dateStr), value: consumption });
         }
     }
 
-    return { cardStats, displayedTableStats, tableTotals, dailyChartData, cumulativeChartData, productChartData };
-  }, [operations, kitchens, selectedKitchen, startDate, endDate, prodHistStart, prodHistEnd, selectedProductId, prodHistKitchen]);
+    return { dailyChartData, cumulativeChartData, productChartData };
+  }, [operations, selectedKitchen, startDate, endDate, prodHistStart, prodHistEnd, selectedProductId, prodHistKitchen]);
 
   const showTransfers = kitchens.length > 1;
 
-  // Styled Excel Export for Dashboard
-  const handleExport = () => {
-     const kitchenName = selectedKitchen === 'all' 
-        ? 'Barcha oshxonalar' 
-        : kitchens.find(k => String(k.id) === selectedKitchen)?.name || 'Noma\'lum';
-     
-     const reportTitle = "Asosiy Moliyaviy Hisobot"; // Main Financial Report
-
-     let tableHTML = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-        <meta charset="utf-8" />
-        <style>
-            .header { font-size: 16px; font-weight: bold; text-align: center; height: 40px; }
-            .subheader { font-weight: bold; }
-            .table-head { background-color: #f0f0f0; font-weight: bold; text-align: center; border: 1px solid #000; }
-            .cell { border: 1px solid #000; padding: 5px; }
-            .num { mso-number-format:"\#\,\#\#0"; }
-        </style>
-      </head>
-      <body>
-        <table border="1">
-           <tr>
-              <td colspan="8" class="header" style="font-size: 18px; text-align: center; background-color: #e2e8f0;">${reportTitle}</td>
-           </tr>
-           <tr>
-              <td colspan="3" class="subheader"><b>Oshxona:</b> ${kitchenName}</td>
-              <td colspan="5" class="subheader"><b>Davr:</b> ${startDate} - ${endDate}</td>
-           </tr>
-           <tr><td colspan="8"></td></tr>
-           <tr style="background-color: #cbd5e1;">
-              <th class="table-head">Bo'lim (Oshxona)</th>
-              <th class="table-head">Bosh. Qoldiq</th>
-              <th class="table-head">Kirim</th>
-              <th class="table-head">Xarajat (Sarflangan)</th>
-              <th class="table-head">Oxir. Qoldiq</th>
-              <th class="table-head">Sotuv (Tushum)</th>
-              <th class="table-head">Foyda (Marja)</th>
-              <th class="table-head">%</th>
-           </tr>
-    `;
-
-    dashboardData.displayedTableStats.forEach(stat => {
-        tableHTML += `
-         <tr>
-            <td class="cell"><b>${stat.name}</b></td>
-            <td class="cell num" style="text-align: right;">${formatNumber(stat.beginningBalance)}</td>
-            <td class="cell num" style="text-align: right;">${formatNumber(stat.incoming)}</td>
-            <td class="cell num" style="text-align: right;">${formatNumber(stat.actualExpense)}</td>
-            <td class="cell num" style="text-align: right;"><b>${formatNumber(stat.endBalance)}</b></td>
-            <td class="cell num" style="text-align: right; color: blue;">${formatNumber(stat.salesRevenue)}</td>
-            <td class="cell num" style="text-align: right; color: green;">${formatNumber(stat.markupVal)}</td>
-            <td class="cell num" style="text-align: right;">${stat.markupPercent}%</td>
-         </tr>
-       `;
-    });
-
-    // Total Row
-    tableHTML += `
-       <tr style="background-color: #f1f5f9; font-weight: bold;">
-          <td class="cell"><b>JAMI (ITOGO)</b></td>
-          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.beginningBalance)}</td>
-          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.incoming)}</td>
-          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.actualExpense)}</td>
-          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.endBalance)}</td>
-          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.salesRevenue)}</td>
-          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.markupVal)}</td>
-          <td class="cell">-</td>
-       </tr>
-    </table>
-    </body>
-    </html>
-    `;
-
-     const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
-     const url = URL.createObjectURL(blob);
-     const link = document.createElement('a');
-     link.href = url;
-     link.download = `Main_Report_${formatDate(new Date())}.xls`;
-     document.body.appendChild(link);
-     link.click();
-     document.body.removeChild(link);
-  };
+  // Excel Export via server
+  const handleExport = useCallback(async () => {
+    try {
+      const params: Record<string, string> = {
+        date_from: startDate,
+        date_to: endDate,
+      };
+      if (selectedKitchen !== 'all') params.kitchen = selectedKitchen;
+      const response = await analyticsService.getKitchenReportXlsx(params);
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Kitchen_Report_${formatDate(new Date())}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail
+    }
+  }, [startDate, endDate, selectedKitchen]);
 
   return (
     <div className="space-y-6">
       {/* 1. Filters Bar */}
       <div className="bg-white p-6 rounded-3xl shadow-card border border-slate-100 flex flex-col lg:flex-row items-end gap-6">
         <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <Select 
+          <Select
              label={t('qi.kitchen')}
              options={[{ value: 'all', label: t('dash.filter.all_kitchens') }, ...kitchens.map(k => ({ value: String(k.id), label: k.name }))]}
              value={selectedKitchen}
              onChange={e => setSelectedKitchen(e.target.value)}
              icon={<Filter size={16} />}
           />
-          <Input 
+          <Input
              label={t('anl.date_from')}
              type="date"
              value={startDate}
              onChange={e => setStartDate(e.target.value)}
           />
-           <Input 
+           <Input
              label={t('anl.date_to')}
              type="date"
              value={endDate}
@@ -412,6 +269,9 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
         <div className="overflow-x-auto">
+          {reportLoading ? (
+            <div className="p-8 text-center text-slate-400 text-sm">Loading...</div>
+          ) : (
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-100">
@@ -432,9 +292,9 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {dashboardData.displayedTableStats.map(stat => (
-                <tr key={stat.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-bold text-xs text-slate-800">{stat.name}</td>
+              {displayedTableStats.map(stat => (
+                <tr key={stat.kitchenId} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-3 px-4 font-bold text-xs text-slate-800">{stat.kitchenName}</td>
                   <td className="py-3 px-4 text-xs text-slate-600 text-right font-mono">{formatNumber(stat.beginningBalance)}</td>
                   <td className="py-3 px-4 text-xs text-slate-600 text-right font-mono">{formatNumber(stat.incoming)}</td>
                   <td className="py-3 px-4 text-xs text-blue-600 text-right font-mono">{formatNumber(stat.actualExpense)}</td>
@@ -452,22 +312,23 @@ const Dashboard: React.FC = () => {
               ))}
                <tr className="bg-slate-50 border-t border-slate-200 font-bold">
                   <td className="py-3 px-4 text-xs text-slate-900">{t('anl.total')}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(dashboardData.tableTotals.beginningBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(dashboardData.tableTotals.incoming)}</td>
-                  <td className="py-3 px-4 text-xs text-blue-700 text-right font-mono">{formatNumber(dashboardData.tableTotals.actualExpense)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(dashboardData.tableTotals.endBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(dashboardData.tableTotals.salesRevenue)}</td>
-                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(dashboardData.tableTotals.markupVal)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{dashboardData.tableTotals.markupPercent}%</td>
+                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.beginningBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.incoming)}</td>
+                  <td className="py-3 px-4 text-xs text-blue-700 text-right font-mono">{formatNumber(tableTotals.actualExpense)}</td>
+                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.endBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(tableTotals.salesRevenue)}</td>
+                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(tableTotals.markupVal)}</td>
+                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{tableTotals.markupPercent}%</td>
                   {showTransfers && (
                       <>
-                        <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(dashboardData.tableTotals.transfersIn)}</td>
-                        <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(dashboardData.tableTotals.transfersOut)}</td>
+                        <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.transfersIn)}</td>
+                        <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.transfersOut)}</td>
                       </>
                   )}
                </tr>
             </tbody>
           </table>
+          )}
         </div>
       </div>
 
@@ -482,24 +343,24 @@ const Dashboard: React.FC = () => {
                </div>
                <h3 className="font-display font-bold text-lg text-slate-900">{t('dash.sales_cost_dynamics')}</h3>
             </div>
-            
+
             {/* Chart Mode Toggle */}
             <div className="flex bg-slate-50 p-1 rounded-xl overflow-x-auto max-w-full">
-               <button 
+               <button
                  onClick={() => setChartMode('daily')}
                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'daily' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                >
                  <BarChart3 size={14} />
                  {t('dash.chart.daily')}
                </button>
-               <button 
+               <button
                  onClick={() => setChartMode('cumulative')}
                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'cumulative' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                >
                  <LineChart size={14} />
                  {t('dash.chart.cumulative')}
                </button>
-               <button 
+               <button
                  onClick={() => setChartMode('product')}
                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'product' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
                >
@@ -508,7 +369,7 @@ const Dashboard: React.FC = () => {
                </button>
             </div>
           </div>
-          
+
           {/* Product Chart Filters */}
           {chartMode === 'product' && (
               <div className="flex flex-col sm:flex-row items-end gap-4 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -529,7 +390,7 @@ const Dashboard: React.FC = () => {
                       />
                   </div>
                   <div className="w-full sm:w-auto">
-                      <Input 
+                      <Input
                           label={t('anl.date_from')}
                           type="date"
                           value={prodHistStart}
@@ -537,7 +398,7 @@ const Dashboard: React.FC = () => {
                       />
                   </div>
                   <div className="w-full sm:w-auto">
-                      <Input 
+                      <Input
                           label={t('anl.date_to')}
                           type="date"
                           value={prodHistEnd}
@@ -550,29 +411,29 @@ const Dashboard: React.FC = () => {
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               {chartMode === 'daily' ? (
-                <BarChart data={dashboardData.dailyChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <BarChart data={chartData.dailyChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#94a3b8" 
+                  <XAxis
+                    dataKey="date"
+                    stroke="#94a3b8"
                     tick={{fontFamily: 'Inter', fontSize: 11}}
                     axisLine={false}
                     tickLine={false}
                     dy={10}
                   />
-                  <YAxis 
-                    stroke="#94a3b8" 
+                  <YAxis
+                    stroke="#94a3b8"
                     tick={{fontFamily: 'Inter', fontSize: 11}}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#18181b', 
-                      border: 'none', 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: 'none',
                       borderRadius: '8px',
-                      color: 'white', 
+                      color: 'white',
                       fontSize: '12px'
                     }}
                     itemStyle={{ color: 'white' }}
@@ -580,25 +441,23 @@ const Dashboard: React.FC = () => {
                     formatter={(value: number) => formatNumber(value)}
                   />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
-                  {/* Sales Bar (Green) */}
-                  <Bar 
-                    dataKey="sales" 
-                    name={t('dash.chart.sales')} 
-                    fill="#10b981" 
+                  <Bar
+                    dataKey="sales"
+                    name={t('dash.chart.sales')}
+                    fill="#10b981"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   />
-                  {/* Cost Bar (Blue) */}
-                  <Bar 
-                    dataKey="cost" 
-                    name={t('dash.chart.cost')} 
-                    fill="#3b82f6" 
+                  <Bar
+                    dataKey="cost"
+                    name={t('dash.chart.cost')}
+                    fill="#3b82f6"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   />
                 </BarChart>
               ) : chartMode === 'cumulative' ? (
-                <AreaChart data={dashboardData.cumulativeChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <AreaChart data={chartData.cumulativeChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
@@ -610,27 +469,27 @@ const Dashboard: React.FC = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#94a3b8" 
+                  <XAxis
+                    dataKey="date"
+                    stroke="#94a3b8"
                     tick={{fontFamily: 'Inter', fontSize: 11}}
                     axisLine={false}
                     tickLine={false}
                     dy={10}
                   />
-                  <YAxis 
-                    stroke="#94a3b8" 
+                  <YAxis
+                    stroke="#94a3b8"
                     tick={{fontFamily: 'Inter', fontSize: 11}}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#18181b', 
-                      border: 'none', 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: 'none',
                       borderRadius: '8px',
-                      color: 'white', 
+                      color: 'white',
                       fontSize: '12px'
                     }}
                     itemStyle={{ color: 'white' }}
@@ -638,51 +497,49 @@ const Dashboard: React.FC = () => {
                     formatter={(value: number) => formatNumber(value)}
                   />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
-                  {/* Cost Line (Blue) */}
-                  <Area 
-                    type="monotone" 
-                    dataKey="cost" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2} 
-                    fillOpacity={1} 
-                    fill="url(#colorCost)" 
+                  <Area
+                    type="monotone"
+                    dataKey="cost"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorCost)"
                     name={t('dash.chart.cum_cost')}
                   />
-                  {/* Sales Line (Green) */}
-                  <Area 
-                    type="monotone" 
-                    dataKey="sales" 
-                    stroke="#10b981" 
-                    strokeWidth={3} 
-                    fillOpacity={1} 
-                    fill="url(#colorSales)" 
+                  <Area
+                    type="monotone"
+                    dataKey="sales"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorSales)"
                     name={t('dash.chart.cum_sales')}
                   />
                 </AreaChart>
               ) : (
-                <BarChart data={dashboardData.productChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <BarChart data={chartData.productChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#94a3b8" 
+                  <XAxis
+                    dataKey="date"
+                    stroke="#94a3b8"
                     tick={{fontFamily: 'Inter', fontSize: 11}}
                     axisLine={false}
                     tickLine={false}
                     dy={10}
                   />
-                  <YAxis 
-                    stroke="#94a3b8" 
+                  <YAxis
+                    stroke="#94a3b8"
                     tick={{fontFamily: 'Inter', fontSize: 11}}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#18181b', 
-                      border: 'none', 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: 'none',
                       borderRadius: '8px',
-                      color: 'white', 
+                      color: 'white',
                       fontSize: '12px'
                     }}
                     itemStyle={{ color: 'white' }}
@@ -690,10 +547,10 @@ const Dashboard: React.FC = () => {
                     formatter={(value: number) => formatNumber(value)}
                   />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
-                  <Bar 
-                    dataKey="value" 
-                    name={t('dash.chart.prod_expense')} 
-                    fill="#8b5cf6" 
+                  <Bar
+                    dataKey="value"
+                    name={t('dash.chart.prod_expense')}
+                    fill="#8b5cf6"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   />

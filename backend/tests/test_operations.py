@@ -203,6 +203,116 @@ class TestLastIncomingPrice:
 
 
 @pytest.mark.django_db
+class TestOperationValidation:
+    def test_quantity_must_be_positive(self, tenant_admin_client, kitchen, product):
+        response = tenant_admin_client.post(
+            "/api/operations/",
+            {
+                "type": "INCOMING",
+                "date": str(date.today()),
+                "time": "09:00:00",
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
+                "quantity": "0",
+                "unit": "kg",
+                "price": "90000.00",
+            },
+        )
+        assert response.status_code == 400
+
+    def test_transfer_requires_to_kitchen(self, tenant_admin_client, kitchen, product):
+        response = tenant_admin_client.post(
+            "/api/operations/",
+            {
+                "type": "TRANSFER",
+                "date": str(date.today()),
+                "time": "09:00:00",
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
+                "quantity": "10.000",
+                "unit": "kg",
+            },
+        )
+        assert response.status_code == 400
+
+    def test_transfer_cannot_same_kitchen(self, tenant_admin_client, kitchen, product):
+        response = tenant_admin_client.post(
+            "/api/operations/",
+            {
+                "type": "TRANSFER",
+                "date": str(date.today()),
+                "time": "09:00:00",
+                "kitchen_id": kitchen.id,
+                "to_kitchen_id": kitchen.id,
+                "product_id": product.id,
+                "quantity": "10.000",
+                "unit": "kg",
+            },
+        )
+        assert response.status_code == 400
+
+    def test_sale_requires_price(self, tenant_admin_client, kitchen, product):
+        response = tenant_admin_client.post(
+            "/api/operations/",
+            {
+                "type": "SALE",
+                "date": str(date.today()),
+                "time": "14:00:00",
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
+                "quantity": "5.000",
+                "unit": "kg",
+            },
+        )
+        assert response.status_code == 400
+
+    def test_incoming_requires_price(self, tenant_admin_client, kitchen, product):
+        response = tenant_admin_client.post(
+            "/api/operations/",
+            {
+                "type": "INCOMING",
+                "date": str(date.today()),
+                "time": "09:00:00",
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
+                "quantity": "50.000",
+                "unit": "kg",
+            },
+        )
+        assert response.status_code == 400
+
+    def test_unit_auto_fill_from_product(self, tenant_admin_client, kitchen, product):
+        response = tenant_admin_client.post(
+            "/api/operations/",
+            {
+                "type": "DAILY",
+                "date": str(date.today()),
+                "time": "09:00:00",
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
+                "quantity": "50.000",
+            },
+        )
+        assert response.status_code == 201
+        assert response.data["unit"] == "kg"
+
+    def test_unit_mismatch_with_product(self, tenant_admin_client, kitchen, product):
+        response = tenant_admin_client.post(
+            "/api/operations/",
+            {
+                "type": "DAILY",
+                "date": str(date.today()),
+                "time": "09:00:00",
+                "kitchen_id": kitchen.id,
+                "product_id": product.id,
+                "quantity": "50.000",
+                "unit": "liters",
+            },
+        )
+        assert response.status_code == 400
+
+
+@pytest.mark.django_db
 class TestOperationTenantIsolation:
     def test_cannot_see_other_org_operations(
         self, tenant_admin_client, operation, org2, kitchen_other_org, product_other_org
