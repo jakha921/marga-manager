@@ -45,6 +45,7 @@ interface DataContextType {
   addOperation: (operation: Omit<OperationEntry, 'id' | 'organizationId'>) => void;
   updateOperation: (id: string | number, updates: Partial<OperationEntry>) => void;
   deleteOperation: (id: string | number) => void;
+  fetchFilteredOperations: (params: Record<string, string>) => Promise<OperationEntry[]>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -112,7 +113,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (userRole === 'TENANT_ADMIN') {
-          const usersRes = await usersService.getAll(bigPage).catch(() => ({ data: { results: [] } }));
+          const [orgsRes, usersRes] = await Promise.all([
+            organizationsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
+            usersService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
+          ]);
+          const rawOrgs = orgsRes.data.results || orgsRes.data || [];
+          setAllOrgs(rawOrgs.map(normalizeOrg));
           setAllUsers(usersRes.data.results || usersRes.data || []);
         }
 
@@ -329,6 +335,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const fetchFilteredOperations = useCallback(async (params: Record<string, string>): Promise<OperationEntry[]> => {
+    try {
+      const res = await operationsService.getAll(params);
+      const raw = res.data.results || res.data || [];
+      return raw.map(normalizeOperation);
+    } catch (err) {
+      console.error('Failed to fetch filtered operations:', err);
+      return [];
+    }
+  }, []);
+
   return (
     <DataContext.Provider value={{
       // SaaS
@@ -364,7 +381,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteCategory,
       addOperation,
       updateOperation,
-      deleteOperation
+      deleteOperation,
+      fetchFilteredOperations
     }}>
       {children}
     </DataContext.Provider>

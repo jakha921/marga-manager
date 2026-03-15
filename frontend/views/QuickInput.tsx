@@ -14,7 +14,7 @@ import { formatDate, formatNumber, parseNumber } from '../utils';
 import { Clock, CheckCircle2, Zap, Search, Filter, ScanLine, Edit2, Trash2, Calendar, MapPin, DollarSign, Package, Sigma, ChevronDown, Download } from 'lucide-react';
 
 const QuickInput: React.FC = () => {
-  const { products, kitchens, operations, addOperation, updateOperation, deleteOperation } = useData();
+  const { products, kitchens, operations, addOperation, updateOperation, deleteOperation, fetchFilteredOperations } = useData();
   const { t } = useLanguage();
   const { userRole } = useAuth();
   
@@ -61,6 +61,11 @@ const QuickInput: React.FC = () => {
   const [histType, setHistType] = useState<string>('all');
   const [histDateFrom, setHistDateFrom] = useState(() => localStorage.getItem('qi_hist_from') || getYesterday());
   const [histDateTo, setHistDateTo] = useState(() => localStorage.getItem('qi_hist_to') || getFutureDate());
+
+  // Server-side filtered history
+  const [filteredHistory, setFilteredHistory] = useState<OperationEntry[]>([]);
+  const [histLoading, setHistLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Save persisted filters
   useEffect(() => localStorage.setItem('qi_hist_kitchen', histKitchen), [histKitchen]);
@@ -209,7 +214,7 @@ const QuickInput: React.FC = () => {
       }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedKitchen) return;
     if (opType === 'TRANSFER' && !targetKitchen) return;
     if (opType !== 'SALE' && (!productSearch || !quantity || isProductError || !selectedProduct)) return;
@@ -233,10 +238,10 @@ const QuickInput: React.FC = () => {
     const parsedPrice = parseNumber(unitPrice);
     const finalPrice = parsedPrice ? parsedPrice * qtyNum : undefined;
 
-    addOperation({
+    await addOperation({
       type: opType,
       date,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
       kitchenId: selectedKitchen,
       kitchenName: kitchens.find(k => String(k.id) === selectedKitchen)?.name || 'Unknown',
       toKitchenId: opType === 'TRANSFER' ? targetKitchen : undefined,
@@ -247,6 +252,7 @@ const QuickInput: React.FC = () => {
       unit: prodUnit,
       price: finalPrice
     });
+    setRefreshTrigger(prev => prev + 1);
 
     setProductSearch('');
     setQuantity('');
@@ -340,9 +346,10 @@ const QuickInput: React.FC = () => {
       }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (editingOp && editFormData.id) {
-      updateOperation(editingOp.id, editFormData);
+      await updateOperation(editingOp.id, editFormData);
+      setRefreshTrigger(prev => prev + 1);
       setIsEditModalOpen(false);
       setEditingOp(null);
     }
@@ -352,9 +359,10 @@ const QuickInput: React.FC = () => {
     setDeleteConfirmId(id);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteConfirmId) {
-      deleteOperation(deleteConfirmId);
+      await deleteOperation(deleteConfirmId);
+      setRefreshTrigger(prev => prev + 1);
       setDeleteConfirmId(null);
     }
   };
@@ -378,15 +386,25 @@ const QuickInput: React.FC = () => {
     }
   };
 
-  const filteredHistory = operations.filter(op => {
-      const matchesSearch = op.productName.toLowerCase().includes(histSearch.toLowerCase());
-      const matchesKitchen = histKitchen === 'all' || String(op.kitchenId) === histKitchen;
-      const matchesType = histType === 'all' || op.type === histType;
-      const opDate = new Date(op.date);
-      const matchesFrom = !histDateFrom || opDate >= new Date(histDateFrom);
-      const matchesTo = !histDateTo || opDate <= new Date(histDateTo);
-      return matchesSearch && matchesKitchen && matchesType && matchesFrom && matchesTo;
-  });
+  // Fetch filtered history from server
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setHistLoading(true);
+      const params: Record<string, string> = { page_size: '200' };
+      if (histType !== 'all') params.type = histType;
+      if (histKitchen !== 'all') params.kitchen = histKitchen;
+      if (histDateFrom) params.date_from = histDateFrom;
+      if (histDateTo) params.date_to = histDateTo;
+      if (histSearch) params.search = histSearch;
+
+      const ops = await fetchFilteredOperations(params);
+      setFilteredHistory(ops);
+      setHistLoading(false);
+    };
+
+    const timer = setTimeout(fetchHistory, histSearch ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [histType, histKitchen, histDateFrom, histDateTo, histSearch, refreshTrigger, fetchFilteredOperations]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
@@ -457,9 +475,9 @@ const QuickInput: React.FC = () => {
             <td class="cell">${formatDate(op.date)}</td>
             <td class="cell">${op.productName}</td>
             <td class="cell" style="text-align: center;">${op.unit}</td>
-            <td class="cell num" style="text-align: center;">${op.quantity}</td>
-            <td class="cell num" style="text-align: right;">${unitPrice}</td>
-            <td class="cell num" style="text-align: right;">${op.price || 0}</td>
+            <td class="cell num" style="text-align: center;">${formatNumber(Number(op.quantity))}</td>
+            <td class="cell num" style="text-align: right;">${formatNumber(unitPrice)}</td>
+            <td class="cell num" style="text-align: right;">${formatNumber(Number(op.price) || 0)}</td>
          </tr>
        `;
     });
@@ -468,7 +486,7 @@ const QuickInput: React.FC = () => {
            <tr>
               <td colspan="4"></td>
               <td class="subheader" style="text-align: right;"><b>JAMI (ITOGO):</b></td>
-              <td class="subheader num" style="text-align: right; background-color: #f1f5f9;"><b>${totalSum}</b></td>
+              <td class="subheader num" style="text-align: right; background-color: #f1f5f9;"><b>${formatNumber(totalSum)}</b></td>
            </tr>
         </table>
       </body>
@@ -485,7 +503,7 @@ const QuickInput: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  const totalAmount = filteredHistory.reduce((sum, op) => sum + (op.price || 0), 0);
+  const totalAmount = filteredHistory.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
   
   const totalQuantities = filteredHistory.reduce((acc, op) => {
     const unit = op.unit || 'units';
@@ -636,7 +654,7 @@ const QuickInput: React.FC = () => {
              <div className="w-full md:w-32 flex-shrink-0">
                  <Input 
                     ref={totalSumRef}
-                    label="Сумма"
+                    label={t('qi.total_calc')}
                     type="text"
                     placeholder="0.00"
                     value={totalSum}
@@ -802,7 +820,7 @@ const QuickInput: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-1.5 gap-x-4">
                                 <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                                 <Calendar size={13} className="text-slate-300" />
-                                {formatDate(entry.date)} <span className="text-slate-200">|</span> {entry.time}
+                                {formatDate(entry.date)} <span className="text-slate-200">|</span> {entry.time?.slice(0, 5)}
                                 </div>
                                 <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
                                 <MapPin size={13} className="text-slate-300" />
@@ -826,7 +844,7 @@ const QuickInput: React.FC = () => {
                         <div className="text-left md:text-right px-2">
                             <div className="font-display font-bold text-slate-900 text-xl flex items-center gap-2 justify-start md:justify-end">
                             <Package size={16} className="text-slate-300" />
-                            {entry.quantity} <span className="text-sm font-body font-medium text-slate-400 uppercase tracking-tighter">{entry.unit}</span>
+                            {formatNumber(Number(entry.quantity))} <span className="text-sm font-body font-medium text-slate-400 uppercase tracking-tighter">{entry.unit}</span>
                             </div>
                             {/* Display Total Price */}
                             {entry.price && (

@@ -63,9 +63,9 @@ const Dashboard: React.FC = () => {
     // 2. Calculate High-Level Stats (Cards)
     const cardStats = {
       totalOps: filteredOps.length,
-      incomingVol: filteredOps.filter(op => op.type === 'INCOMING').reduce((acc, curr) => acc + curr.quantity, 0),
-      salesCount: filteredOps.filter(op => op.type === 'SALE').reduce((acc, curr) => acc + curr.quantity, 0),
-      salesRevenue: filteredOps.filter(op => op.type === 'SALE').reduce((acc, curr) => acc + (curr.price || 0), 0),
+      incomingVol: filteredOps.filter(op => op.type === 'INCOMING').reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0),
+      salesCount: filteredOps.filter(op => op.type === 'SALE').reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0),
+      salesRevenue: filteredOps.filter(op => op.type === 'SALE').reduce((acc, curr) => acc + (Number(curr.price) || 0), 0),
     };
 
     // 3. Calculate Detailed Kitchen/Dept Stats (Table)
@@ -75,7 +75,7 @@ const Dashboard: React.FC = () => {
         op.type === 'DAILY' && 
         op.date === startDate
       );
-      const beginningBalance = startBalanceOps.reduce((sum, op) => sum + (op.price || 0), 0);
+      const beginningBalance = startBalanceOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
 
       const incomingOps = operations.filter(op => {
         const opDate = new Date(op.date);
@@ -83,14 +83,14 @@ const Dashboard: React.FC = () => {
         const e = new Date(endDate);
         return op.kitchenId === k.id && op.type === 'INCOMING' && opDate >= s && opDate <= e;
       });
-      const incoming = incomingOps.reduce((sum, op) => sum + (op.price || 0), 0);
+      const incoming = incomingOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
 
-      const endBalanceOps = operations.filter(op => 
-        op.kitchenId === k.id && 
-        op.type === 'DAILY' && 
+      const endBalanceOps = operations.filter(op =>
+        op.kitchenId === k.id &&
+        op.type === 'DAILY' &&
         op.date === endDate
       );
-      const endBalance = endBalanceOps.reduce((sum, op) => sum + (op.price || 0), 0);
+      const endBalance = endBalanceOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
 
       // Transfers Logic
       const transferOutOps = operations.filter(op => {
@@ -99,7 +99,7 @@ const Dashboard: React.FC = () => {
         const e = new Date(endDate);
         return op.kitchenId === k.id && op.type === 'TRANSFER' && opDate >= s && opDate <= e;
       });
-      const transfersOut = transferOutOps.reduce((sum, op) => sum + (op.price || 0), 0);
+      const transfersOut = transferOutOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
 
       const transferInOps = operations.filter(op => {
         const opDate = new Date(op.date);
@@ -107,7 +107,7 @@ const Dashboard: React.FC = () => {
         const e = new Date(endDate);
         return op.toKitchenId === k.id && op.type === 'TRANSFER' && opDate >= s && opDate <= e;
       });
-      const transfersIn = transferInOps.reduce((sum, op) => sum + (op.price || 0), 0);
+      const transfersIn = transferInOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
 
       // Actual Expense (Consumption) calculation:
       const actualExpense = beginningBalance + incoming + transfersIn - transfersOut - endBalance;
@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
         const e = new Date(endDate);
         return op.kitchenId === k.id && op.type === 'SALE' && opDate >= s && opDate <= e;
       });
-      const salesRevenue = salesOps.reduce((sum, op) => sum + (op.price || 0), 0);
+      const salesRevenue = salesOps.reduce((sum, op) => sum + (Number(op.price) || 0), 0);
 
       const markupVal = salesRevenue - actualExpense;
       const markupPercent = actualExpense > 0 ? ((markupVal / actualExpense) * 100).toFixed(1) : '0.0';
@@ -168,12 +168,12 @@ const Dashboard: React.FC = () => {
     
     filteredOps.filter(op => op.type === 'SALE').forEach(op => {
        const curr = chartMap.get(op.date) || { sales: 0, cost: 0 };
-       chartMap.set(op.date, { ...curr, sales: curr.sales + (op.price || 0) });
+       chartMap.set(op.date, { ...curr, sales: curr.sales + (Number(op.price) || 0) });
     });
 
     filteredOps.filter(op => op.type === 'INCOMING').forEach(op => {
         const curr = chartMap.get(op.date) || { sales: 0, cost: 0 };
-        chartMap.set(op.date, { ...curr, cost: curr.cost + (op.price || 0) });
+        chartMap.set(op.date, { ...curr, cost: curr.cost + (Number(op.price) || 0) });
     });
 
     const dailyChartData = Array.from(chartMap.entries()).map(([date, val]) => ({
@@ -212,7 +212,7 @@ const Dashboard: React.FC = () => {
             // If 'all', sum up balances of all kitchens. If specific, take that kitchen's balance.
             // Note: If multiple entries for same kitchen/date, we should ideally take the latest. 
             // Assuming one daily entry per kitchen per day for simplicity or summing them if multiple (which implies corrections).
-            return ops.reduce((acc, curr) => acc + curr.quantity, 0);
+            return ops.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
         };
 
         const getIncoming = (dateStr: string) => {
@@ -223,31 +223,31 @@ const Dashboard: React.FC = () => {
                     op.date === dateStr &&
                     (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
                 )
-                .reduce((acc, curr) => acc + curr.quantity, 0);
+                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
         };
 
         const getTransferOut = (dateStr: string) => {
             if (prodHistKitchen === 'all') return 0; // Transfers don't affect global consumption
             return operations
-                .filter(op => 
-                    String(op.productId) === selectedProductId && 
-                    op.type === 'TRANSFER' && 
+                .filter(op =>
+                    String(op.productId) === selectedProductId &&
+                    op.type === 'TRANSFER' &&
                     op.date === dateStr &&
                     String(op.kitchenId) === prodHistKitchen
                 )
-                .reduce((acc, curr) => acc + curr.quantity, 0);
+                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
         };
 
         const getTransferIn = (dateStr: string) => {
             if (prodHistKitchen === 'all') return 0; // Transfers don't affect global consumption
             return operations
-                .filter(op => 
-                    String(op.productId) === selectedProductId && 
-                    op.type === 'TRANSFER' && 
+                .filter(op =>
+                    String(op.productId) === selectedProductId &&
+                    op.type === 'TRANSFER' &&
                     op.date === dateStr &&
                     String(op.toKitchenId) === prodHistKitchen
                 )
-                .reduce((acc, curr) => acc + curr.quantity, 0);
+                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
         };
 
         for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
@@ -331,12 +331,12 @@ const Dashboard: React.FC = () => {
         tableHTML += `
          <tr>
             <td class="cell"><b>${stat.name}</b></td>
-            <td class="cell num" style="text-align: right;">${stat.beginningBalance}</td>
-            <td class="cell num" style="text-align: right;">${stat.incoming}</td>
-            <td class="cell num" style="text-align: right;">${stat.actualExpense}</td>
-            <td class="cell num" style="text-align: right;"><b>${stat.endBalance}</b></td>
-            <td class="cell num" style="text-align: right; color: blue;">${stat.salesRevenue}</td>
-            <td class="cell num" style="text-align: right; color: green;">${stat.markupVal}</td>
+            <td class="cell num" style="text-align: right;">${formatNumber(stat.beginningBalance)}</td>
+            <td class="cell num" style="text-align: right;">${formatNumber(stat.incoming)}</td>
+            <td class="cell num" style="text-align: right;">${formatNumber(stat.actualExpense)}</td>
+            <td class="cell num" style="text-align: right;"><b>${formatNumber(stat.endBalance)}</b></td>
+            <td class="cell num" style="text-align: right; color: blue;">${formatNumber(stat.salesRevenue)}</td>
+            <td class="cell num" style="text-align: right; color: green;">${formatNumber(stat.markupVal)}</td>
             <td class="cell num" style="text-align: right;">${stat.markupPercent}%</td>
          </tr>
        `;
@@ -346,12 +346,12 @@ const Dashboard: React.FC = () => {
     tableHTML += `
        <tr style="background-color: #f1f5f9; font-weight: bold;">
           <td class="cell"><b>JAMI (ITOGO)</b></td>
-          <td class="cell num" style="text-align: right;">${dashboardData.tableTotals.beginningBalance}</td>
-          <td class="cell num" style="text-align: right;">${dashboardData.tableTotals.incoming}</td>
-          <td class="cell num" style="text-align: right;">${dashboardData.tableTotals.actualExpense}</td>
-          <td class="cell num" style="text-align: right;">${dashboardData.tableTotals.endBalance}</td>
-          <td class="cell num" style="text-align: right;">${dashboardData.tableTotals.salesRevenue}</td>
-          <td class="cell num" style="text-align: right;">${dashboardData.tableTotals.markupVal}</td>
+          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.beginningBalance)}</td>
+          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.incoming)}</td>
+          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.actualExpense)}</td>
+          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.endBalance)}</td>
+          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.salesRevenue)}</td>
+          <td class="cell num" style="text-align: right;">${formatNumber(dashboardData.tableTotals.markupVal)}</td>
           <td class="cell">-</td>
        </tr>
     </table>

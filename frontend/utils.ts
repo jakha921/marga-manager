@@ -19,7 +19,8 @@ export const formatDate = (dateStr: string | Date): string => {
 };
 
 export const formatNumber = (num: number): string => {
-  return num.toLocaleString('ru-RU').replace(/,/g, ' ').replace(/\u00A0/g, ' ');
+  if (typeof num !== 'number' || isNaN(num)) return '0';
+  return num.toLocaleString('ru-RU').replace(/\u00A0/g, ' ');
 };
 
 export const parseNumber = (str: string): number => {

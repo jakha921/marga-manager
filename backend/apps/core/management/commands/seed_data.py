@@ -168,30 +168,30 @@ class Command(BaseCommand):
     def _create_products(self, org: Organization, categories: dict[str, Category]) -> list[Product]:
         product_data = [
             # Xom ashyo (Raw materials)
-            ("XA-001", "Mol go'shti", "Xom ashyo", "kg"),
-            ("XA-002", "Tovuq go'shti", "Xom ashyo", "kg"),
-            ("XA-003", "Qo'y go'shti", "Xom ashyo", "kg"),
-            ("XA-004", "Kartoshka", "Xom ashyo", "kg"),
-            ("XA-005", "Piyoz", "Xom ashyo", "kg"),
-            ("XA-006", "Sabzi", "Xom ashyo", "kg"),
+            ("10001", "Mol go'shti", "Xom ashyo", "kg"),
+            ("10002", "Tovuq go'shti", "Xom ashyo", "kg"),
+            ("10003", "Qo'y go'shti", "Xom ashyo", "kg"),
+            ("10004", "Kartoshka", "Xom ashyo", "kg"),
+            ("10005", "Piyoz", "Xom ashyo", "kg"),
+            ("10006", "Sabzi", "Xom ashyo", "kg"),
             # Oziq-ovqat (Groceries)
-            ("OO-001", "Guruch", "Oziq-ovqat", "kg"),
-            ("OO-002", "Un", "Oziq-ovqat", "kg"),
-            ("OO-003", "Tuz", "Oziq-ovqat", "kg"),
-            ("OO-004", "O'simlik yog'i", "Oziq-ovqat", "L"),
-            ("OO-005", "Zira", "Oziq-ovqat", "kg"),
+            ("20001", "Guruch", "Oziq-ovqat", "kg"),
+            ("20002", "Un", "Oziq-ovqat", "kg"),
+            ("20003", "Tuz", "Oziq-ovqat", "kg"),
+            ("20004", "O'simlik yog'i", "Oziq-ovqat", "L"),
+            ("20005", "Zira", "Oziq-ovqat", "kg"),
             # Yarim tayyor (Semi-finished)
-            ("YT-001", "Qiyma", "Yarim tayyor", "kg"),
-            ("YT-002", "Xamir", "Yarim tayyor", "kg"),
+            ("30001", "Qiyma", "Yarim tayyor", "kg"),
+            ("30002", "Xamir", "Yarim tayyor", "kg"),
             # Ichimliklar (Beverages)
-            ("IC-001", "Coca-Cola 1.5L", "Ichimliklar", "dona"),
-            ("IC-002", "Mineral suv 1L", "Ichimliklar", "dona"),
-            ("IC-003", "Kompot", "Ichimliklar", "L"),
+            ("40001", "Coca-Cola 1.5L", "Ichimliklar", "dona"),
+            ("40002", "Mineral suv 1L", "Ichimliklar", "dona"),
+            ("40003", "Kompot", "Ichimliklar", "L"),
             # Tayyor taomlar (Finished dishes)
-            ("TT-001", "Osh (Palov)", "Tayyor taomlar", "porsia"),
-            ("TT-002", "Lag'mon", "Tayyor taomlar", "porsia"),
-            ("TT-003", "Somsa", "Tayyor taomlar", "dona"),
-            ("TT-004", "Shashlik", "Tayyor taomlar", "porsia"),
+            ("50001", "Osh (Palov)", "Tayyor taomlar", "porsia"),
+            ("50002", "Lag'mon", "Tayyor taomlar", "porsia"),
+            ("50003", "Somsa", "Tayyor taomlar", "dona"),
+            ("50004", "Shashlik", "Tayyor taomlar", "porsia"),
         ]
         products = []
         for code, name, cat_name, unit in product_data:
@@ -219,11 +219,11 @@ class Command(BaseCommand):
 
         # Price ranges by product code prefix (UZS)
         price_ranges: dict[str, tuple[int, int]] = {
-            "XA": (40000, 120000),  # Raw materials per kg
-            "OO": (5000, 30000),  # Groceries per kg/L
-            "YT": (30000, 60000),  # Semi-finished per kg
-            "IC": (5000, 15000),  # Beverages per unit
-            "TT": (25000, 50000),  # Finished dishes per portion
+            "10": (40000, 120000),  # Raw materials per kg
+            "20": (5000, 30000),  # Groceries per kg/L
+            "30": (30000, 60000),  # Semi-finished per kg
+            "40": (5000, 15000),  # Beverages per unit
+            "50": (25000, 50000),  # Finished dishes per portion
         }
 
         op_types = [
@@ -240,11 +240,11 @@ class Command(BaseCommand):
             kitchen = random.choice(kitchens)
             days_ago = random.randint(0, 30)
             op_date = (now - timedelta(days=days_ago)).date()
-            op_time = (
-                now.replace(
-                    hour=random.randint(6, 22),
-                    minute=random.randint(0, 59),
-                )
+            op_time = now.replace(
+                hour=random.randint(6, 22),
+                minute=random.randint(0, 59),
+                second=0,
+                microsecond=0,
             ).time()
 
             prefix = product.code[:2]
