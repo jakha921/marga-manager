@@ -53,7 +53,7 @@ const Products: React.FC = () => {
 
   const generateNextCode = () => {
     const codes = products.map(p => parseInt(p.code)).filter(c => !isNaN(c));
-    if (codes.length === 0) return '1001';
+    if (codes.length === 0) return '101';
     return (Math.max(...codes) + 1).toString();
   };
 
@@ -236,7 +236,7 @@ const Products: React.FC = () => {
                   label={t('prod.code')} 
                   value={formData.code} 
                   onChange={e => setFormData({...formData, code: e.target.value})} 
-                  placeholder="0000"
+                  placeholder="000"
                   icon={<Barcode size={16} />}
                 />
              </div>

@@ -168,30 +168,30 @@ class Command(BaseCommand):
     def _create_products(self, org: Organization, categories: dict[str, Category]) -> list[Product]:
         product_data = [
             # Xom ashyo (Raw materials)
-            ("10001", "Mol go'shti", "Xom ashyo", "kg"),
-            ("10002", "Tovuq go'shti", "Xom ashyo", "kg"),
-            ("10003", "Qo'y go'shti", "Xom ashyo", "kg"),
-            ("10004", "Kartoshka", "Xom ashyo", "kg"),
-            ("10005", "Piyoz", "Xom ashyo", "kg"),
-            ("10006", "Sabzi", "Xom ashyo", "kg"),
+            ("101", "Mol go'shti", "Xom ashyo", "kg"),
+            ("102", "Tovuq go'shti", "Xom ashyo", "kg"),
+            ("103", "Qo'y go'shti", "Xom ashyo", "kg"),
+            ("104", "Kartoshka", "Xom ashyo", "kg"),
+            ("105", "Piyoz", "Xom ashyo", "kg"),
+            ("106", "Sabzi", "Xom ashyo", "kg"),
             # Oziq-ovqat (Groceries)
-            ("20001", "Guruch", "Oziq-ovqat", "kg"),
-            ("20002", "Un", "Oziq-ovqat", "kg"),
-            ("20003", "Tuz", "Oziq-ovqat", "kg"),
-            ("20004", "O'simlik yog'i", "Oziq-ovqat", "L"),
-            ("20005", "Zira", "Oziq-ovqat", "kg"),
+            ("201", "Guruch", "Oziq-ovqat", "kg"),
+            ("202", "Un", "Oziq-ovqat", "kg"),
+            ("203", "Tuz", "Oziq-ovqat", "kg"),
+            ("204", "O'simlik yog'i", "Oziq-ovqat", "L"),
+            ("205", "Zira", "Oziq-ovqat", "kg"),
             # Yarim tayyor (Semi-finished)
-            ("30001", "Qiyma", "Yarim tayyor", "kg"),
-            ("30002", "Xamir", "Yarim tayyor", "kg"),
+            ("301", "Qiyma", "Yarim tayyor", "kg"),
+            ("302", "Xamir", "Yarim tayyor", "kg"),
             # Ichimliklar (Beverages)
-            ("40001", "Coca-Cola 1.5L", "Ichimliklar", "dona"),
-            ("40002", "Mineral suv 1L", "Ichimliklar", "dona"),
-            ("40003", "Kompot", "Ichimliklar", "L"),
+            ("401", "Coca-Cola 1.5L", "Ichimliklar", "dona"),
+            ("402", "Mineral suv 1L", "Ichimliklar", "dona"),
+            ("403", "Kompot", "Ichimliklar", "L"),
             # Tayyor taomlar (Finished dishes)
-            ("50001", "Osh (Palov)", "Tayyor taomlar", "porsia"),
-            ("50002", "Lag'mon", "Tayyor taomlar", "porsia"),
-            ("50003", "Somsa", "Tayyor taomlar", "dona"),
-            ("50004", "Shashlik", "Tayyor taomlar", "porsia"),
+            ("501", "Osh (Palov)", "Tayyor taomlar", "porsia"),
+            ("502", "Lag'mon", "Tayyor taomlar", "porsia"),
+            ("503", "Somsa", "Tayyor taomlar", "dona"),
+            ("504", "Shashlik", "Tayyor taomlar", "porsia"),
         ]
         products = []
         for code, name, cat_name, unit in product_data:
@@ -219,11 +219,11 @@ class Command(BaseCommand):
 
         # Price ranges by product code prefix (UZS)
         price_ranges: dict[str, tuple[int, int]] = {
-            "10": (40000, 120000),  # Raw materials per kg
-            "20": (5000, 30000),  # Groceries per kg/L
-            "30": (30000, 60000),  # Semi-finished per kg
-            "40": (5000, 15000),  # Beverages per unit
-            "50": (25000, 50000),  # Finished dishes per portion
+            "1": (40000, 120000),  # Raw materials per kg
+            "2": (5000, 30000),  # Groceries per kg/L
+            "3": (30000, 60000),  # Semi-finished per kg
+            "4": (5000, 15000),  # Beverages per unit
+            "5": (25000, 50000),  # Finished dishes per portion
         }
 
         op_types = [
@@ -247,7 +247,7 @@ class Command(BaseCommand):
                 microsecond=0,
             ).time()
 
-            prefix = product.code[:2]
+            prefix = product.code[:1]
             price_range = price_ranges.get(prefix, (10000, 50000))
 
             # Determine quantity based on unit
