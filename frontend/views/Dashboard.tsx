@@ -226,6 +226,28 @@ const Dashboard: React.FC = () => {
     }
   }, [startDate, endDate, selectedKitchen]);
 
+  const ChartTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string; dataKey: string }>;
+    label?: string;
+  }) => {
+    if (!active || !payload?.length) return null;
+    const salesEntry = payload.find(p => p.dataKey === 'sales');
+    const costEntry = payload.find(p => p.dataKey === 'cost');
+    const margin = (salesEntry?.value ?? 0) - (costEntry?.value ?? 0);
+
+    return (
+      <div style={{ backgroundColor: '#18181b', borderRadius: '8px', color: 'white', fontSize: '12px', padding: '8px 12px' }}>
+        <p style={{ marginBottom: 4, fontWeight: 600 }}>{label}</p>
+        {salesEntry && <p style={{ color: '#10b981' }}>{salesEntry.name}: {formatNumber(salesEntry.value)}</p>}
+        {costEntry && <p style={{ color: '#3b82f6' }}>{costEntry.name}: {formatNumber(costEntry.value)}</p>}
+        <p style={{ color: '#f59e0b', borderTop: '1px solid #333', marginTop: 4, paddingTop: 4 }}>
+          {t('dash.chart.margin')}: {formatNumber(margin)}
+        </p>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Filters Bar */}
@@ -275,18 +297,18 @@ const Dashboard: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display">{t('anl.col.dept')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.start')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.in')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.exp')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.end')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.sales')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.mrk')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display cursor-help" title={t('anl.col.dept.full')}>{t('anl.col.dept')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.start.full')}>{t('anl.col.start')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.in.full')}>{t('anl.col.in')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.exp.full')}>{t('anl.col.exp')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.end.full')}>{t('anl.col.end')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.sales.full')}>{t('anl.col.sales')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.mrk.full')}>{t('anl.col.mrk')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">%</th>
                 {showTransfers && (
                     <>
-                        <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.trns_in')}</th>
-                        <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.trns_out')}</th>
+                        <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.trns_in.full')}>{t('anl.col.trns_in')}</th>
+                        <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.trns_out.full')}>{t('anl.col.trns_out')}</th>
                     </>
                 )}
               </tr>
@@ -428,18 +450,7 @@ const Dashboard: React.FC = () => {
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'white',
-                      fontSize: '12px'
-                    }}
-                    itemStyle={{ color: 'white' }}
-                    cursor={{fill: '#f8fafc'}}
-                    formatter={(value: number) => formatNumber(value)}
-                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{fill: '#f8fafc'}} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
                   <Bar
                     dataKey="sales"
@@ -484,18 +495,7 @@ const Dashboard: React.FC = () => {
                     tickLine={false}
                     tickFormatter={formatCompactNumber}
                   />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'white',
-                      fontSize: '12px'
-                    }}
-                    itemStyle={{ color: 'white' }}
-                    cursor={{stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4'}}
-                    formatter={(value: number) => formatNumber(value)}
-                  />
+                  <Tooltip content={<ChartTooltip />} cursor={{stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4'}} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }} />
                   <Area
                     type="monotone"

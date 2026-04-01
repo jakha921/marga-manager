@@ -65,6 +65,17 @@ const QuickInput: React.FC = () => {
   const [histDateFrom, setHistDateFrom] = useState(() => localStorage.getItem('qi_hist_from') || getYesterday());
   const [histDateTo, setHistDateTo] = useState(() => localStorage.getItem('qi_hist_to') || getFutureDate());
 
+  // Sync top date to history filter dates
+  const isFirstDateRender = useRef(true);
+  useEffect(() => {
+    if (isFirstDateRender.current) {
+      isFirstDateRender.current = false;
+      return;
+    }
+    setHistDateFrom(date);
+    setHistDateTo(date);
+  }, [date]);
+
   // Server-side filtered history
   const [filteredHistory, setFilteredHistory] = useState<OperationEntry[]>([]);
   const [histLoading, setHistLoading] = useState(false);

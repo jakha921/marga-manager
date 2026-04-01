@@ -126,15 +126,15 @@ const Analytics: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display">{t('anl.col.dept')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.start')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.in')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.exp')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.end')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.sales')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.mrk')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display cursor-help" title={t('anl.col.dept.full')}>{t('anl.col.dept')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.start.full')}>{t('anl.col.start')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.in.full')}>{t('anl.col.in')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.exp.full')}>{t('anl.col.exp')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.end.full')}>{t('anl.col.end')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.sales.full')}>{t('anl.col.sales')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.mrk.full')}>{t('anl.col.mrk')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">%</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">{t('anl.col.trns')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.trns.full')}>{t('anl.col.trns')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
