@@ -62,16 +62,11 @@ const QuickInput: React.FC = () => {
   const [histSearch, setHistSearch] = useState('');
   const [histKitchen, setHistKitchen] = useState(() => localStorage.getItem('qi_hist_kitchen') || 'all');
   const [histType, setHistType] = useState<string>('all');
-  const [histDateFrom, setHistDateFrom] = useState(() => localStorage.getItem('qi_hist_from') || getYesterday());
-  const [histDateTo, setHistDateTo] = useState(() => localStorage.getItem('qi_hist_to') || getFutureDate());
+  const [histDateFrom, setHistDateFrom] = useState(date);
+  const [histDateTo, setHistDateTo] = useState(date);
 
   // Sync top date to history filter dates
-  const isFirstDateRender = useRef(true);
   useEffect(() => {
-    if (isFirstDateRender.current) {
-      isFirstDateRender.current = false;
-      return;
-    }
     setHistDateFrom(date);
     setHistDateTo(date);
   }, [date]);
@@ -90,8 +85,6 @@ const QuickInput: React.FC = () => {
 
   // Save persisted filters
   useEffect(() => localStorage.setItem('qi_hist_kitchen', histKitchen), [histKitchen]);
-  useEffect(() => localStorage.setItem('qi_hist_from', histDateFrom), [histDateFrom]);
-  useEffect(() => localStorage.setItem('qi_hist_to', histDateTo), [histDateTo]);
 
   // Refs for keyboard navigation
   const kitchenRef = useRef<HTMLSelectElement>(null);
