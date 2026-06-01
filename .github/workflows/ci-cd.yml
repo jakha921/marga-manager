@@ -103,18 +103,18 @@ jobs:
     steps:
       - name: Wait for deployment
         run: |
-          echo "Waiting 60s for Coolify restart..."
-          sleep 60
-          for i in $(seq 1 12); do
+          echo "Waiting 90s for Coolify restart..."
+          sleep 90
+          for i in $(seq 1 20); do
             CODE=$(curl -s -o /dev/null -w "%{http_code}" \
               "https://marga.fullfocus.dev/api/health/" --max-time 10 || echo "000")
             if [ "$CODE" = "200" ]; then
               echo "Health check passed (attempt $i)"; exit 0
             fi
-            echo "Attempt $i/12: HTTP $CODE, retrying in 15s..."; sleep 15
+            echo "Attempt $i/20: HTTP $CODE, retrying in 15s..."; sleep 15
           done
-          echo "Health check failed after 12 attempts"; exit 1
-        timeout-minutes: 5
+          echo "Health check failed after 20 attempts"; exit 1
+        timeout-minutes: 10
 
   smoke-test:
     needs: wait-for-healthy
@@ -145,14 +145,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Telegram notification
+        env:
+          SMOKE_RESULT: ${{ needs.smoke-test.result }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ "${{ needs.smoke-test.result }}" = "success" ]; then
+          if [ "$SMOKE_RESULT" = "success" ]; then
             EMOJI="✅"; STATUS="Deploy successful"
           else EMOJI="❌"; STATUS="Deploy failed"; fi
-          SHA="${{ github.sha }}"; SHORT="${SHA:0:7}"
-          MSG=$(echo "${{ github.event.head_commit.message }}" | head -1)
-          TEXT="${EMOJI} *Marga Manager*%0ACommit: \`${SHORT}\` ${MSG}%0AStatus: ${STATUS}%0A[Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          SHORT="${COMMIT_SHA:0:7}"
+          MSG=$(echo "$COMMIT_MSG" | head -1)
+          TEXT="${EMOJI} *Marga Manager*%0ACommit: \`${SHORT}\` ${MSG}%0AStatus: ${STATUS}%0A[Actions](https://github.com/${REPO}/actions/runs/${RUN_ID})"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
             -d text="$TEXT" -d parse_mode="Markdown" \
             -d disable_web_page_preview="true" || true

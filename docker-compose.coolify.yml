@@ -34,19 +34,18 @@ services:
     volumes:
       - static_files:/app/staticfiles
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')\" 2>/dev/null"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
 
   frontend:
     image: jakha921/marga-frontend:latest
     expose:
       - "80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     volumes:
       - static_files:/app/static:ro
     healthcheck:
