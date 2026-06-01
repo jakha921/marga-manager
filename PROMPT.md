@@ -367,7 +367,7 @@ def verify_payme_auth(request) -> bool:
 
 ## Phase 4 — Payme Webhook View (все 6 методов)
 
-### 4.1 [ ] Создать `payme_views.py` — JSON-RPC webhook
+### 4.1 [x] Создать `payme_views.py` — JSON-RPC webhook
 
 **ВАЖНО**: Используй обычный `django.views.View` (НЕ DRF ViewSet) — иначе глобальный CamelCase renderer сломает протокол Payme (Payme ожидает `create_time`, а DRF вернёт `createTime`).
 
