@@ -18,8 +18,25 @@ jobs:
       - run: ruff check backend/
       - run: ruff format --check backend/
 
-  build-backend:
+  test:
     needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --frozen
+      - name: Run tests
+        working-directory: backend
+        run: uv run pytest -v --tb=short
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.dev
+
+  build-backend:
+    needs: [lint, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +58,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-frontend:
-    needs: lint
+    needs: [lint, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -69,7 +86,73 @@ jobs:
     steps:
       - name: Deploy to Coolify
         run: |
-          curl -s -X GET \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
             "https://coolify.fullfocus.dev/api/v1/deploy?uuid=${{ secrets.COOLIFY_SERVICE_UUID }}&force=true" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
-            --fail-with-body
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "Coolify response ($HTTP_CODE): $BODY"
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Deploy trigger failed"; exit 1
+          fi
+
+  wait-for-healthy:
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployment
+        run: |
+          echo "Waiting 60s for Coolify restart..."
+          sleep 60
+          for i in $(seq 1 12); do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://marga.fullfocus.dev/api/health/" --max-time 10 || echo "000")
+            if [ "$CODE" = "200" ]; then
+              echo "Health check passed (attempt $i)"; exit 0
+            fi
+            echo "Attempt $i/12: HTTP $CODE, retrying in 15s..."; sleep 15
+          done
+          echo "Health check failed after 12 attempts"; exit 1
+        timeout-minutes: 5
+
+  smoke-test:
+    needs: wait-for-healthy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke test production
+        run: |
+          BASE="https://marga.fullfocus.dev"
+          FAILED=0
+          check() {
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "$2" --max-time 10 || echo "000")
+            if [ "$CODE" = "$3" ]; then echo "PASS: $1 -> $CODE"
+            else echo "FAIL: $1 -> expected $3, got $CODE"; FAILED=$((FAILED+1)); fi
+          }
+          check "Frontend" "$BASE/" "200"
+          check "API (401)" "$BASE/api/organizations/" "401"
+          check "Health" "$BASE/api/health/" "200"
+          check "Login" "$BASE/api/auth/login/" "405"
+          check "Admin" "$BASE/admin/" "302"
+          check "Docs" "$BASE/api/docs/" "200"
+          if [ "$FAILED" -gt 0 ]; then echo "$FAILED test(s) failed!"; exit 1; fi
+          echo "All smoke tests passed!"
+
+  notify:
+    needs: [lint, test, build-backend, build-frontend, deploy, wait-for-healthy, smoke-test]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram notification
+        run: |
+          if [ "${{ needs.smoke-test.result }}" = "success" ]; then
+            EMOJI="✅"; STATUS="Deploy successful"
+          else EMOJI="❌"; STATUS="Deploy failed"; fi
+          SHA="${{ github.sha }}"; SHORT="${SHA:0:7}"
+          MSG=$(echo "${{ github.event.head_commit.message }}" | head -1)
+          TEXT="${EMOJI} *Marga Manager*%0ACommit: \`${SHORT}\` ${MSG}%0AStatus: ${STATUS}%0A[Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="$TEXT" -d parse_mode="Markdown" \
+            -d disable_web_page_preview="true" || true
