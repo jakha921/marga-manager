@@ -810,7 +810,7 @@ path("api/", include("apps.payments.urls")),
 
 ## Phase 6 — Admin
 
-### 6.1 [ ] Зарегистрировать модели в Django Admin (Unfold)
+### 6.1 [x] Зарегистрировать модели в Django Admin (Unfold)
 
 **Создай `backend/apps/payments/admin.py`:**
 
