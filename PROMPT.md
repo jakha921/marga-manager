@@ -287,7 +287,7 @@ uv run python manage.py migrate
 
 ## Phase 3 — Payme Errors & Auth Helper
 
-### 3.1 [ ] Создать `payme_errors.py` с кодами ошибок и helper
+### 3.1 [x] Создать `payme_errors.py` с кодами ошибок и helper
 
 **Создай `backend/apps/payments/payme_errors.py`:**
 
