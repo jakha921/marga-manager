@@ -24,7 +24,7 @@
 
 ---
 
-### 0.2 [ ] Добавить незакоммиченный health check view и связанные файлы
+### 0.2 [x] Добавить незакоммиченный health check view и связанные файлы
 
 Файл `backend/apps/core/views.py` существует (незакоммичен) и нужен для `config/urls.py`.
 
@@ -54,7 +54,7 @@ def health_check(request):
 
 ---
 
-### 0.3 [ ] Исправить сломанную ссылку `index.css` в `frontend/index.html`
+### 0.3 [x] Исправить сломанную ссылку `index.css` в `frontend/index.html`
 
 В `frontend/index.html` есть `<link rel="stylesheet" href="/index.css">` но файл не существует → 404 в браузере.
 
