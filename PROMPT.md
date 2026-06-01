@@ -851,7 +851,7 @@ class PaymeTransactionAdmin(ModelAdmin):
 
 ## Phase 7 — Backend Tests
 
-### 7.1 [ ] Написать тесты для Payme интеграции
+### 7.1 [x] Написать тесты для Payme интеграции
 
 **Создай `backend/tests/test_payments.py`** с тест-кейсами:
 

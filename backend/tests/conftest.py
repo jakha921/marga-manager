@@ -167,3 +167,15 @@ def tenant_admin2_client(tenant_admin2):
 def kitchen_user_client(api_client, kitchen_user):
     api_client.force_authenticate(user=kitchen_user)
     return api_client
+
+
+@pytest.fixture
+def order(db, org, tenant_admin):
+    from apps.payments.models import Order
+
+    return Order.objects.create(
+        organization=org,
+        target_plan="PRO",
+        amount=4_900_000,
+        created_by=tenant_admin,
+    )
