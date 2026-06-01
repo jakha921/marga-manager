@@ -37,3 +37,7 @@ Thumbs.db
 
 # Docker
 docker/postgres_data/
+
+# Debug artifacts
+screenshot-*.png
+snapshot-*.txt
