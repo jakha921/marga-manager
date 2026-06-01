@@ -989,7 +989,7 @@ export const paymentsService = {
 
 ## Phase 9 — Frontend: Refactor Settings.tsx Billing Tab
 
-### 9.1 [ ] Заменить mock billing на реальный Payme checkout flow
+### 9.1 [x] Заменить mock billing на реальный Payme checkout flow
 
 **Измени `frontend/views/Settings.tsx`:**
 

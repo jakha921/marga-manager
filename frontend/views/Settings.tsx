@@ -7,40 +7,33 @@ import Input from '../components/Input';
 import Button from '../components/Button';
 import Select from '../components/Select';
 import Modal from '../components/Modal';
-import { 
-  Users, 
-  Settings as SettingsIcon, 
-  CreditCard, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  User, 
-  Key, 
-  CheckCircle2, 
+import {
+  Users,
+  Settings as SettingsIcon,
+  CreditCard,
+  Plus,
+  Trash2,
+  Edit2,
+  User,
+  Key,
+  CheckCircle2,
   Crown,
   AlertTriangle,
-  Check,
   Building2,
   DollarSign,
   Package,
   Save
 } from 'lucide-react';
-import { UserRole, User as UserType, SubscriptionPlan, Organization } from '../types';
+import { User as UserType, SubscriptionPlan, Organization } from '../types';
+import type { SubscriptionOrder } from '../types';
+import { paymentsService } from '../api/services/payments';
+import { PLAN_PRICES, PLAN_PRICES_DISPLAY, PLAN_LIMITS } from '../constants';
 
 type Tab = 'general' | 'users' | 'billing';
 
-interface PlanDetails {
-    id: SubscriptionPlan;
-    name: string;
-    price: number;
-    kitchens: number | 'Unlimited';
-    users: number | 'Unlimited';
-    features: string[];
-}
-
 const Settings: React.FC = () => {
   const { t } = useLanguage();
-  const { users, addUser, updateUser, deleteUser, currentOrganization, upgradeSubscription, updateOrganization } = useData();
+  const { users, addUser, updateUser, deleteUser, currentOrganization, updateOrganization } = useData();
   const { username } = useAuth(); // Current logged in user
   
   const [activeTab, setActiveTab] = useState<Tab>('users');
@@ -56,9 +49,8 @@ const Settings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Billing State
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [targetPlan, setTargetPlan] = useState<PlanDetails | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [paymentOrders, setPaymentOrders] = useState<SubscriptionOrder[]>([]);
 
   // Filter users for current tenant organization
   const tenantUsers = users.filter(u => u.organizationId === currentOrganization?.id);
@@ -67,35 +59,43 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     if (currentOrganization && activeTab === 'general') {
-       setGenForm({ ...currentOrganization });
+      setGenForm({ ...currentOrganization });
     }
   }, [currentOrganization, activeTab]);
 
-  const PLANS: PlanDetails[] = [
-    {
-        id: 'BASIC',
-        name: t('saas.plan.basic'),
-        price: 0,
-        kitchens: 1,
-        users: 5,
-        features: [t('bill.feature.kitchens') + ': 1', t('bill.feature.users') + ': 5', 'Basic Reporting']
-    },
-    {
-        id: 'PRO',
-        name: t('saas.plan.pro'),
-        price: 49,
-        kitchens: 10,
-        users: 50,
-        features: [t('bill.feature.kitchens') + ': 10', t('bill.feature.users') + ': 50', t('bill.feature.analytics'), t('bill.feature.support')]
-    },
-    {
-        id: 'ENTERPRISE',
-        name: 'Enterprise',
-        price: 199,
-        kitchens: 'Unlimited',
-        users: 'Unlimited',
-        features: ['Unlimited Everything', 'Dedicated API', 'SLA', 'Custom Onboarding']
+  useEffect(() => {
+    if (activeTab === 'billing') {
+      paymentsService.getOrders().then(res => {
+        setPaymentOrders(res.data.results || []);
+      }).catch(() => {});
     }
+  }, [activeTab]);
+
+  const PLANS: { id: SubscriptionPlan; name: string; features: string[] }[] = [
+    {
+      id: 'BASIC',
+      name: t('saas.plan.basic'),
+      features: [
+        `${t('bill.feature.kitchens')}: ${PLAN_LIMITS.BASIC.kitchens}`,
+        `${t('bill.feature.users')}: ${PLAN_LIMITS.BASIC.users}`,
+        'Basic Reporting',
+      ],
+    },
+    {
+      id: 'PRO',
+      name: t('saas.plan.pro'),
+      features: [
+        `${t('bill.feature.kitchens')}: ${PLAN_LIMITS.PRO.kitchens}`,
+        `${t('bill.feature.users')}: ${PLAN_LIMITS.PRO.users}`,
+        t('bill.feature.analytics'),
+        t('bill.feature.support'),
+      ],
+    },
+    {
+      id: 'ENTERPRISE',
+      name: 'Enterprise',
+      features: ['Unlimited Everything', 'Dedicated API', 'SLA', 'Custom Onboarding'],
+    },
   ];
 
   const handleOpenAdd = () => {
@@ -158,21 +158,19 @@ const Settings: React.FC = () => {
     setTimeout(() => setGenSaved(false), 3000);
   };
 
-  const initiateUpgrade = (plan: PlanDetails) => {
-      setTargetPlan(plan);
-      setIsPaymentModalOpen(true);
-  };
-
-  const handlePayment = () => {
-      if (!targetPlan) return;
-      setIsProcessing(true);
-      
-      // Simulate API call
-      setTimeout(() => {
-          upgradeSubscription(targetPlan.id);
-          setIsProcessing(false);
-          setIsPaymentModalOpen(false);
-      }, 1500);
+  const handleUpgrade = async (plan: SubscriptionPlan) => {
+    if (plan === 'BASIC') return;
+    setIsCreatingOrder(true);
+    try {
+      const amount = PLAN_PRICES[plan];
+      const orderRes = await paymentsService.createOrder({ targetPlan: plan, amount });
+      const urlRes = await paymentsService.getCheckoutUrl(orderRes.data.id);
+      window.location.href = urlRes.data.checkoutUrl;
+    } catch (err) {
+      console.error('Payment error:', err);
+    } finally {
+      setIsCreatingOrder(false);
+    }
   };
 
   const currentUser = tenantUsers.find(u => u.username === username);
@@ -305,61 +303,125 @@ const Settings: React.FC = () => {
 
         {/* BILLING TAB */}
         {activeTab === 'billing' && (
-           <div className="space-y-8">
-               <div className="flex items-center justify-between">
-                 <div>
-                    <h2 className="font-display font-bold text-xl text-slate-900">{t('set.tab.billing')}</h2>
-                    <p className="text-sm text-slate-500 mt-1">Manage your subscription and billing details.</p>
-                 </div>
-               </div>
+          <div className="space-y-8">
+            <div>
+              <h2 className="font-display font-bold text-xl text-slate-900">{t('set.tab.billing')}</h2>
+              <p className="text-sm text-slate-500 mt-1">Manage your subscription and billing details.</p>
+            </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {PLANS.map(plan => {
-                      const isCurrent = currentOrganization?.plan === plan.id;
-                      const isPro = plan.id === 'PRO';
-                      
-                      return (
-                          <div key={plan.id} className={`relative flex flex-col p-6 rounded-3xl border transition-all duration-300 ${isCurrent ? 'border-emerald-500 ring-4 ring-emerald-500/10 bg-white shadow-lg' : 'border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-200 hover:shadow-md'}`}>
-                              {isCurrent && (
-                                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-emerald-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full shadow-sm tracking-wider">
-                                      {t('bill.current')}
-                                  </div>
-                              )}
-                              {isPro && !isCurrent && (
-                                  <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-bl-xl rounded-tr-2xl tracking-wider">
-                                      Recommended
-                                  </div>
-                              )}
-                              
-                              <h3 className="text-lg font-bold text-slate-900 font-display mb-2">{plan.name}</h3>
-                              <div className="mb-6">
-                                  <span className="text-3xl font-bold text-slate-900">${plan.price}</span>
-                                  <span className="text-sm text-slate-400 font-medium">{t('bill.cycle')}</span>
-                              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {PLANS.map(plan => {
+                const isCurrent = currentOrganization?.plan === plan.id;
+                const isPro = plan.id === 'PRO';
+                const currentPlanIndex = ['BASIC', 'PRO', 'ENTERPRISE'].indexOf(currentOrganization?.plan || 'BASIC');
+                const thisPlanIndex = ['BASIC', 'PRO', 'ENTERPRISE'].indexOf(plan.id);
+                const isUpgrade = thisPlanIndex > currentPlanIndex;
 
-                              <ul className="space-y-3 mb-8 flex-1">
-                                  {plan.features.map((feature, i) => (
-                                      <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
-                                          <CheckCircle2 size={16} className={`flex-shrink-0 mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-slate-400'}`} />
-                                          <span className="leading-tight">{feature}</span>
-                                      </li>
-                                  ))}
-                              </ul>
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative flex flex-col p-6 rounded-3xl border transition-all duration-300 ${
+                      isCurrent
+                        ? 'border-emerald-500 ring-4 ring-emerald-500/10 bg-white shadow-lg'
+                        : 'border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-200 hover:shadow-md'
+                    }`}
+                  >
+                    {isCurrent && (
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-emerald-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-full shadow-sm tracking-wider">
+                        {t('bill.current')}
+                      </div>
+                    )}
+                    {isPro && !isCurrent && (
+                      <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-bl-xl rounded-tr-2xl tracking-wider">
+                        Recommended
+                      </div>
+                    )}
 
-                              <Button 
-                                fullWidth 
-                                variant={isCurrent ? 'secondary' : 'primary'}
-                                disabled={isCurrent}
-                                onClick={() => initiateUpgrade(plan)}
-                                className={isCurrent ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ''}
-                              >
-                                {isCurrent ? t('bill.btn.current') : plan.price > (PLANS.find(p => p.id === currentOrganization?.plan)?.price || 0) ? t('bill.btn.upgrade') : t('bill.btn.downgrade')}
-                              </Button>
-                          </div>
-                      )
-                  })}
-               </div>
-           </div>
+                    <h3 className="text-lg font-bold text-slate-900 font-display mb-2">{plan.name}</h3>
+                    <div className="mb-6">
+                      <span className="text-3xl font-bold text-slate-900">{PLAN_PRICES_DISPLAY[plan.id]}</span>
+                      {PLAN_PRICES[plan.id] > 0 && (
+                        <span className="text-sm text-slate-400 font-medium">{t('bill.cycle')}</span>
+                      )}
+                    </div>
+
+                    <ul className="space-y-3 mb-8 flex-1">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
+                          <CheckCircle2
+                            size={16}
+                            className={`flex-shrink-0 mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-slate-400'}`}
+                          />
+                          <span className="leading-tight">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button
+                      fullWidth
+                      variant={isCurrent ? 'secondary' : 'primary'}
+                      disabled={isCurrent || isCreatingOrder || plan.id === 'BASIC'}
+                      onClick={() => handleUpgrade(plan.id)}
+                      className={isCurrent ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ''}
+                    >
+                      {isCurrent
+                        ? t('bill.btn.current')
+                        : isCreatingOrder
+                          ? '...'
+                          : isUpgrade
+                            ? t('bill.btn.upgrade')
+                            : t('bill.btn.downgrade')}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Payment History */}
+            {paymentOrders.length > 0 && (
+              <div>
+                <h3 className="font-display font-bold text-base text-slate-900 mb-4">Payment History</h3>
+                <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-100">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Plan</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {paymentOrders.map(order => (
+                        <tr key={order.id} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 text-slate-600">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-slate-900">{order.targetPlan}</td>
+                          <td className="px-4 py-3 text-slate-600">
+                            {(order.amount / 100).toLocaleString()} UZS
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                order.status === 'PAID'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : order.status === 'PENDING' || order.status === 'PAYING'
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-slate-100 text-slate-500'
+                              }`}
+                            >
+                              {order.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* GENERAL TAB */}
@@ -539,54 +601,6 @@ const Settings: React.FC = () => {
          </div>
       </Modal>
 
-      {/* Payment Modal */}
-      <Modal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        title={t('bill.modal.title')}
-      >
-          <div className="space-y-6">
-              <p className="text-slate-500 text-sm">{t('bill.modal.desc')}</p>
-              
-              {targetPlan && (
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-                      <div className="flex justify-between items-center mb-2">
-                          <span className="text-slate-500 text-xs font-bold uppercase">{t('bill.modal.new_plan')}</span>
-                          <span className="text-slate-900 font-bold font-display">{targetPlan.name}</span>
-                      </div>
-                      <div className="flex justify-between items-center mb-4">
-                          <span className="text-slate-500 text-xs font-bold uppercase">{t('bill.modal.price')}</span>
-                          <span className="text-slate-900 font-bold">${targetPlan.price} / month</span>
-                      </div>
-                      <div className="h-px bg-slate-200 mb-4"></div>
-                      <div className="flex justify-between items-center">
-                          <span className="text-slate-900 font-bold">{t('bill.modal.total')}</span>
-                          <span className="text-2xl font-bold text-emerald-600">${targetPlan.price}</span>
-                      </div>
-                  </div>
-              )}
-
-              <div className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3">
-                 <CreditCard size={20} className="text-slate-400" />
-                 <div className="flex-1">
-                    <div className="text-xs font-bold text-slate-900">•••• •••• •••• 4242</div>
-                    <div className="text-[10px] text-slate-500">Expires 12/28</div>
-                 </div>
-                 <button className="text-xs font-bold text-indigo-600 hover:text-indigo-800">Change</button>
-              </div>
-
-              <div className="pt-2">
-                  <Button 
-                    fullWidth 
-                    onClick={handlePayment} 
-                    disabled={isProcessing}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                     {isProcessing ? t('bill.modal.processing') : t('bill.modal.confirm')}
-                  </Button>
-              </div>
-          </div>
-      </Modal>
     </div>
   );
 };
