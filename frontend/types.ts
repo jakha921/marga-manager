@@ -115,3 +115,19 @@ export interface LastIncomingResponse {
   quantity: string | null;
   unit: string | null;
 }
+
+export type OrderStatus = 'PENDING' | 'PAYING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
+
+export interface SubscriptionOrder {
+  id: number;
+  organizationId: number;
+  targetPlan: SubscriptionPlan;
+  amount: number; // в тийинах
+  status: OrderStatus;
+  createdBy: number | null;
+  createdByName: string | null;
+  paidAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

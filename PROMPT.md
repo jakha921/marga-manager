@@ -906,7 +906,7 @@ def order(org, tenant_admin):
 
 ## Phase 8 — Frontend: Service, Types, Constants
 
-### 8.1 [ ] Добавить типы и сервис для платежей
+### 8.1 [x] Добавить типы и сервис для платежей
 
 **Добавь в `frontend/types.ts`** (в конец файла):
 
