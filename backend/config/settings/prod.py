@@ -28,3 +28,6 @@ SECURE_HSTS_SECONDS = 60 * 60 * 24
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = False  # SSL handled by reverse proxy
+
+# Payme production
+PAYME_CHECKOUT_URL = "https://checkout.paycom.uz"

@@ -69,7 +69,7 @@ def health_check(request):
 
 ## Phase 1 — Create `apps.payments` App Skeleton
 
-### 1.1 [ ] Создать структуру Django app `apps.payments`
+### 1.1 [x] Создать структуру Django app `apps.payments`
 
 **Создай следующие пустые файлы:**
 ```

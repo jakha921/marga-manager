@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.kitchens",
     "apps.products",
     "apps.operations",
+    "apps.payments",
 ]
 
 # --- Middleware ---
@@ -96,6 +97,12 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- Payme ---
+PAYME_MERCHANT_ID = os.getenv("PAYME_MERCHANT_ID", "")
+PAYME_MERCHANT_KEY = os.getenv("PAYME_MERCHANT_KEY", "")
+PAYME_CHECKOUT_URL = os.getenv("PAYME_CHECKOUT_URL", "https://test.paycom.uz")
+PAYME_CALLBACK_URL = os.getenv("PAYME_CALLBACK_URL", "http://localhost:3000/#/settings")
 
 # --- DRF ---
 from config.drf_settings import *  # noqa: E402, F401, F403
