@@ -669,7 +669,7 @@ class PaymeWebhookView(View):
 
 ## Phase 5 — REST API для фронтенда
 
-### 5.1 [ ] Создать serializers, views, urls для Order API
+### 5.1 [x] Создать serializers, views, urls для Order API
 
 **Создай `backend/apps/payments/serializers.py`:**
 
