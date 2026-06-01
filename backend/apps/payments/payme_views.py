@@ -58,7 +58,7 @@ class PaymeWebhookView(View):
     # ------------------------------------------------------------------ #
     #  CheckPerformTransaction                                             #
     # ------------------------------------------------------------------ #
-    def _checkPerformTransaction(self, params: dict, request_id):
+    def _checkPerformTransaction(self, params: dict, request_id):  # noqa: N802
         amount = params.get("amount")
         order_id = params.get("account", {}).get("order_id")
 
@@ -81,7 +81,7 @@ class PaymeWebhookView(View):
     # ------------------------------------------------------------------ #
     #  CreateTransaction                                                   #
     # ------------------------------------------------------------------ #
-    def _createTransaction(self, params: dict, request_id):
+    def _createTransaction(self, params: dict, request_id):  # noqa: N802
         payme_id = params.get("id")
         payme_time = params.get("time")
         amount = params.get("amount")
@@ -157,7 +157,7 @@ class PaymeWebhookView(View):
     # ------------------------------------------------------------------ #
     #  PerformTransaction                                                  #
     # ------------------------------------------------------------------ #
-    def _performTransaction(self, params: dict, request_id):
+    def _performTransaction(self, params: dict, request_id):  # noqa: N802
         payme_id = params.get("id")
 
         try:
@@ -212,7 +212,7 @@ class PaymeWebhookView(View):
     # ------------------------------------------------------------------ #
     #  CancelTransaction                                                   #
     # ------------------------------------------------------------------ #
-    def _cancelTransaction(self, params: dict, request_id):
+    def _cancelTransaction(self, params: dict, request_id):  # noqa: N802
         payme_id = params.get("id")
         reason = params.get("reason")
 
@@ -270,7 +270,7 @@ class PaymeWebhookView(View):
     # ------------------------------------------------------------------ #
     #  CheckTransaction                                                    #
     # ------------------------------------------------------------------ #
-    def _checkTransaction(self, params: dict, request_id):
+    def _checkTransaction(self, params: dict, request_id):  # noqa: N802
         payme_id = params.get("id")
 
         try:
@@ -293,7 +293,7 @@ class PaymeWebhookView(View):
     # ------------------------------------------------------------------ #
     #  GetStatement                                                        #
     # ------------------------------------------------------------------ #
-    def _getStatement(self, params: dict, request_id):
+    def _getStatement(self, params: dict, request_id):  # noqa: N802
         from_ts = params.get("from", 0)
         to_ts = params.get("to", 0)
 
