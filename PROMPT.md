@@ -123,7 +123,7 @@ PAYME_CALLBACK_URL=http://localhost:3000/#/settings
 
 ## Phase 2 — Payme Integration: Models
 
-### 2.1 [ ] Создать модели `Order` и `PaymeTransaction`
+### 2.1 [x] Создать модели `Order` и `PaymeTransaction`
 
 **Создай `backend/apps/payments/models.py`:**
 
