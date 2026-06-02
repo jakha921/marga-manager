@@ -3,7 +3,7 @@ from rest_framework import viewsets
 from apps.core.permissions import IsSuperAdmin, IsTenantAdmin
 
 from .models import Organization
-from .serializers import OrganizationSerializer
+from .serializers import AdminOrganizationSerializer, OrganizationSerializer
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):
@@ -18,6 +18,11 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         if self.action in ("list", "retrieve", "partial_update", "update"):
             return [IsTenantAdmin()]
         return [IsSuperAdmin()]
+
+    def get_serializer_class(self):
+        if self.request.user.role == "SUPER_ADMIN":
+            return AdminOrganizationSerializer
+        return OrganizationSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()

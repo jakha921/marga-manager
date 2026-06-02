@@ -21,11 +21,11 @@
 
 **Задача**: Закоммитить незакоммиченные файлы, удалить мусорные файлы.
 
-- [ ] Закоммитить `backend/apps/core/views.py` (health check view, уже подключён в urls.py)
-- [ ] Закоммитить `backend/config/urls.py` если не закоммичен
-- [ ] Проверить наличие `screenshot-*.png`, `snapshot-*.txt`, `GSD-GUIDE.md`, `.playwright-mcp/` — если есть, удалить
-- [ ] Проверка: `git status` — должно быть чисто после коммита
-- [ ] Коммит: `chore: закоммитить health check view, убрать мусорные файлы`
+- [x] Закоммитить `backend/apps/core/views.py` (health check view, уже подключён в urls.py)
+- [x] Закоммитить `backend/config/urls.py` если не закоммичен
+- [x] Проверить наличие `screenshot-*.png`, `snapshot-*.txt`, `GSD-GUIDE.md`, `.playwright-mcp/` — если есть, удалить
+- [x] Проверка: `git status` — должно быть чисто после коммита
+- [x] Коммит: `chore: закоммитить health check view, убрать мусорные файлы`
 
 ---
 
@@ -33,10 +33,10 @@
 
 **Задача**: `backend/apps/core/views.py` возвращает `str(e)` при ошибке БД — утечка деталей подключения.
 
-- [ ] Найти в `backend/apps/core/views.py` место где `str(e)` попадает в ответ
-- [ ] Заменить на generic строку: `"database unavailable"` (не раскрывать детали ошибки)
-- [ ] Проверка: `cd backend && uv run python manage.py check`
-- [ ] Коммит: `fix(security): убрать утечку деталей ошибки БД в health check`
+- [x] Найти в `backend/apps/core/views.py` место где `str(e)` попадает в ответ
+- [x] Заменить на generic строку: `"database unavailable"` (уже исправлено — возвращает `"unavailable"`)
+- [x] Проверка: `cd backend && uv run python manage.py check`
+- [x] Коммит: `fix(security): убрать утечку деталей ошибки БД в health check` (N/A — уже безопасно)
 
 ---
 

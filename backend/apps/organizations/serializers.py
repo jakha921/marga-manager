@@ -2,33 +2,50 @@ from rest_framework import serializers
 
 from .models import Organization
 
+ORGANIZATION_FIELDS = [
+    "id",
+    "name",
+    "slug",
+    "plan",
+    "status",
+    "max_kitchens",
+    "max_users",
+    "mrr",
+    "contact_name",
+    "phone",
+    "email",
+    "address",
+    "currency",
+    "tax_rate",
+    "low_stock_threshold",
+    "kitchen_count",
+    "user_count",
+    "created_at",
+]
+
 
 class OrganizationSerializer(serializers.ModelSerializer):
-    """Сериализатор организации."""
+    """Сериализатор для TENANT_ADMIN — поля управления планом read-only."""
 
     kitchen_count = serializers.IntegerField(source="kitchens.count", read_only=True)
     user_count = serializers.IntegerField(source="users.count", read_only=True)
 
     class Meta:
         model = Organization
-        fields = [
-            "id",
-            "name",
+        fields = ORGANIZATION_FIELDS
+        read_only_fields = [
+            "created_at",
             "slug",
             "plan",
             "status",
             "max_kitchens",
             "max_users",
             "mrr",
-            "contact_name",
-            "phone",
-            "email",
-            "address",
-            "currency",
-            "tax_rate",
-            "low_stock_threshold",
-            "kitchen_count",
-            "user_count",
-            "created_at",
         ]
+
+
+class AdminOrganizationSerializer(OrganizationSerializer):
+    """Сериализатор для SUPER_ADMIN — все поля доступны для записи."""
+
+    class Meta(OrganizationSerializer.Meta):
         read_only_fields = ["created_at"]
