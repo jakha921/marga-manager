@@ -41,3 +41,7 @@ docker/postgres_data/
 # Debug artifacts
 screenshot-*.png
 snapshot-*.txt
+prod-*.png
+.playwright-mcp/
+GSD-GUIDE.md
+.claude/
