@@ -51,6 +51,7 @@ const Settings: React.FC = () => {
   // Billing State
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [paymentOrders, setPaymentOrders] = useState<SubscriptionOrder[]>([]);
+  const [billingError, setBillingError] = useState<string | null>(null);
 
   // Filter users for current tenant organization
   const tenantUsers = users.filter(u => u.organizationId === currentOrganization?.id);
@@ -161,13 +162,20 @@ const Settings: React.FC = () => {
   const handleUpgrade = async (plan: SubscriptionPlan) => {
     if (plan === 'BASIC') return;
     setIsCreatingOrder(true);
+    setBillingError(null);
     try {
       const amount = PLAN_PRICES[plan];
       const orderRes = await paymentsService.createOrder({ targetPlan: plan, amount });
       const urlRes = await paymentsService.getCheckoutUrl(orderRes.data.id);
       window.location.href = urlRes.data.checkoutUrl;
-    } catch (err) {
-      console.error('Payment error:', err);
+    } catch (err: unknown) {
+      const axErr = err as { response?: { data?: { detail?: string; targetPlan?: string[]; amount?: string[] } } };
+      const msg =
+        axErr.response?.data?.detail ??
+        axErr.response?.data?.targetPlan?.[0] ??
+        axErr.response?.data?.amount?.[0] ??
+        (err instanceof Error ? err.message : 'Ошибка при создании заказа');
+      setBillingError(msg);
     } finally {
       setIsCreatingOrder(false);
     }
@@ -308,6 +316,12 @@ const Settings: React.FC = () => {
               <h2 className="font-display font-bold text-xl text-slate-900">{t('set.tab.billing')}</h2>
               <p className="text-sm text-[var(--text-secondary)] mt-1">{t('set.billing.desc')}</p>
             </div>
+
+            {billingError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold flex items-center gap-2 border border-red-100">
+                <AlertTriangle size={16} /> {billingError}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {PLANS.map(plan => {

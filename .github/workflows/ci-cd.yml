@@ -136,6 +136,7 @@ jobs:
           check "Login" "$BASE/api/auth/login/" "405"
           check "Admin" "$BASE/admin/" "302"
           check "Docs" "$BASE/api/docs/" "200"
+          check "Plans (public)" "$BASE/api/payments/plans/" "200"
           if [ "$FAILED" -gt 0 ]; then echo "$FAILED test(s) failed!"; exit 1; fi
           echo "All smoke tests passed!"
 
