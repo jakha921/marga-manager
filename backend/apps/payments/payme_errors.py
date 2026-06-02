@@ -1,4 +1,5 @@
 import base64
+import hmac
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -71,6 +72,9 @@ def verify_payme_auth(request) -> bool:
     try:
         decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
         login, key = decoded.split(":", 1)
-        return login == "Paycom" and key == settings.PAYME_MERCHANT_KEY
+        merchant_key = settings.PAYME_MERCHANT_KEY
+        if not merchant_key:
+            return False
+        return login == "Paycom" and hmac.compare_digest(key, merchant_key)
     except Exception:
         return False
