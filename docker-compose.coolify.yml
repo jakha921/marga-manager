@@ -15,6 +15,7 @@ services:
 
   backend:
     image: jakha921/marga-backend:latest
+    pull_policy: always
     expose:
       - "8000"
     environment:
@@ -46,6 +47,7 @@ services:
 
   frontend:
     image: jakha921/marga-frontend:latest
+    pull_policy: always
     expose:
       - "80"
     depends_on:
