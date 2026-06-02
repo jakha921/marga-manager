@@ -45,6 +45,9 @@ class Order(TimeStampedModel):
     )
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name="Оплачен в")
     cancelled_at = models.DateTimeField(null=True, blank=True, verbose_name="Отменён в")
+    previous_plan = models.CharField(
+        max_length=20, blank=True, default="", verbose_name="Предыдущий план"
+    )
 
     class Meta:
         verbose_name = "Заказ на подписку"
@@ -74,6 +77,8 @@ class Order(TimeStampedModel):
             max_users = None
 
         org = self.organization
+        self.previous_plan = org.plan
+        self.save(update_fields=["previous_plan", "updated_at"])
         org.plan = self.target_plan
         if max_kitchens is not None:
             org.max_kitchens = max_kitchens
@@ -81,6 +86,20 @@ class Order(TimeStampedModel):
             org.max_users = max_users
         org.mrr = self.amount / 100  # конвертация тийин → UZS
         org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
+
+    def revert_plan(self) -> None:
+        """Откатить план организации к предыдущему (вызывается при отмене выполненной транзакции)."""
+        if not self.previous_plan:
+            return
+        try:
+            config = PlanConfig.objects.get(plan=self.previous_plan)
+        except PlanConfig.DoesNotExist:
+            return
+        org = self.organization
+        org.plan = self.previous_plan
+        org.max_kitchens = config.max_kitchens
+        org.max_users = config.max_users
+        org.save(update_fields=["plan", "max_kitchens", "max_users", "updated_at"])
 
     def cancel(self) -> None:
         """Отменить заказ."""

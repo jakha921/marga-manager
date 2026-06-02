@@ -249,12 +249,12 @@ class PaymeWebhookView(View):
                 txn.save(update_fields=["state", "reason", "payme_cancel_time", "updated_at"])
                 txn.order.cancel()
         elif txn.state == PaymeTransaction.STATE_PERFORMED:
-            # Отмена уже выполненной транзакции — план не откатываем автоматически
             with transaction.atomic():
                 txn.state = PaymeTransaction.STATE_CANCELLED_AFTER
                 txn.reason = reason
                 txn.payme_cancel_time = now_ms
                 txn.save(update_fields=["state", "reason", "payme_cancel_time", "updated_at"])
+                txn.order.revert_plan()
         else:
             return error_response(PaymeError.CANT_PERFORM, request_id)
 
