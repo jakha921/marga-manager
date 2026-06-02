@@ -343,7 +343,7 @@ Backdrop кнопка закрытия — `role="button"` и `aria-label="Close
 
 **Коммит**: `feat: добавить ErrorBoundary, Skeleton loader, ARIA атрибуты, исправить undefined setter`
 
-- [ ] Phase 4 complete
+- [x] Phase 4 complete
 
 ---
 

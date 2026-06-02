@@ -270,7 +270,7 @@ const QuickInput: React.FC = () => {
     setEditUnitPriceStr(uPrice ? formatNumber(uPrice) : '');
     setEditTotalPriceStr(op.price ? formatNumber(op.price) : '');
     
-    setEditUnitPrice(uPrice.toString()); // Keep this for logic if needed, but we rely on Str now
+    setEditUnitPriceStr(uPrice ? formatNumber(uPrice) : '');
     setIsEditModalOpen(true);
   };
 
@@ -810,20 +810,22 @@ const QuickInput: React.FC = () => {
                         </div>
                         
                         <div className="flex gap-1.5">
-                            <button 
+                            <button
                                 type="button"
-                                onClick={() => handleOpenEdit(entry)} 
+                                onClick={() => handleOpenEdit(entry)}
                                 className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-slate-100 bg-slate-50 shadow-sm"
-                                title="Edit"
+                                title={t('common.edit')}
+                                aria-label={t('common.edit')}
                             >
                                 <Edit2 size={18} />
                             </button>
                             {userRole !== 'KITCHEN_USER' && (
-                                <button 
+                                <button
                                     type="button"
-                                    onClick={() => handleDelete(entry.id)} 
+                                    onClick={() => handleDelete(entry.id)}
                                     className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-red-50 bg-red-50/30 shadow-sm"
-                                    title="Delete"
+                                    title={t('common.delete')}
+                                    aria-label={t('common.delete')}
                                 >
                                     <Trash2 size={18} />
                                 </button>

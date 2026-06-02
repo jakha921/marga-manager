@@ -9,6 +9,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import Select from '../components/Select';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { Skeleton } from '../components/Skeleton';
 import { analyticsService } from '../api/services/analytics';
 import { KitchenReportResponse } from '../types';
 
@@ -296,7 +297,7 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="overflow-x-auto">
           {reportLoading ? (
-            <div className="p-8 text-center text-[var(--text-muted)] text-sm">Loading...</div>
+            <Skeleton rows={5} />
           ) : (
           <table className="w-full text-left">
             <thead>
