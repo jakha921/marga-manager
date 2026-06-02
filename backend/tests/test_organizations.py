@@ -1,4 +1,6 @@
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 
 @pytest.mark.django_db
@@ -43,6 +45,24 @@ class TestOrganizationSuperAdmin:
         response = super_admin_client.delete(f"/api/organizations/{org.id}/")
         assert response.status_code == 204
 
+    def test_super_admin_can_change_plan(self, super_admin_client, org):
+        response = super_admin_client.patch(
+            f"/api/organizations/{org.id}/",
+            {"plan": "BASIC"},
+        )
+        assert response.status_code == 200
+        assert response.data["plan"] == "BASIC"
+
+    def test_list_no_n_plus_one(self, super_admin_client, org, org2):
+        # Regression: kitchen_count and user_count must come from annotate(), not .count() per row
+        with CaptureQueriesContext(connection) as ctx:
+            response = super_admin_client.get("/api/organizations/")
+        assert response.status_code == 200
+        # 1 query for the annotated list + 1 for pagination count — well under N+1 territory
+        assert len(ctx.captured_queries) <= 3, (
+            f"Too many queries ({len(ctx.captured_queries)}): N+1 regression in OrganizationViewSet"
+        )
+
 
 @pytest.mark.django_db
 class TestOrganizationTenantAdmin:
@@ -69,6 +89,16 @@ class TestOrganizationTenantAdmin:
         )
         assert response.status_code == 200
         assert response.data["name"] == "Updated Name"
+
+    def test_tenant_admin_cannot_change_plan(self, tenant_admin_client, org):
+        # plan is read_only for TENANT_ADMIN — silently ignored, not an error
+        response = tenant_admin_client.patch(
+            f"/api/organizations/{org.id}/",
+            {"plan": "BASIC"},
+        )
+        assert response.status_code == 200
+        org.refresh_from_db()
+        assert org.plan == "PRO"  # unchanged
 
     def test_create_forbidden(self, tenant_admin_client):
         response = tenant_admin_client.post(

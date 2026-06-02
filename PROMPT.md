@@ -513,7 +513,7 @@ def test_login_rate_limit(self):
 
 **Коммит**: `test: добавить тесты для категорий, аналитики, N+1 regression, rate limiting`
 
-- [ ] Phase 7 complete
+- [x] Phase 7 complete
 
 ---
 

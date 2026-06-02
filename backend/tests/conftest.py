@@ -8,16 +8,18 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture(autouse=True)
-def disable_throttling(settings):
+def disable_throttling(settings, monkeypatch):
+    high_rates = {"anon": "10000/minute", "user": "10000/minute", "login": "10000/minute"}
     settings.REST_FRAMEWORK = {
         **settings.REST_FRAMEWORK,
         "DEFAULT_THROTTLE_CLASSES": [],
-        "DEFAULT_THROTTLE_RATES": {
-            "anon": "10000/minute",
-            "user": "10000/minute",
-            "login": "10000/minute",
-        },
+        "DEFAULT_THROTTLE_RATES": high_rates,
     }
+    # SimpleRateThrottle.THROTTLE_RATES is bound at import time to the production
+    # rates dict — settings override alone doesn't update it. Patch directly.
+    from rest_framework.throttling import SimpleRateThrottle
+
+    monkeypatch.setattr(SimpleRateThrottle, "THROTTLE_RATES", high_rates)
 
 
 from apps.accounts.models import User
