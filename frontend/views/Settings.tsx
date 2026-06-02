@@ -306,7 +306,7 @@ const Settings: React.FC = () => {
           <div className="space-y-8">
             <div>
               <h2 className="font-display font-bold text-xl text-slate-900">{t('set.tab.billing')}</h2>
-              <p className="text-sm text-slate-500 mt-1">Manage your subscription and billing details.</p>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">{t('set.billing.desc')}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -333,7 +333,7 @@ const Settings: React.FC = () => {
                     )}
                     {isPro && !isCurrent && (
                       <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-bold uppercase px-3 py-1 rounded-bl-xl rounded-tr-2xl tracking-wider">
-                        Recommended
+                        {t('set.billing.recommended')}
                       </div>
                     )}
 
@@ -380,15 +380,15 @@ const Settings: React.FC = () => {
             {/* Payment History */}
             {paymentOrders.length > 0 && (
               <div>
-                <h3 className="font-display font-bold text-base text-slate-900 mb-4">Payment History</h3>
-                <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)] mb-4">{t('set.billing.history')}</h3>
+                <div className="rounded-2xl border border-[var(--border-light)] overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-50 border-b border-slate-100">
+                    <thead className="bg-[var(--bg-surface-2)] border-b border-[var(--border-light)]">
                       <tr>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Plan</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t('set.billing.th_date')}</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t('set.billing.th_plan')}</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t('set.billing.th_amount')}</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t('set.billing.th_status')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -444,10 +444,10 @@ const Settings: React.FC = () => {
               )}
 
               {/* Section 1: Identity */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-6">
-                 <div className="flex items-center gap-3 text-slate-800 font-bold border-b border-slate-200 pb-2 mb-4">
-                    <Building2 size={20} className="text-slate-400" />
-                    Identity & Contact
+              <div className="bg-[var(--bg-surface-2)] p-6 rounded-2xl border border-[var(--border-light)] space-y-6">
+                 <div className="flex items-center gap-3 text-[var(--text-primary)] font-bold border-b border-[var(--border-color)] pb-2 mb-4">
+                    <Building2 size={20} className="text-[var(--text-muted)]" />
+                    {t('set.profile.identity')}
                  </div>
                  
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -530,7 +530,7 @@ const Settings: React.FC = () => {
                       className="bg-white"
                     />
                     <div className="flex items-center text-xs text-slate-500 pt-6">
-                       Setting this threshold will highlight products in red within reports when stock levels fall below this value.
+                       {t('set.threshold_help')}
                     </div>
                  </div>
               </div>

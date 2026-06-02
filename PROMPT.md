@@ -244,7 +244,7 @@ common.delete  — "Delete" / "Удалить" / "O'chirish"
 
 **Коммит**: `feat: добавить недостающие переводы EN/RU/UZ для QuickInput, Settings, Dashboard`
 
-- [ ] Phase 3 complete
+- [x] Phase 3 complete
 
 ---
 

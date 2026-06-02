@@ -226,6 +226,33 @@ const translations: Record<Language, Record<string, string>> = {
     'common.entries': 'entries',
     'common.prev': 'Previous',
     'common.next': 'Next',
+    'common.loading': 'Loading...',
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'common.edit': 'Edit',
+    'common.delete': 'Delete',
+
+    // QuickInput modal/edit
+    'qi.edit_entry': 'Edit Entry',
+    'qi.product_details': 'Product Details',
+    'qi.unit_price': 'Unit Price',
+    'qi.total_price': 'Total Price',
+    'qi.save_changes': 'Save Changes',
+    'qi.confirm_delete': 'Confirm Delete',
+    'qi.delete_op_msg': 'Are you sure you want to delete this operation? This action cannot be undone.',
+
+    // Settings billing
+    'set.billing.desc': 'Manage your subscription and billing details.',
+    'set.billing.history': 'Payment History',
+    'set.billing.th_date': 'Date',
+    'set.billing.th_plan': 'Plan',
+    'set.billing.th_amount': 'Amount',
+    'set.billing.th_status': 'Status',
+    'set.billing.recommended': 'Recommended',
+
+    // Settings profile
+    'set.profile.identity': 'Identity & Contact',
+    'set.threshold_help': 'Setting this threshold highlights low-stock products in reports.',
 
     // Chart
     'dash.chart.daily': 'Daily',
@@ -454,6 +481,33 @@ const translations: Record<Language, Record<string, string>> = {
     'common.entries': 'записей',
     'common.prev': 'Назад',
     'common.next': 'Вперед',
+    'common.loading': 'Загрузка...',
+    'common.cancel': 'Отмена',
+    'common.save': 'Сохранить',
+    'common.edit': 'Редактировать',
+    'common.delete': 'Удалить',
+
+    // QuickInput modal/edit
+    'qi.edit_entry': 'Редактировать',
+    'qi.product_details': 'Детали продукта',
+    'qi.unit_price': 'Цена за ед.',
+    'qi.total_price': 'Итого',
+    'qi.save_changes': 'Сохранить',
+    'qi.confirm_delete': 'Подтвердить удаление',
+    'qi.delete_op_msg': 'Вы уверены, что хотите удалить эту операцию? Это действие нельзя отменить.',
+
+    // Settings billing
+    'set.billing.desc': 'Управление подпиской и оплатой.',
+    'set.billing.history': 'История платежей',
+    'set.billing.th_date': 'Дата',
+    'set.billing.th_plan': 'Тариф',
+    'set.billing.th_amount': 'Сумма',
+    'set.billing.th_status': 'Статус',
+    'set.billing.recommended': 'Рекомендуем',
+
+    // Settings profile
+    'set.profile.identity': 'Личные данные',
+    'set.threshold_help': 'Порог выделит продукты красным в отчётах при низком остатке.',
 
     // Chart
     'dash.chart.daily': 'День',
@@ -682,6 +736,33 @@ const translations: Record<Language, Record<string, string>> = {
     'common.entries': 'yozuvlar',
     'common.prev': 'Oldingi',
     'common.next': 'Keyingi',
+    'common.loading': 'Yuklanmoqda...',
+    'common.cancel': 'Bekor qilish',
+    'common.save': 'Saqlash',
+    'common.edit': 'Tahrirlash',
+    'common.delete': 'O\'chirish',
+
+    // QuickInput modal/edit
+    'qi.edit_entry': 'Tahrirlash',
+    'qi.product_details': 'Mahsulot tafsilotlari',
+    'qi.unit_price': 'Birlik narxi',
+    'qi.total_price': 'Jami narx',
+    'qi.save_changes': 'Saqlash',
+    'qi.confirm_delete': 'O\'chirishni tasdiqlash',
+    'qi.delete_op_msg': 'Bu amalni o\'chirishga ishonchingiz komilmi? Bu amalni bekor qilib bo\'lmaydi.',
+
+    // Settings billing
+    'set.billing.desc': 'Obuna va to\'lovni boshqarish.',
+    'set.billing.history': 'To\'lov tarixi',
+    'set.billing.th_date': 'Sana',
+    'set.billing.th_plan': 'Tarif',
+    'set.billing.th_amount': 'Summa',
+    'set.billing.th_status': 'Holat',
+    'set.billing.recommended': 'Tavsiya',
+
+    // Settings profile
+    'set.profile.identity': 'Shaxsiy ma\'lumotlar',
+    'set.threshold_help': 'Bu chegara hisobotlarda kam qoldiqli mahsulotlarni qizil rang bilan belgilaydi.',
 
     // Chart
     'dash.chart.daily': 'Kunlik',

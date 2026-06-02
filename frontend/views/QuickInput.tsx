@@ -912,38 +912,38 @@ const QuickInput: React.FC = () => {
         </div>
       </div>
 
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Entry">
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title={t('qi.edit_entry')}>
         <div className="space-y-5">
            <div className="grid grid-cols-2 gap-4">
-              <Input label="Date" type="date" value={editFormData.date || ''} onChange={e => handleEditChange('date', e.target.value)} />
-              <Input label="Time" type="time" value={editFormData.time || ''} onChange={e => handleEditChange('time', e.target.value)} />
+              <Input label={t('qi.date')} type="date" value={editFormData.date || ''} onChange={e => handleEditChange('date', e.target.value)} />
+              <Input label={t('qi.time')} type="time" value={editFormData.time || ''} onChange={e => handleEditChange('time', e.target.value)} />
            </div>
-           
-           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Product Details</div>
-              <div className="font-bold text-slate-900">{editFormData.productName}</div>
+
+           <div className="p-4 bg-[var(--bg-surface-2)] rounded-2xl border border-[var(--border-light)]">
+              <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">{t('qi.product_details')}</div>
+              <div className="font-bold text-[var(--text-primary)]">{editFormData.productName}</div>
            </div>
 
            <div className="grid grid-cols-2 gap-4">
-              <Input label="Quantity" type="text" value={editQtyStr} onChange={e => handleEditQtyChange(e.target.value)} />
-              <Input 
-                  label="Unit Price"
+              <Input label={t('qi.qty')} type="text" value={editQtyStr} onChange={e => handleEditQtyChange(e.target.value)} />
+              <Input
+                  label={t('qi.unit_price')}
                   type="text"
                   value={editUnitPriceStr}
                   onChange={e => handleEditUnitPriceChange(e.target.value)}
               />
            </div>
-           
-           <Input 
-               label="Total Price" 
-               type="text" 
-               value={editTotalPriceStr} 
-               onChange={e => handleEditTotalPriceChange(e.target.value)} 
+
+           <Input
+               label={t('qi.total_price')}
+               type="text"
+               value={editTotalPriceStr}
+               onChange={e => handleEditTotalPriceChange(e.target.value)}
            />
 
            <div className="pt-4 flex gap-3">
-             <Button variant="ghost" onClick={() => setIsEditModalOpen(false)} fullWidth>Cancel</Button>
-             <Button onClick={handleUpdate} fullWidth>Save Changes</Button>
+             <Button variant="ghost" onClick={() => setIsEditModalOpen(false)} fullWidth>{t('common.cancel')}</Button>
+             <Button onClick={handleUpdate} fullWidth>{t('qi.save_changes')}</Button>
            </div>
         </div>
       </Modal>
@@ -952,19 +952,19 @@ const QuickInput: React.FC = () => {
       <Modal
         isOpen={!!deleteConfirmId}
         onClose={() => setDeleteConfirmId(null)}
-        title="Confirm Delete"
+        title={t('qi.confirm_delete')}
       >
         <div className="text-center py-4">
            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
               <Trash2 size={32} />
            </div>
-           <h3 className="text-lg font-bold text-slate-900 mb-2">{t('prod.delete_confirm')}</h3>
-           <p className="text-slate-500 text-sm mb-6">
-             Are you sure you want to delete this operation? This action cannot be undone.
+           <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{t('prod.delete_confirm')}</h3>
+           <p className="text-[var(--text-secondary)] text-sm mb-6">
+             {t('qi.delete_op_msg')}
            </p>
            <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => setDeleteConfirmId(null)} className="flex-1">Cancel</Button>
-              <Button onClick={confirmDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20">Delete</Button>
+              <Button variant="secondary" onClick={() => setDeleteConfirmId(null)} className="flex-1">{t('common.cancel')}</Button>
+              <Button onClick={confirmDelete} className="flex-1 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20">{t('common.delete')}</Button>
            </div>
         </div>
       </Modal>
