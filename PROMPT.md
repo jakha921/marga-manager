@@ -117,31 +117,31 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ### 3.1 KitchenReportView: уменьшить запросы
 
-- [ ] В `backend/apps/operations/views.py` строки 251-297: вместо цикла `for kitchen in kitchens` с 6 aggregate вызовами — сделать 6 запросов с `values("kitchen").annotate(...)` + собрать в dict по kitchen_id. Итого 6 запросов вместо 6N
+- [x] В `backend/apps/operations/views.py` строки 251-297: вместо цикла с 6 aggregate вызовами — 6 запросов с `values("kitchen").annotate(...)`, сборка в dict по kitchen_id. 6 запросов вместо 6N
 
 ### 3.2 select_related в ViewSets
 
-- [ ] В `backend/apps/kitchens/views.py` строка 13: `Kitchen.objects.select_related("organization").all()`
-- [ ] В `backend/apps/products/views.py` строка 13 (CategoryViewSet): `Category.objects.select_related("organization").all()`
-- [ ] В `backend/apps/products/views.py` строка 22 (ProductViewSet): добавить `"organization"` к существующему `select_related("category")`
+- [x] В `backend/apps/kitchens/views.py`: `Kitchen.objects.select_related("organization").all()`
+- [x] В `backend/apps/products/views.py` (CategoryViewSet): `Category.objects.select_related("organization").all()`
+- [x] В `backend/apps/products/views.py` (ProductViewSet): добавлен `"organization"` к `select_related("category")`
 
 ### 3.3 Export Excel: лимит записей
 
-- [ ] В `backend/apps/operations/views.py` (export_excel action): добавить `qs = qs[:10_000]` перед итерацией — защита от OOM
+- [x] В `backend/apps/operations/views.py` (export_excel): добавлен `qs[:10_000]` перед итерацией
 
 ### 3.4 OperationEntrySerializer.price: привести к модели
 
-- [ ] В `backend/apps/operations/serializers.py` строка 36: `max_digits=12, decimal_places=2` вместо `max_digits=30, decimal_places=15`
+- [x] В `backend/apps/operations/serializers.py`: `max_digits=12, decimal_places=2`
 
 ### 3.5 Pagination docstring
 
-- [ ] В `backend/apps/core/pagination.py`: исправить docstring — `200 элементов на страницу` вместо `20`
+- [x] В `backend/apps/core/pagination.py`: docstring исправлен — `200 элементов на страницу, макс 500`
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
 
 **Коммит**: `perf: KitchenReport 6N→6 queries, select_related, export limit, serializer alignment`
 
-- [ ] Phase 3 complete
+- [x] Phase 3 complete
 
 ---
 

@@ -10,7 +10,7 @@ from .serializers import CategorySerializer, ProductSerializer
 class CategoryViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet):
     """CRUD категорий."""
 
-    queryset = Category.objects.all()
+    queryset = Category.objects.select_related("organization").all()
     serializer_class = CategorySerializer
     permission_classes = [IsTenantAdminOrReadOnly]
     search_fields = ["name"]
@@ -19,7 +19,7 @@ class CategoryViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelView
 class ProductViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet):
     """CRUD продуктов."""
 
-    queryset = Product.objects.select_related("category").all()
+    queryset = Product.objects.select_related("category", "organization").all()
     serializer_class = ProductSerializer
     permission_classes = [IsTenantAdminOrReadOnly]
     filterset_fields = ["category"]

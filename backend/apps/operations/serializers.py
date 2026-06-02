@@ -33,7 +33,7 @@ class OperationEntrySerializer(serializers.ModelSerializer):
 
     unit = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
     price = serializers.DecimalField(
-        max_digits=30, decimal_places=15, required=False, allow_null=True, coerce_to_string=False
+        max_digits=12, decimal_places=2, required=False, allow_null=True, coerce_to_string=False
     )
 
     organization_id = serializers.IntegerField(source="organization.id", read_only=True)

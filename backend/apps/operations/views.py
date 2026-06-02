@@ -64,7 +64,7 @@ class OperationViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelVie
         from openpyxl import Workbook
         from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-        qs = self.filter_queryset(self.get_queryset())
+        qs = self.filter_queryset(self.get_queryset())[:10_000]
 
         wb = Workbook()
         ws = wb.active
@@ -248,53 +248,64 @@ class KitchenReportView(APIView):
             "markup_val": ZERO,
         }
 
-        for kitchen in kitchens_qs:
-            # Начальный остаток — DAILY на date_from
-            beginning_balance = qs.filter(
-                kitchen=kitchen, type=OperationEntry.Type.DAILY, date=date_from
-            ).aggregate(total=Coalesce(Sum("price"), ZERO))["total"]
+        # 6 групповых запросов вместо 6N (по одному aggregate на кухню)
+        def _agg_by_kitchen(queryset):
+            return {
+                row["kitchen"]: row["total"]
+                for row in queryset.values("kitchen").annotate(total=Coalesce(Sum("price"), ZERO))
+            }
 
-            # Приход за период
-            incoming = qs.filter(
-                kitchen=kitchen,
+        def _agg_by_to_kitchen(queryset):
+            return {
+                row["to_kitchen"]: row["total"]
+                for row in queryset.values("to_kitchen").annotate(
+                    total=Coalesce(Sum("price"), ZERO)
+                )
+            }
+
+        beginning_map = _agg_by_kitchen(qs.filter(type=OperationEntry.Type.DAILY, date=date_from))
+        incoming_map = _agg_by_kitchen(
+            qs.filter(
                 type=OperationEntry.Type.INCOMING,
                 date__gte=date_from,
                 date__lte=date_to,
-            ).aggregate(total=Coalesce(Sum("price"), ZERO))["total"]
-
-            # Конечный остаток — DAILY на date_to
-            end_balance = qs.filter(
-                kitchen=kitchen, type=OperationEntry.Type.DAILY, date=date_to
-            ).aggregate(total=Coalesce(Sum("price"), ZERO))["total"]
-
-            # Перемещения из кухни
-            transfers_out = qs.filter(
-                kitchen=kitchen,
-                type=OperationEntry.Type.TRANSFER,
-                date__gte=date_from,
-                date__lte=date_to,
-            ).aggregate(total=Coalesce(Sum("price"), ZERO))["total"]
-
-            # Перемещения в кухню
-            transfers_in = qs.filter(
-                to_kitchen=kitchen,
-                type=OperationEntry.Type.TRANSFER,
-                date__gte=date_from,
-                date__lte=date_to,
-            ).aggregate(total=Coalesce(Sum("price"), ZERO))["total"]
-
-            # Фактический расход
-            actual_expense = (
-                beginning_balance + incoming + transfers_in - transfers_out - end_balance
             )
-
-            # Выручка от продаж
-            sales_revenue = qs.filter(
-                kitchen=kitchen,
+        )
+        end_balance_map = _agg_by_kitchen(qs.filter(type=OperationEntry.Type.DAILY, date=date_to))
+        transfers_out_map = _agg_by_kitchen(
+            qs.filter(
+                type=OperationEntry.Type.TRANSFER,
+                date__gte=date_from,
+                date__lte=date_to,
+            )
+        )
+        transfers_in_map = _agg_by_to_kitchen(
+            qs.filter(
+                type=OperationEntry.Type.TRANSFER,
+                date__gte=date_from,
+                date__lte=date_to,
+                to_kitchen__isnull=False,
+            )
+        )
+        sales_map = _agg_by_kitchen(
+            qs.filter(
                 type=OperationEntry.Type.SALE,
                 date__gte=date_from,
                 date__lte=date_to,
-            ).aggregate(total=Coalesce(Sum("price"), ZERO))["total"]
+            )
+        )
+
+        for kitchen in kitchens_qs:
+            kid = kitchen.id
+            beginning_balance = beginning_map.get(kid, ZERO)
+            incoming = incoming_map.get(kid, ZERO)
+            end_balance = end_balance_map.get(kid, ZERO)
+            transfers_out = transfers_out_map.get(kid, ZERO)
+            transfers_in = transfers_in_map.get(kid, ZERO)
+            sales_revenue = sales_map.get(kid, ZERO)
+            actual_expense = (
+                beginning_balance + incoming + transfers_in - transfers_out - end_balance
+            )
 
             markup_val = sales_revenue - actual_expense
             markup_percent = (
@@ -302,7 +313,7 @@ class KitchenReportView(APIView):
             )
 
             entry = {
-                "kitchen_id": kitchen.id,
+                "kitchen_id": kid,
                 "kitchen_name": kitchen.name,
                 "beginning_balance": beginning_balance,
                 "incoming": incoming,

@@ -3,7 +3,7 @@ from rest_framework.response import Response
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    """Стандартная пагинация: 20 элементов на страницу."""
+    """Стандартная пагинация: 200 элементов на страницу, макс 500."""
 
     page_size = 200
     page_size_query_param = "page_size"
