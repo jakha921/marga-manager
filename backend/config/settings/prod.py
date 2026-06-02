@@ -29,5 +29,10 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = False  # SSL handled by reverse proxy
 
-# Payme production
-PAYME_CHECKOUT_URL = "https://checkout.paycom.uz"
+# Payme — значения управляются через Coolify env vars
+# prod: PAYME_CHECKOUT_URL=https://checkout.paycom.uz
+# stage: PAYME_CHECKOUT_URL=https://test.paycom.uz
+PAYME_MERCHANT_ID = os.getenv("PAYME_MERCHANT_ID", "")
+PAYME_MERCHANT_KEY = os.getenv("PAYME_MERCHANT_KEY", "")
+PAYME_CHECKOUT_URL = os.getenv("PAYME_CHECKOUT_URL", "https://checkout.paycom.uz")
+PAYME_CALLBACK_URL = os.getenv("PAYME_CALLBACK_URL", "")
