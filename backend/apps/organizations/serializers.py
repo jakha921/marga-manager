@@ -27,8 +27,8 @@ ORGANIZATION_FIELDS = [
 class OrganizationSerializer(serializers.ModelSerializer):
     """Сериализатор для TENANT_ADMIN — поля управления планом read-only."""
 
-    kitchen_count = serializers.IntegerField(source="kitchens.count", read_only=True)
-    user_count = serializers.IntegerField(source="users.count", read_only=True)
+    kitchen_count = serializers.IntegerField(read_only=True)
+    user_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Organization

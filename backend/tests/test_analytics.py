@@ -174,9 +174,8 @@ class TestProductHistory:
         response = tenant_admin_client.get(
             f"/api/analytics/product-history/{product_other_org.id}/"
         )
-        assert response.status_code == 200
-        # Tenant admin should not see other org's product history
-        assert len(response.data) == 0
+        # Product belongs to another org — 404 prevents ID enumeration
+        assert response.status_code == 404
 
     def test_product_history_unauthenticated(self, api_client, product):
         response = api_client.get(f"/api/analytics/product-history/{product.id}/")

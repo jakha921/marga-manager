@@ -470,7 +470,7 @@ product = get_object_or_404(
 
 **Коммит**: `perf: исправить N+1 в OrganizationSerializer, добавить индексы БД, валидация product_id`
 
-- [ ] Phase 6 complete
+- [x] Phase 6 complete
 
 ---
 

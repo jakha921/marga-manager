@@ -53,6 +53,7 @@ class OperationEntry(TenantModel):
             models.Index(fields=["product"]),
             models.Index(fields=["type"]),
             models.Index(fields=["organization", "date"]),
+            models.Index(fields=["organization", "kitchen", "date"]),
         ]
 
     def __str__(self) -> str:

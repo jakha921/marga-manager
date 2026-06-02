@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.db.models import Count, Sum
 from django.db.models.functions import Coalesce
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers as drf_serializers
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -11,6 +12,7 @@ from rest_framework.views import APIView
 from apps.core.mixins import TenantCreateMixin, TenantQuerySetMixin
 from apps.core.permissions import IsKitchenUserOrAbove
 from apps.kitchens.models import Kitchen
+from apps.products.models import Product
 
 from .filters import OperationEntryFilter
 from .models import OperationEntry
@@ -183,6 +185,11 @@ class ProductHistoryView(APIView):
 
     def get(self, request, product_id):
         user = request.user
+
+        if user.role != "SUPER_ADMIN" and user.organization:
+            get_object_or_404(Product, pk=product_id, organization=user.organization)
+        else:
+            get_object_or_404(Product, pk=product_id)
 
         qs = OperationEntry.objects.filter(product_id=product_id)
         if user.role != "SUPER_ADMIN" and user.organization:

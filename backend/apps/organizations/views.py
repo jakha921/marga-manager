@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import viewsets
 
 from apps.core.permissions import IsSuperAdmin, IsTenantAdmin
@@ -9,7 +10,10 @@ from .serializers import AdminOrganizationSerializer, OrganizationSerializer
 class OrganizationViewSet(viewsets.ModelViewSet):
     """CRUD организаций. SUPER_ADMIN — полный доступ, TENANT_ADMIN — чтение/обновление своей."""
 
-    queryset = Organization.objects.all()
+    queryset = Organization.objects.annotate(
+        kitchen_count=Count("kitchens", distinct=True),
+        user_count=Count("users", distinct=True),
+    )
     serializer_class = OrganizationSerializer
     search_fields = ["name", "slug"]
     filterset_fields = ["plan", "status"]
