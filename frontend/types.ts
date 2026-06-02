@@ -9,7 +9,6 @@ export interface User {
   id: number;
   organizationId: number;
   username: string;
-  password: string; // Stored for mock purposes
   fullName: string;
   role: UserRole;
   createdAt: string;

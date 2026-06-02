@@ -9,7 +9,7 @@ import Select from '../components/Select';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import { analyticsService } from '../api/services/analytics';
-import { KitchenReportEntry, KitchenReportResponse } from '../types';
+import { KitchenReportResponse } from '../types';
 
 const Dashboard: React.FC = () => {
   const { stats, operations, kitchens, products } = useData();

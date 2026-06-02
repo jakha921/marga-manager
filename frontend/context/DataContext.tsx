@@ -209,15 +209,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const upgradeSubscription = useCallback(async (plan: SubscriptionPlan) => {
-    if (organizationId) {
-      let maxKitchens = 1;
-      let maxUsers = 5;
-      if (plan === 'PRO') { maxKitchens = 10; maxUsers = 50; }
-      else if (plan === 'ENTERPRISE') { maxKitchens = 999; maxUsers = 999; }
-      await updateOrganization(organizationId, { plan, maxKitchens, maxUsers });
-    }
-  }, [organizationId, updateOrganization]);
+  const upgradeSubscription = useCallback((_plan: SubscriptionPlan) => {
+    window.location.hash = '#/settings';
+  }, []);
 
   const addKitchen = useCallback(async (data: Omit<Kitchen, 'id' | 'createdAt' | 'organizationId'>): Promise<{ success: boolean; error?: string }> => {
     try {

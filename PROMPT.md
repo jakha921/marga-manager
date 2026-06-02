@@ -58,13 +58,13 @@
 
 **Задача**: `backend/apps/payments/payme_errors.py` — `verify_payme_auth()` уязвима к пустому ключу и timing attack.
 
-- [ ] Открыть `backend/apps/payments/payme_errors.py`
-- [ ] В функции `verify_payme_auth` добавить:
+- [x] Открыть `backend/apps/payments/payme_errors.py`
+- [x] В функции `verify_payme_auth` добавить:
   1. Проверку что `settings.PAYME_MERCHANT_KEY` не пустой — если пустой, сразу возвращать `False`
   2. Заменить `key == settings.PAYME_MERCHANT_KEY` на `hmac.compare_digest(key, settings.PAYME_MERCHANT_KEY)`
   3. Добавить `import hmac` в начало файла
-- [ ] Проверка: `cd backend && uv run pytest -v`
-- [ ] Коммит: `fix(security): защита от пустого ключа и timing attack в Payme auth`
+- [x] Проверка: `cd backend && uv run pytest -v`
+- [x] Коммит: `fix(security): защита от пустого ключа и timing attack в Payme auth`
 
 ---
 

@@ -4,7 +4,6 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Select from '../components/Select';
 import Modal from '../components/Modal';
-import DateFilter from '../components/DateFilter';
 import { OPERATION_TYPES } from '../constants';
 import { OperationType, OperationEntry } from '../types';
 import { useData } from '../context/DataContext';
@@ -35,8 +34,6 @@ const QuickInput: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingOp, setEditingOp] = useState<OperationEntry | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<OperationEntry>>({});
-  const [editUnitPrice, setEditUnitPrice] = useState<string>('');
-  
   // Formatted strings for Edit Modal
   const [editQtyStr, setEditQtyStr] = useState('');
   const [editUnitPriceStr, setEditUnitPriceStr] = useState('');
@@ -44,19 +41,6 @@ const QuickInput: React.FC = () => {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Helper for dates
-  const getYesterday = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
-  };
-
-  // Get date 30 days in future for demo purposes
-  const getFutureDate = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  };
 
   // History Filter State with Persistence
   const [histSearch, setHistSearch] = useState('');

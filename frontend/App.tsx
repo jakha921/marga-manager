@@ -7,7 +7,6 @@ import QuickInput from './views/QuickInput';
 import Kitchens from './views/Kitchens';
 import Products from './views/Products';
 import Settings from './views/Settings';
-import Reports from './views/Reports'; // Still imported if needed later, or can be removed, but user only asked to hide. I'll leave import for now but remove route.
 import Login from './views/Login';
 import AdminDashboard from './views/superadmin/AdminDashboard';
 import { DataProvider } from './context/DataContext';

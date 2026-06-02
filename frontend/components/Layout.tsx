@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, HelpCircle, LogOut, Globe } from 'lucide-react';
+import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, LogOut, Globe } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils';
