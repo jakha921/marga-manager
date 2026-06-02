@@ -44,13 +44,13 @@
 
 **Задача**: `OrganizationSerializer` позволяет TENANT_ADMIN через PATCH обновить `plan`, `max_kitchens`, `max_users`, `mrr`, `status` — privilege escalation.
 
-- [ ] Открыть `backend/apps/organizations/serializers.py`
-- [ ] В `OrganizationSerializer.Meta.read_only_fields` добавить: `"plan"`, `"max_kitchens"`, `"max_users"`, `"mrr"`, `"status"`, `"slug"`
-- [ ] В `backend/apps/organizations/views.py` убедиться что SUPER_ADMIN может обновлять эти поля (через отдельный `AdminOrganizationSerializer` или `get_serializer_class`):
+- [x] Открыть `backend/apps/organizations/serializers.py`
+- [x] В `OrganizationSerializer.Meta.read_only_fields` добавить: `"plan"`, `"max_kitchens"`, `"max_users"`, `"mrr"`, `"status"`, `"slug"`
+- [x] В `backend/apps/organizations/views.py` убедиться что SUPER_ADMIN может обновлять эти поля (через отдельный `AdminOrganizationSerializer` или `get_serializer_class`):
   - Создать `AdminOrganizationSerializer(OrganizationSerializer)` без лишних read_only ограничений
   - В `OrganizationViewSet.get_serializer_class()` — вернуть `AdminOrganizationSerializer` если `request.user.role == 'SUPER_ADMIN'`
-- [ ] Проверка: `cd backend && uv run pytest -v`
-- [ ] Коммит: `fix(security): запретить TENANT_ADMIN изменять plan и лимиты организации`
+- [x] Проверка: `cd backend && uv run pytest -v`
+- [x] Коммит: `fix(security): запретить TENANT_ADMIN изменять plan и лимиты организации`
 
 ---
 
@@ -73,34 +73,34 @@
 **Задача**: Удалить ~650+ строк мёртвого кода.
 
 ### 5a: Удалить мёртвые файлы
-- [ ] Удалить `frontend/views/Analytics.tsx` (193 строки, нет маршрута в App.tsx)
-- [ ] Удалить `frontend/views/Reports.tsx` (импортируется но нет маршрута — убрать импорт из App.tsx тоже)
-- [ ] В `frontend/App.tsx` удалить импорт `Reports` и любые неиспользуемые импорты
+- [x] Удалить `frontend/views/Analytics.tsx` (193 строки, нет маршрута в App.tsx)
+- [x] Удалить `frontend/views/Reports.tsx` (импортируется но нет маршрута — убрать импорт из App.tsx тоже)
+- [x] В `frontend/App.tsx` удалить импорт `Reports` и любые неиспользуемые импорты
 
 ### 5b: Очистить constants.ts
-- [ ] Открыть `frontend/constants.ts`
-- [ ] Удалить все `MOCK_*` константы (MOCK_USERS, MOCK_ORGANIZATIONS, MOCK_PRODUCTS, MOCK_OPERATIONS и т.д.) — это ~450 строк с plaintext паролями
-- [ ] Оставить только реально используемые константы; если файл пустой — удалить и убрать импорты
+- [x] Открыть `frontend/constants.ts`
+- [x] Удалить все `MOCK_*` константы (MOCK_USERS, MOCK_ORGANIZATIONS, MOCK_PRODUCTS, MOCK_OPERATIONS и т.д.) — это ~450 строк с plaintext паролями
+- [x] Оставить только реально используемые константы; если файл пустой — удалить и убрать импорты
 
 ### 5c: Убрать password из типов
-- [ ] Открыть `frontend/types.ts`
-- [ ] Найти `User` interface — удалить поле `password: string` (комментарий "for mock purposes")
+- [x] Открыть `frontend/types.ts`
+- [x] Найти `User` interface — удалить поле `password: string` (комментарий "for mock purposes")
 
 ### 5d: Убрать неиспользуемые импорты/переменные
-- [ ] `frontend/views/QuickInput.tsx` — убрать: импорт `DateFilter`, state `editUnitPrice`, функции `getYesterday` и `getFutureDate`
-- [ ] `frontend/views/Dashboard.tsx` — убрать: импорт `KitchenReportEntry`, неиспользуемые destructure из `stats`
-- [ ] `frontend/components/Layout.tsx` — убрать импорт `HelpCircle`
-- [ ] `frontend/views/superadmin/AdminDashboard.tsx` — убрать импорт `StatsCard`
+- [x] `frontend/views/QuickInput.tsx` — убрать: импорт `DateFilter`, state `editUnitPrice`, функции `getYesterday` и `getFutureDate`
+- [x] `frontend/views/Dashboard.tsx` — убрать: импорт `KitchenReportEntry`, неиспользуемые destructure из `stats`
+- [x] `frontend/components/Layout.tsx` — убрать импорт `HelpCircle`
+- [x] `frontend/views/superadmin/AdminDashboard.tsx` — убрать импорт `StatsCard`
 
 ### 5e: Убрать billing bypass
-- [ ] Открыть `frontend/context/DataContext.tsx`
-- [ ] Найти `upgradeSubscription()` функцию (~lines 212-220) — она делает прямой PATCH на `/api/organizations/{id}/`, обходя Payme
-- [ ] Заменить реализацию: вместо API-вызова — навигация к Settings billing tab (`window.location.hash = '#/settings'`)
-- [ ] Открыть `frontend/views/Kitchens.tsx` ~line 74 — проверить что вызов `upgradeSubscription()` корректно работает (переходит в Settings)
+- [x] Открыть `frontend/context/DataContext.tsx`
+- [x] Найти `upgradeSubscription()` функцию (~lines 212-220) — она делает прямой PATCH на `/api/organizations/{id}/`, обходя Payme
+- [x] Заменить реализацию: вместо API-вызова — навигация к Settings billing tab (`window.location.hash = '#/settings'`)
+- [x] Открыть `frontend/views/Kitchens.tsx` ~line 74 — проверить что вызов `upgradeSubscription()` корректно работает (переходит в Settings)
 
 ### Проверка:
-- [ ] `cd frontend && npm run build` — должен собраться без ошибок
-- [ ] Коммит: `refactor: удалить мёртвый код, MOCK данные с паролями, billing bypass`
+- [x] `cd frontend && npm run build` — должен собраться без ошибок
+- [x] Коммит: `refactor: удалить мёртвый код, MOCK данные с паролями, billing bypass`
 
 ---
 
@@ -108,13 +108,13 @@
 
 **Задача**: Проверить `OrganizationMiddleware` — вероятно мёртвый код.
 
-- [ ] Найти все использования `request.organization` в codebase: `grep -r "request\.organization" backend/`
-- [ ] Если `request.organization` нигде не читается (только middleware устанавливает) — удалить:
+- [x] Найти все использования `request.organization` в codebase: `grep -r "request\.organization" backend/`
+- [x] Если `request.organization` нигде не читается (только middleware устанавливает) — удалить:
   - Удалить класс из `backend/apps/core/middleware.py`
   - Убрать `'apps.core.middleware.OrganizationMiddleware'` из `MIDDLEWARE` в `backend/config/settings/base.py`
-- [ ] Если используется — оставить, отметить задачу как N/A
-- [ ] Проверка: `cd backend && uv run python manage.py check && uv run pytest -v`
-- [ ] Коммит: `refactor: удалить мёртвый OrganizationMiddleware` (или skip если N/A)
+- [x] Если используется — оставить, отметить задачу как N/A
+- [x] Проверка: `cd backend && uv run python manage.py check && uv run pytest -v`
+- [x] Коммит: `refactor: удалить мёртвый OrganizationMiddleware` (или skip если N/A)
 
 ---
 
@@ -123,8 +123,8 @@
 **Задача**: Создать модель `PlanConfig` чтобы SUPER_ADMIN мог менять цены/лимиты планов через admin без деплоя.
 
 ### 7a: Backend — модель и миграция
-- [ ] Открыть `backend/apps/payments/models.py`
-- [ ] Добавить модель `PlanConfig` ПОСЛЕ существующих моделей:
+- [x] Открыть `backend/apps/payments/models.py`
+- [x] Добавить модель `PlanConfig` ПОСЛЕ существующих моделей:
   ```python
   class PlanConfig(TimeStampedModel):
       class Plan(models.TextChoices):
@@ -145,13 +145,13 @@
       def __str__(self):
           return f"{self.plan} — {self.price // 100:,} UZS"
   ```
-- [ ] Создать миграцию: `cd backend && uv run python manage.py makemigrations payments`
-- [ ] Создать data migration для seed начальных значений — взять текущие значения из `PLAN_PRICES` и `PLAN_LIMITS`
-- [ ] Применить: `cd backend && uv run python manage.py migrate`
+- [x] Создать миграцию: `cd backend && uv run python manage.py makemigrations payments`
+- [x] Создать data migration для seed начальных значений — взять текущие значения из `PLAN_PRICES` и `PLAN_LIMITS`
+- [x] Применить: `cd backend && uv run python manage.py migrate`
 
 ### 7b: Backend — Admin
-- [ ] Открыть `backend/apps/payments/admin.py`
-- [ ] Зарегистрировать `PlanConfig`:
+- [x] Открыть `backend/apps/payments/admin.py`
+- [x] Зарегистрировать `PlanConfig`:
   ```python
   @admin.register(PlanConfig)
   class PlanConfigAdmin(ModelAdmin):
@@ -160,36 +160,36 @@
   ```
 
 ### 7c: Backend — Использовать PlanConfig
-- [ ] В `Order.mark_as_paid()` — брать лимиты из `PlanConfig.objects.get(plan=self.target_plan)` вместо `PLAN_LIMITS`
-- [ ] В `OrderSerializer.validate()` или `OrderViewSet.create()` — брать цену из `PlanConfig` вместо `PLAN_PRICES`
-- [ ] Удалить `PLAN_PRICES` и `PLAN_LIMITS` из `models.py` после замены
+- [x] В `Order.mark_as_paid()` — брать лимиты из `PlanConfig.objects.get(plan=self.target_plan)` вместо `PLAN_LIMITS`
+- [x] В `OrderSerializer.validate()` или `OrderViewSet.create()` — брать цену из `PlanConfig` вместо `PLAN_PRICES`
+- [x] Удалить `PLAN_PRICES` и `PLAN_LIMITS` из `models.py` после замены
 
 ### 7d: Backend — Public API endpoint
-- [ ] В `backend/apps/payments/views.py` добавить:
+- [x] В `backend/apps/payments/views.py` добавить:
   ```python
   class PlanConfigListView(generics.ListAPIView):
       permission_classes = [AllowAny]
       serializer_class = PlanConfigSerializer
       queryset = PlanConfig.objects.filter(is_active=True)
   ```
-- [ ] В `backend/apps/payments/serializers.py` создать `PlanConfigSerializer` с полями: `plan`, `price`, `max_kitchens`, `max_users`
-- [ ] В `backend/apps/payments/urls.py` добавить маршрут: `path("plans/", PlanConfigListView.as_view())`
+- [x] В `backend/apps/payments/serializers.py` создать `PlanConfigSerializer` с полями: `plan`, `price`, `max_kitchens`, `max_users`
+- [x] В `backend/apps/payments/urls.py` добавить маршрут: `path("plans/", PlanConfigListView.as_view())`
 
 ### 7e: Frontend — получать цены с API
-- [ ] В `frontend/api/services/payments.ts` добавить:
+- [x] В `frontend/api/services/payments.ts` добавить:
   ```typescript
   export async function getPlans(): Promise<PlanConfig[]> {
     const res = await apiClient.get('/payments/plans/');
     return res.data.results ?? res.data;
   }
   ```
-- [ ] В `frontend/types.ts` добавить тип `PlanConfig`
-- [ ] В `frontend/views/Settings.tsx` billing tab — заменить хардкодные цены на данные из `getPlans()`
+- [x] В `frontend/types.ts` добавить тип `PlanConfig`
+- [x] В `frontend/views/Settings.tsx` billing tab — заменить хардкодные цены на данные из `getPlans()`
 
 ### Проверка:
-- [ ] `cd backend && uv run python manage.py check && uv run python manage.py makemigrations --check && uv run pytest -v`
-- [ ] `cd frontend && npm run build`
-- [ ] Коммит: `feat: PlanConfig — управление ценами планов через Django Admin`
+- [x] `cd backend && uv run python manage.py check && uv run python manage.py makemigrations --check && uv run pytest -v`
+- [x] `cd frontend && npm run build`
+- [x] Коммит: `feat: PlanConfig — управление ценами планов через Django Admin`
 
 ---
 
@@ -197,16 +197,16 @@
 
 **Задача**: Когда Payme отменяет транзакцию ПОСЛЕ выполнения (`STATE_CANCELLED_AFTER`), план организации не откатывается.
 
-- [ ] Открыть `backend/apps/payments/models.py`
-- [ ] В модель `Order` добавить поле:
+- [x] Открыть `backend/apps/payments/models.py`
+- [x] В модель `Order` добавить поле:
   ```python
   previous_plan = models.CharField(max_length=20, blank=True, default="")
   ```
-- [ ] В `Order.mark_as_paid()` — перед обновлением плана сохранить текущий:
+- [x] В `Order.mark_as_paid()` — перед обновлением плана сохранить текущий:
   ```python
   self.previous_plan = self.organization.plan
   ```
-- [ ] Добавить метод `Order.revert_plan()`:
+- [x] Добавить метод `Order.revert_plan()`:
   ```python
   def revert_plan(self):
       if not self.previous_plan:
@@ -221,11 +221,11 @@
       org.max_users = config.max_users
       org.save(update_fields=["plan", "max_kitchens", "max_users", "updated_at"])
   ```
-- [ ] Создать и применить миграцию
-- [ ] В `backend/apps/payments/payme_views.py` — в `_cancelTransaction`, ветка `elif txn.state == STATE_PERFORMED`:
+- [x] Создать и применить миграцию
+- [x] В `backend/apps/payments/payme_views.py` — в `_cancelTransaction`, ветка `elif txn.state == STATE_PERFORMED`:
   - После `txn.save(...)` добавить: `txn.order.revert_plan()`
-- [ ] Проверка: `cd backend && uv run python manage.py makemigrations --check && uv run pytest -v`
-- [ ] Коммит: `fix: откатывать план организации при отмене выполненной транзакции Payme`
+- [x] Проверка: `cd backend && uv run python manage.py makemigrations --check && uv run pytest -v`
+- [x] Коммит: `fix: откатывать план организации при отмене выполненной транзакции Payme`
 
 ---
 
@@ -234,8 +234,8 @@
 **Задача**: Создать раздельные конфигурации для prod и stage. Все секреты — через Coolify env vars.
 
 ### 9a: Обновить docker-compose.coolify.yml (prod)
-- [ ] Открыть `docker-compose.coolify.yml`
-- [ ] В секцию `backend.environment` добавить:
+- [x] Открыть `docker-compose.coolify.yml`
+- [x] В секцию `backend.environment` добавить:
   ```yaml
   PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID}
   PAYME_MERCHANT_KEY: ${PAYME_MERCHANT_KEY}
@@ -244,7 +244,7 @@
   ```
 
 ### 9b: Создать docker-compose.stage.yml
-- [ ] Создать файл `docker-compose.stage.yml`:
+- [x] Создать файл `docker-compose.stage.yml`:
   ```yaml
   # Stage environment — для тестирования с Payme sandbox (test.paycom.uz)
   # Env vars для Coolify:
@@ -319,19 +319,19 @@
   ```
 
 ### 9c: Backend settings — читать Payme из env
-- [ ] Открыть `backend/config/settings/prod.py`
-- [ ] Добавить:
+- [x] Открыть `backend/config/settings/prod.py`
+- [x] Добавить:
   ```python
   PAYME_MERCHANT_ID = env("PAYME_MERCHANT_ID", default="")
   PAYME_MERCHANT_KEY = env("PAYME_MERCHANT_KEY", default="")
   PAYME_CHECKOUT_URL = env("PAYME_CHECKOUT_URL", default="https://checkout.paycom.uz")
   PAYME_CALLBACK_URL = env("PAYME_CALLBACK_URL", default="")
   ```
-- [ ] Открыть `backend/config/settings/base.py` — убедиться что те же настройки есть с dev defaults (test.paycom.uz)
+- [x] Открыть `backend/config/settings/base.py` — убедиться что те же настройки есть с dev defaults (test.paycom.uz)
 
 ### 9d: Документировать .env.example
-- [ ] Открыть `.env.example` (или создать)
-- [ ] Добавить секцию:
+- [x] Открыть `.env.example` (или создать)
+- [x] Добавить секцию:
   ```
   # Payme / Paycom integration
   # Test sandbox: https://test.paycom.uz  (для stage)
@@ -343,10 +343,10 @@
   ```
 
 ### Проверка:
-- [ ] `docker compose -f docker-compose.coolify.yml config` — без ошибок
-- [ ] `docker compose -f docker-compose.stage.yml config` — без ошибок
-- [ ] `cd backend && uv run python manage.py check`
-- [ ] Коммит: `feat: добавить stage окружение и Payme env vars в docker-compose`
+- [x] `docker compose -f docker-compose.coolify.yml config` — без ошибок
+- [x] `docker compose -f docker-compose.stage.yml config` — без ошибок
+- [x] `cd backend && uv run python manage.py check`
+- [x] Коммит: `feat: добавить stage окружение и Payme env vars в docker-compose`
 
 ---
 
@@ -354,8 +354,8 @@
 
 **Задача**: Написать интеграционные тесты для Payme webhook и REST API.
 
-- [ ] Создать `backend/tests/test_payments.py`
-- [ ] Написать тесты (pytest + django.test.Client, реальная БД — НЕ mock):
+- [x] Создать `backend/tests/test_payments.py`
+- [x] Написать тесты (pytest + django.test.Client, реальная БД — НЕ mock):
   - `test_payme_auth_no_header` — запрос без Authorization → -32504
   - `test_payme_auth_wrong_key` — неверный ключ → -32504
   - `test_payme_empty_key_blocked` — при пустом PAYME_MERCHANT_KEY → -32504 (не пропускает)
@@ -372,8 +372,8 @@
   - `test_get_statement_range` — возвращает транзакции за период
   - `test_plan_config_list_public` — `GET /api/payments/plans/` без auth → 200 со списком планов
   - `test_org_plan_readonly_for_tenant_admin` — PATCH `/api/organizations/{id}/` с `plan=PRO` → поле игнорируется, остаётся прежнее значение
-- [ ] Проверка: `cd backend && uv run pytest tests/test_payments.py -v`
-- [ ] Коммит: `test: интеграционные тесты Payme webhook и PlanConfig API`
+- [x] Проверка: `cd backend && uv run pytest tests/test_payments.py -v`
+- [x] Коммит: `test: интеграционные тесты Payme webhook и PlanConfig API`
 
 ---
 
