@@ -15,7 +15,9 @@ from .payme_errors import (
 )
 
 
-@method_decorator(csrf_exempt, name="dispatch")
+@method_decorator(
+    csrf_exempt, name="dispatch"
+)  # Payme использует HTTP Basic auth — это CSRF-защита для данного endpoint
 class PaymeWebhookView(View):
     """
     Единственная точка входа для Payme Merchant API (JSON-RPC 2.0).

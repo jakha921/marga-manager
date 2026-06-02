@@ -3,6 +3,23 @@ from datetime import date, time
 import pytest
 from rest_framework.test import APIClient
 
+# Disable throttling globally for all tests
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def disable_throttling(settings):
+    settings.REST_FRAMEWORK = {
+        **settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_CLASSES": [],
+        "DEFAULT_THROTTLE_RATES": {
+            "anon": "10000/minute",
+            "user": "10000/minute",
+            "login": "10000/minute",
+        },
+    }
+
+
 from apps.accounts.models import User
 from apps.kitchens.models import Kitchen
 from apps.operations.models import OperationEntry

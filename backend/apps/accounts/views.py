@@ -11,10 +11,12 @@ from .serializers import (
     UserCreateSerializer,
     UserSerializer,
 )
+from .throttles import LoginRateThrottle
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [LoginRateThrottle]
 
 
 class MeView(generics.RetrieveAPIView):

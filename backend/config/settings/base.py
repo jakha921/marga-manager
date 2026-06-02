@@ -10,8 +10,9 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me-in-production")
-DEBUG = os.getenv("DEBUG", "1") == "1"
-ALLOWED_HOSTS: list[str] = os.getenv("ALLOWED_HOSTS", "*").split(",")
+DEBUG = os.getenv("DEBUG", "0") == "1"
+_allowed = os.getenv("ALLOWED_HOSTS", "")
+ALLOWED_HOSTS: list[str] = [h.strip() for h in _allowed.split(",") if h.strip()]
 
 # --- Apps ---
 INSTALLED_APPS = [

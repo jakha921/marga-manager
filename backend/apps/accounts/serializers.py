@@ -40,7 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserCreateSerializer(serializers.ModelSerializer):
     """Сериализатор создания пользователя."""
 
-    password = serializers.CharField(write_only=True, min_length=5)
+    password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
         model = User
@@ -53,6 +53,11 @@ class UserCreateSerializer(serializers.ModelSerializer):
             "organization",
             "is_active",
         ]
+
+    def validate_password(self, value: str) -> str:
+        if value.isdigit():
+            raise serializers.ValidationError("Пароль не может состоять только из цифр.")
+        return value
 
     def create(self, validated_data):
         password = validated_data.pop("password")

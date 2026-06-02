@@ -413,7 +413,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 **Коммит**: `fix(security): password min 8, rate limiting, безопасные defaults DEBUG/ALLOWED_HOSTS`
 
-- [ ] Phase 5 complete
+- [x] Phase 5 complete
 
 ---
 
