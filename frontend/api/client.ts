@@ -16,6 +16,9 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Promise-based lock to prevent parallel refresh races
+let refreshPromise: Promise<string> | null = null;
+
 // Response interceptor: auto-refresh on 401
 apiClient.interceptors.response.use(
   (response) => response,
@@ -26,14 +29,18 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem('km_refresh_token');
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${API_URL}/auth/refresh/`, {
-            refresh: refreshToken,
-          });
-          localStorage.setItem('km_access_token', data.access);
-          if (data.refresh) {
-            localStorage.setItem('km_refresh_token', data.refresh);
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post(`${API_URL}/auth/refresh/`, { refresh: refreshToken })
+              .then(({ data }) => {
+                localStorage.setItem('km_access_token', data.access);
+                if (data.refresh) localStorage.setItem('km_refresh_token', data.refresh);
+                return data.access as string;
+              })
+              .finally(() => { refreshPromise = null; });
           }
-          originalRequest.headers.Authorization = `Bearer ${data.access}`;
+          const newToken = await refreshPromise;
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return apiClient(originalRequest);
         } catch {
           localStorage.removeItem('km_access_token');

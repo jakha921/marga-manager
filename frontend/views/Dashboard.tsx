@@ -13,6 +13,31 @@ import { Skeleton } from '../components/Skeleton';
 import { analyticsService } from '../api/services/analytics';
 import { KitchenReportResponse } from '../types';
 
+const ChartTooltip = React.memo(({ active, payload, label }: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string; dataKey: string }>;
+  label?: string;
+}) => {
+  const { t } = useLanguage();
+  const { theme } = useTheme();
+  if (!active || !payload?.length) return null;
+  const salesEntry = payload.find(p => p.dataKey === 'sales');
+  const costEntry = payload.find(p => p.dataKey === 'cost');
+  const margin = (salesEntry?.value ?? 0) - (costEntry?.value ?? 0);
+  const tooltipBg = theme === 'dark' ? '#1e293b' : '#18181b';
+  const tooltipBorder = theme === 'dark' ? '#334155' : '#333';
+  return (
+    <div style={{ backgroundColor: tooltipBg, borderRadius: '8px', color: 'white', fontSize: '12px', padding: '8px 12px' }}>
+      <p style={{ marginBottom: 4, fontWeight: 600 }}>{label}</p>
+      {salesEntry && <p style={{ color: '#10b981' }}>{salesEntry.name}: {formatNumber(salesEntry.value)}</p>}
+      {costEntry && <p style={{ color: '#3b82f6' }}>{costEntry.name}: {formatNumber(costEntry.value)}</p>}
+      <p style={{ color: '#f59e0b', borderTop: `1px solid ${tooltipBorder}`, marginTop: 4, paddingTop: 4 }}>
+        {t('dash.chart.margin')}: {formatNumber(margin)}
+      </p>
+    </div>
+  );
+});
+
 const Dashboard: React.FC = () => {
   const { stats, operations, kitchens, products } = useData();
   const { t } = useLanguage();
@@ -229,29 +254,6 @@ const Dashboard: React.FC = () => {
     }
   }, [startDate, endDate, selectedKitchen]);
 
-  const ChartTooltip = ({ active, payload, label }: {
-    active?: boolean;
-    payload?: Array<{ name: string; value: number; color: string; dataKey: string }>;
-    label?: string;
-  }) => {
-    if (!active || !payload?.length) return null;
-    const salesEntry = payload.find(p => p.dataKey === 'sales');
-    const costEntry = payload.find(p => p.dataKey === 'cost');
-    const margin = (salesEntry?.value ?? 0) - (costEntry?.value ?? 0);
-
-    const tooltipBg = theme === 'dark' ? '#1e293b' : '#18181b';
-    const tooltipBorder = theme === 'dark' ? '#334155' : '#333';
-    return (
-      <div style={{ backgroundColor: tooltipBg, borderRadius: '8px', color: 'white', fontSize: '12px', padding: '8px 12px' }}>
-        <p style={{ marginBottom: 4, fontWeight: 600 }}>{label}</p>
-        {salesEntry && <p style={{ color: '#10b981' }}>{salesEntry.name}: {formatNumber(salesEntry.value)}</p>}
-        {costEntry && <p style={{ color: '#3b82f6' }}>{costEntry.name}: {formatNumber(costEntry.value)}</p>}
-        <p style={{ color: '#f59e0b', borderTop: `1px solid ${tooltipBorder}`, marginTop: 4, paddingTop: 4 }}>
-          {t('dash.chart.margin')}: {formatNumber(margin)}
-        </p>
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">

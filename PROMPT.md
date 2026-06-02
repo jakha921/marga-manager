@@ -201,39 +201,29 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ### 5.1 useMemo для DataContext value
 
-- [ ] В `frontend/context/DataContext.tsx` строка 344-380: обернуть объект value в `useMemo` с правильным dependency array
+- [x] В `frontend/context/DataContext.tsx`: обернуть объект value в `useMemo` с правильным dependency array. Также `currentOrganization` и `stats` вынесены в `useMemo`
 
 ### 5.2 useCallback для action handlers
 
-- [ ] В `frontend/context/DataContext.tsx`: обернуть все handler функции (addKitchen, updateKitchen, deleteKitchen, etc.) в `useCallback`
+- [x] В `frontend/context/DataContext.tsx`: все handler функции уже в `useCallback` (было + подтверждено)
 
 ### 5.3 AbortController в fetchData
 
-- [ ] В `frontend/context/DataContext.tsx` useEffect: добавить `AbortController`, передать `signal` в запросы, `controller.abort()` в cleanup
+- [x] В `frontend/context/DataContext.tsx` useEffect: добавлен `AbortController`, ранний возврат если `aborted`, `controller.abort()` в cleanup
 
 ### 5.4 Token refresh: promise-based lock
 
-- [ ] В `frontend/api/client.ts`: добавить `let refreshPromise: Promise<string> | null = null` — при первом 401 создать promise для refresh, при параллельных 401 переиспользовать тот же promise
-```ts
-if (!refreshPromise) {
-  refreshPromise = axios.post(...).then(({data}) => {
-    localStorage.setItem('km_access_token', data.access);
-    if (data.refresh) localStorage.setItem('km_refresh_token', data.refresh);
-    return data.access;
-  }).finally(() => { refreshPromise = null; });
-}
-const newToken = await refreshPromise;
-```
+- [x] В `frontend/api/client.ts`: добавлен `let refreshPromise: Promise<string> | null = null` с `.finally(() => { refreshPromise = null; })`
 
 ### 5.5 ChartTooltip из render scope
 
-- [ ] В `frontend/views/Dashboard.tsx`: вынести `ChartTooltip` за пределы компонента Dashboard — определить как отдельный компонент или `React.memo`'d функцию на уровне модуля
+- [x] В `frontend/views/Dashboard.tsx`: `ChartTooltip` вынесен на уровень модуля как `React.memo` компонент с хуками `useLanguage` и `useTheme`
 
 **Проверка**: `cd frontend && npm run build`
 
 **Коммит**: `fix(frontend): memoize DataContext, AbortController, token refresh lock, extract ChartTooltip`
 
-- [ ] Phase 5 complete
+- [x] Phase 5 complete
 
 ---
 

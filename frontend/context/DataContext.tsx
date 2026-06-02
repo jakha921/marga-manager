@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Kitchen, Product, OperationEntry, DashboardStats, SubscriptionPlan, Category, Organization, User } from '../types';
 import { useAuth } from './AuthContext';
 import { organizationsService } from '../api/services/organizations';
@@ -96,33 +96,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    const controller = new AbortController();
+
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch data based on role
         const bigPage = { page_size: '1000' };
 
-        if (userRole === 'SUPER_ADMIN') {
+        if (userRole === 'SUPER_ADMIN' || userRole === 'TENANT_ADMIN') {
           const [orgsRes, usersRes] = await Promise.all([
             organizationsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
             usersService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
           ]);
+          if (controller.signal.aborted) return;
           const rawOrgs = orgsRes.data.results || orgsRes.data || [];
           setAllOrgs(rawOrgs.map(normalizeOrg));
           setAllUsers(usersRes.data.results || usersRes.data || []);
         }
 
-        if (userRole === 'TENANT_ADMIN') {
-          const [orgsRes, usersRes] = await Promise.all([
-            organizationsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
-            usersService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
-          ]);
-          const rawOrgs = orgsRes.data.results || orgsRes.data || [];
-          setAllOrgs(rawOrgs.map(normalizeOrg));
-          setAllUsers(usersRes.data.results || usersRes.data || []);
-        }
-
-        // Fetch tenant data (for all authenticated users)
         const [kitchensRes, categoriesRes, productsRes, operationsRes] = await Promise.all([
           kitchensService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
           categoriesService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
@@ -130,35 +121,39 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           operationsService.getAll(bigPage).catch(() => ({ data: { results: [] } })),
         ]);
 
+        if (controller.signal.aborted) return;
         setAllKitchens(kitchensRes.data.results || kitchensRes.data || []);
         setAllCategories(categoriesRes.data.results || categoriesRes.data || []);
         setAllProducts(productsRes.data.results || productsRes.data || []);
         const rawOps = operationsRes.data.results || operationsRes.data || [];
         setAllOperations(rawOps.map(normalizeOperation));
       } catch (err) {
-        console.error('Failed to fetch data:', err);
+        if (!controller.signal.aborted) console.error('Failed to fetch data:', err);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchData();
+    return () => controller.abort();
   }, [isAuthenticated, userRole, organizationId]);
 
   // --- DERIVED STATE ---
-  const currentOrganization = allOrgs.find(o => String(o.id) === String(organizationId)) || null;
-  const kitchens = allKitchens;
-  const categories = allCategories;
-  const products = allProducts;
-  const operations = allOperations;
+  const currentOrganization = useMemo(
+    () => allOrgs.find(o => String(o.id) === String(organizationId)) || null,
+    [allOrgs, organizationId]
+  );
 
-  const stats: DashboardStats = {
-    todayEntries: operations.filter(op => op.date === new Date().toISOString().split('T')[0]).length,
-    incomingKg: operations
-      .filter(op => op.type === 'INCOMING' && op.unit === 'kg')
-      .reduce((acc, curr) => acc + curr.quantity, 0),
-    salesCount: operations.filter(op => op.type === 'SALE').length,
-  };
+  const stats: DashboardStats = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return {
+      todayEntries: allOperations.filter(op => op.date === today).length,
+      incomingKg: allOperations
+        .filter(op => op.type === 'INCOMING' && op.unit === 'kg')
+        .reduce((acc, curr) => acc + curr.quantity, 0),
+      salesCount: allOperations.filter(op => op.type === 'SALE').length,
+    };
+  }, [allOperations]);
 
   const subscription = currentOrganization?.plan || 'BASIC';
 
@@ -340,44 +335,57 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const value = useMemo(() => ({
+    // SaaS
+    organizations: allOrgs,
+    addOrganization,
+    updateOrganization,
+
+    // Users
+    users: allUsers,
+    addUser,
+    updateUser,
+    deleteUser,
+
+    // Tenant
+    currentOrganization,
+    kitchens: allKitchens,
+    products: allProducts,
+    categories: allCategories,
+    operations: allOperations,
+    stats,
+    subscription,
+    loading,
+
+    upgradeSubscription,
+    addKitchen,
+    updateKitchen,
+    deleteKitchen,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addOperation,
+    updateOperation,
+    deleteOperation,
+    fetchFilteredOperations,
+  }), [
+    allOrgs, addOrganization, updateOrganization,
+    allUsers, addUser, updateUser, deleteUser,
+    currentOrganization, allKitchens, allProducts, allCategories, allOperations,
+    stats, subscription, loading,
+    upgradeSubscription,
+    addKitchen, updateKitchen, deleteKitchen,
+    addProduct, updateProduct, deleteProduct,
+    addCategory, updateCategory, deleteCategory,
+    addOperation, updateOperation, deleteOperation,
+    fetchFilteredOperations,
+  ]);
+
   return (
-    <DataContext.Provider value={{
-      // SaaS
-      organizations: allOrgs,
-      addOrganization,
-      updateOrganization,
-
-      // Users
-      users: allUsers,
-      addUser,
-      updateUser,
-      deleteUser,
-
-      // Tenant
-      currentOrganization,
-      kitchens,
-      products,
-      categories,
-      operations,
-      stats,
-      subscription,
-      loading,
-
-      upgradeSubscription,
-      addKitchen,
-      updateKitchen,
-      deleteKitchen,
-      addProduct,
-      updateProduct,
-      deleteProduct,
-      addCategory,
-      updateCategory,
-      deleteCategory,
-      addOperation,
-      updateOperation,
-      deleteOperation,
-      fetchFilteredOperations
-    }}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );
