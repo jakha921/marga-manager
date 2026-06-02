@@ -25,9 +25,9 @@ import {
   Save
 } from 'lucide-react';
 import { User as UserType, SubscriptionPlan, Organization } from '../types';
-import type { SubscriptionOrder } from '../types';
+import type { PlanConfig, SubscriptionOrder } from '../types';
 import { paymentsService } from '../api/services/payments';
-import { PLAN_PRICES, PLAN_PRICES_DISPLAY, PLAN_LIMITS } from '../constants';
+import { PLAN_LIMITS } from '../constants';
 
 type Tab = 'general' | 'users' | 'billing';
 
@@ -51,6 +51,7 @@ const Settings: React.FC = () => {
   // Billing State
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [paymentOrders, setPaymentOrders] = useState<SubscriptionOrder[]>([]);
+  const [planConfigs, setPlanConfigs] = useState<PlanConfig[]>([]);
   const [billingError, setBillingError] = useState<string | null>(null);
 
   // Filter users for current tenant organization
@@ -68,6 +69,9 @@ const Settings: React.FC = () => {
     if (activeTab === 'billing') {
       paymentsService.getOrders().then(res => {
         setPaymentOrders(res.data.results || []);
+      }).catch(() => {});
+      paymentsService.getPlans().then(res => {
+        setPlanConfigs(Array.isArray(res.data) ? res.data : []);
       }).catch(() => {});
     }
   }, [activeTab]);
@@ -164,7 +168,8 @@ const Settings: React.FC = () => {
     setIsCreatingOrder(true);
     setBillingError(null);
     try {
-      const amount = PLAN_PRICES[plan];
+      const config = planConfigs.find(c => c.plan === plan);
+      const amount = config?.price ?? 0;
       const orderRes = await paymentsService.createOrder({ targetPlan: plan, amount });
       const urlRes = await paymentsService.getCheckoutUrl(orderRes.data.id);
       window.location.href = urlRes.data.checkoutUrl;
@@ -330,6 +335,10 @@ const Settings: React.FC = () => {
                 const currentPlanIndex = ['BASIC', 'PRO', 'ENTERPRISE'].indexOf(currentOrganization?.plan || 'BASIC');
                 const thisPlanIndex = ['BASIC', 'PRO', 'ENTERPRISE'].indexOf(plan.id);
                 const isUpgrade = thisPlanIndex > currentPlanIndex;
+                const planConfig = planConfigs.find(c => c.plan === plan.id);
+                const priceDisplay = planConfig
+                  ? planConfig.price === 0 ? t('bill.free') : `${(planConfig.priceUzs).toLocaleString()} UZS`
+                  : '...';
 
                 return (
                   <div
@@ -353,8 +362,8 @@ const Settings: React.FC = () => {
 
                     <h3 className="text-lg font-bold text-slate-900 font-display mb-2">{plan.name}</h3>
                     <div className="mb-6">
-                      <span className="text-3xl font-bold text-slate-900">{PLAN_PRICES_DISPLAY[plan.id]}</span>
-                      {PLAN_PRICES[plan.id] > 0 && (
+                      <span className="text-3xl font-bold text-slate-900">{priceDisplay}</span>
+                      {planConfig && planConfig.price > 0 && (
                         <span className="text-sm text-slate-400 font-medium">{t('bill.cycle')}</span>
                       )}
                     </div>

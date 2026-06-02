@@ -64,9 +64,9 @@ class Order(TimeStampedModel):
 
     def mark_as_paid(self) -> None:
         """Пометить заказ оплаченным и обновить план организации."""
-        self.status = self.Status.PAID
-        self.paid_at = timezone.now()
-        self.save(update_fields=["status", "paid_at", "updated_at"])
+        from django.db import transaction
+
+        from apps.organizations.models import Organization
 
         try:
             config = PlanConfig.objects.get(plan=self.target_plan)
@@ -76,30 +76,41 @@ class Order(TimeStampedModel):
             max_kitchens = None
             max_users = None
 
-        org = self.organization
-        self.previous_plan = org.plan
-        self.save(update_fields=["previous_plan", "updated_at"])
-        org.plan = self.target_plan
-        if max_kitchens is not None:
-            org.max_kitchens = max_kitchens
-        if max_users is not None:
-            org.max_users = max_users
-        org.mrr = self.amount / 100  # конвертация тийин → UZS
-        org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
+        with transaction.atomic():
+            self.status = self.Status.PAID
+            self.paid_at = timezone.now()
+            self.save(update_fields=["status", "paid_at", "updated_at"])
+
+            org = Organization.objects.select_for_update().get(pk=self.organization_id)
+            self.previous_plan = org.plan
+            self.save(update_fields=["previous_plan", "updated_at"])
+            org.plan = self.target_plan
+            if max_kitchens is not None:
+                org.max_kitchens = max_kitchens
+            if max_users is not None:
+                org.max_users = max_users
+            org.mrr = self.amount / 100  # конвертация тийин → UZS
+            org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
 
     def revert_plan(self) -> None:
         """Откатить план организации к предыдущему (вызывается при отмене выполненной транзакции)."""
+        from django.db import transaction
+
+        from apps.organizations.models import Organization
+
         if not self.previous_plan:
             return
         try:
             config = PlanConfig.objects.get(plan=self.previous_plan)
         except PlanConfig.DoesNotExist:
             return
-        org = self.organization
-        org.plan = self.previous_plan
-        org.max_kitchens = config.max_kitchens
-        org.max_users = config.max_users
-        org.save(update_fields=["plan", "max_kitchens", "max_users", "updated_at"])
+        with transaction.atomic():
+            org = Organization.objects.select_for_update().get(pk=self.organization_id)
+            org.plan = self.previous_plan
+            org.max_kitchens = config.max_kitchens
+            org.max_users = config.max_users
+            org.mrr = config.price / 100  # откат mrr к цене предыдущего плана
+            org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
 
     def cancel(self) -> None:
         """Отменить заказ."""

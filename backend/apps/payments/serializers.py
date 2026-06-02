@@ -66,6 +66,22 @@ class OrderSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         target_plan = attrs.get("target_plan")
         amount = attrs.get("amount")
+
+        request = self.context.get("request")
+        if request and hasattr(request.user, "organization") and request.user.organization:
+            org = request.user.organization
+            # Нет незавершённых заказов
+            if Order.objects.filter(
+                organization=org,
+                status__in=[Order.Status.PENDING, Order.Status.PAYING],
+            ).exists():
+                raise serializers.ValidationError(
+                    {"non_field_errors": "У организации уже есть незавершённый заказ."}
+                )
+            # Org не уже на целевом плане
+            if org.plan == target_plan:
+                raise serializers.ValidationError({"target_plan": "Организация уже на этом плане."})
+
         try:
             config = PlanConfig.objects.get(plan=target_plan, is_active=True)
             expected = config.price

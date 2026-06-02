@@ -36,3 +36,7 @@ PAYME_MERCHANT_ID = os.getenv("PAYME_MERCHANT_ID", "")
 PAYME_MERCHANT_KEY = os.getenv("PAYME_MERCHANT_KEY", "")
 PAYME_CHECKOUT_URL = os.getenv("PAYME_CHECKOUT_URL", "https://checkout.paycom.uz")
 PAYME_CALLBACK_URL = os.getenv("PAYME_CALLBACK_URL", "")
+if not PAYME_CALLBACK_URL:
+    import warnings
+
+    warnings.warn("PAYME_CALLBACK_URL is empty — users won't be redirected after payment")

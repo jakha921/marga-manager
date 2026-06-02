@@ -1,582 +1,410 @@
-# Marga Manager — Ralph Loop Task List
+# Marga Manager — Ralph Loop Task List (Audit V2)
 
 ## Запуск
 ```bash
-ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Django/marga-manager/PROMPT.md). Найди первую незавершённую задачу [ ]. Выполни её полностью — создай файлы, напиши код, запусти проверку (uv run python manage.py check для бэкенда, npm run build для фронтенда). Отметь [x] в PROMPT.md. Закоммить изменения. Повторяй до ALL PHASES COMPLETE." --max-iterations 70 --completion-promise "ALL PHASES COMPLETE" /compact /senior-qa /senior-backend /senior-frontend /frontend-design:frontend-design /server-advisor
+ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Django/marga-manager/PROMPT.md). Найди первую незавершённую задачу [ ]. Выполни её полностью — создай/измени файлы, напиши код, запусти проверку (cd backend && uv run python manage.py check && uv run pytest -v для бэкенда, cd frontend && npm run build для фронтенда). Отметь [x] в PROMPT.md. Закоммить изменения. Повторяй до ALL PHASES COMPLETE." --max-iterations 80 --completion-promise "ALL PHASES COMPLETE" /compact /senior-qa /senior-backend /senior-frontend /frontend-design:frontend-design /server-advisor
 ```
 
 ---
 
 ## Порядок выполнения
 
-1. Phase 1 — Button fix (устраняет баг с цветом, база для всех UI-фаз)
-2. Phase 2 — Light/Dark Theme System
-3. Phase 3 — i18n completeness
-4. Phase 4 — Frontend UX (loading states, error boundary, accessibility)
-5. Phase 5 — Backend security hardening
-6. Phase 6 — N+1 & performance fixes
-7. Phase 7 — Backend test coverage
-8. Phase 8 — Code quality cleanup
+1. Phase 1 — Payments: Race Conditions & Data Integrity
+2. Phase 2 — Backend Security Hardening
+3. Phase 3 — Backend Performance (N+1, export limits, serializer alignment)
+4. Phase 4 — Dark Theme Completion + Light Theme Polish
+5. Phase 5 — Frontend DataContext & API Client Stability
+6. Phase 6 — i18n: непереведённые строки + hardcoded labels
+7. Phase 7 — Accessibility (Modal ARIA, focus trap, ConfirmModal, loading states)
+8. Phase 8 — TypeScript Strictness & Type Safety
+9. Phase 9 — Backend Test Coverage (недостающие сценарии)
+10. Phase 10 — Code Quality Cleanup
 
 ---
 
-## Phase 1: Fix Tailwind Class Conflicts — `cn()` utility + Button
+## Phase 1: Payments — Race Conditions & Data Integrity
 
-**Баг**: Кнопка "Excelga eksport" меняет цвет после обновления страницы. Причина: `Button.tsx:35`
-конкатенирует классы строкой — `bg-white` (из `secondary` variant) конкурирует с `bg-emerald-50`
-(из custom `className` prop). Tailwind CDN разрешает конфликты по порядку в своём stylesheet,
-а не в HTML — результат непредсказуем между рендерами.
+**Проблема**: Платёжная система содержит race conditions, отсутствие валидаций и неоткатываемый MRR.
 
-**Решение**:
-1. Установить `tailwind-merge` и `clsx`:
-   ```bash
-   cd frontend && npm install tailwind-merge clsx
-   ```
-2. Создать `frontend/utils/cn.ts`:
-   ```ts
-   import { twMerge } from 'tailwind-merge';
-   import { clsx, type ClassValue } from 'clsx';
-   export function cn(...inputs: ClassValue[]) {
-     return twMerge(clsx(inputs));
-   }
-   ```
-3. Обновить `frontend/components/Button.tsx` — заменить строковую конкатенацию на `cn()`:
-   ```tsx
-   import { cn } from '../utils/cn';
-   // ...
-   className={cn(baseStyles, variants[variant], sizes[size], widthClass, className)}
-   ```
-4. Применить `cn()` во всех компонентах: `Input.tsx`, `Select.tsx`, `Modal.tsx`, `Layout.tsx`.
-5. Убедиться что `Dashboard.tsx:277` и `Settings.tsx:365` корректно переопределяют цвета.
+### 1.1 Проверка на существующий PENDING/PAYING заказ
 
-**Проверка**: `cd frontend && npm run build`
+- [x] В `backend/apps/payments/serializers.py` метод `validate()` (строка 66): добавить в начало — если у организации уже есть Order со статусом PENDING или PAYING, вернуть ValidationError `"У организации уже есть незавершённый заказ."`
 
-**Коммит**: `fix: добавить tailwind-merge для правильного разрешения конфликтов CSS классов`
+### 1.2 Валидация: org не уже на целевом плане
+
+- [x] В том же `validate()`: после проверки PlanConfig добавить — если `request.user.organization.plan == target_plan`, вернуть ValidationError `"Организация уже на этом плане."`
+
+### 1.3 select_for_update в mark_as_paid()
+
+- [x] В `backend/apps/payments/models.py` метод `mark_as_paid()` (строка 65): обернуть всё в `transaction.atomic()`, получать org через `Organization.objects.select_for_update().get(pk=self.organization_id)` вместо `self.organization`
+
+### 1.4 revert_plan() — откатывать org.mrr
+
+- [x] В `backend/apps/payments/models.py` метод `revert_plan()` (строка 90): добавить `org.mrr = config.price / 100` и `"mrr"` в `update_fields`. Также обернуть в `transaction.atomic()` + `select_for_update()`
+
+### 1.5 Management command для EXPIRED заказов
+
+- [x] Создать `backend/apps/payments/management/__init__.py` и `commands/__init__.py`
+- [x] Создать `backend/apps/payments/management/commands/expire_stale_orders.py`: находит все Order со статусом PENDING/PAYING, созданные более 12 часов назад (`PaymeTransaction.PAYME_TIMEOUT_MS`), ставит статус EXPIRED
+
+### 1.6 Фронтенд: загрузка цен из PlanConfig API
+
+- [x] В `frontend/views/Settings.tsx`: загружать цены планов из `paymentsService.getPlans()` (endpoint уже есть — `GET /api/payments/plans/`) вместо hardcoded `PLAN_PRICES` из constants.ts
+- [x] В `frontend/constants.ts`: убрать `PLAN_PRICES` и `PLAN_PRICES_DISPLAY`, оставить только `PLAN_LIMITS` как fallback
+
+### 1.7 PAYME_CALLBACK_URL: warning при пустом значении
+
+- [x] В `backend/config/settings/prod.py` строка 38: добавить warning
+
+**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
+
+**Коммит**: `fix(payments): race conditions, select_for_update, revert mrr, EXPIRED cleanup, API prices`
 
 - [x] Phase 1 complete
 
 ---
 
-## Phase 2: Light/Dark Theme System
+## Phase 2: Backend Security Hardening
 
-**Задача**: Добавить красивую светлую и тёмную тему, переключатель Sun/Moon в header,
-сохранение выбора в localStorage под ключом `km_theme`.
+**Проблема**: Пароли не проходят Django validators, JWT токен живёт 12 часов, Swagger открыт в проде, HSTS слабый, SECRET_KEY с дефолтом.
 
-### 2.1 CSS переменные в `frontend/index.html`
+### 2.1 Django password validators в UserCreateSerializer
 
-Добавить в `<style>` секцию:
-```css
-:root {
-  --bg-primary: #f1f5f9;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #f8fafc;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border-color: #e2e8f0;
-  --border-light: #f1f5f9;
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --color-primary: #0f172a;
-  --color-accent: #10b981;
-}
+- [ ] В `backend/apps/accounts/serializers.py`: заменить кастомную проверку пароля на `django.contrib.auth.password_validation.validate_password(value)` внутри `validate_password()`. Это применит все 4 валидатора из settings (length, similarity, common, numeric)
 
-[data-theme="dark"] {
-  --bg-primary: #0f172a;
-  --bg-surface: #1e293b;
-  --bg-surface-2: #162032;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --border-color: #334155;
-  --border-light: #1e293b;
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --color-primary: #f1f5f9;
-  --color-accent: #10b981;
-}
-```
+### 2.2 SECRET_KEY — убрать предсказуемый дефолт
 
-Обновить `body` стиль: `background-color: var(--bg-primary); color: var(--text-primary);`
+- [ ] В `backend/config/settings/base.py` строка 12: убрать дефолт, raise `ImproperlyConfigured` если не задан
+- [ ] В `backend/config/settings/dev.py`: добавить `SECRET_KEY = "dev-insecure-key-do-not-use-in-prod"`
 
-### 2.2 ThemeContext `frontend/context/ThemeContext.tsx`
+### 2.3 Postgres password — убрать "marga123" дефолт в prod
 
-```tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+- [ ] В `backend/config/settings/prod.py` строка 12: убрать дефолт `"PASSWORD": os.getenv("POSTGRES_PASSWORD")` — без fallback
 
-type Theme = 'light' | 'dark';
+### 2.4 JWT Access Token: 30 минут вместо 12 часов
 
-interface ThemeContextValue {
-  theme: Theme;
-  toggleTheme: () => void;
-}
+- [ ] В `backend/config/drf_settings.py` строка 43: `"ACCESS_TOKEN_LIFETIME": timedelta(minutes=30)`
 
-const ThemeContext = createContext<ThemeContextValue>({ theme: 'light', toggleTheme: () => {} });
+### 2.5 Swagger: закрыть в проде
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem('km_theme') as Theme) ?? 'light'
-  );
+- [ ] В `backend/config/drf_settings.py` строка 64: `"SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"]`
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('km_theme', theme);
-  }, [theme]);
+### 2.6 HSTS: 1 год вместо 24 часов
 
-  const toggleTheme = () => setTheme(t => (t === 'light' ? 'dark' : 'light'));
+- [ ] В `backend/config/settings/prod.py` строка 27: `SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365`
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
+### 2.7 JWT token blacklisting при rotation
 
-export const useTheme = () => useContext(ThemeContext);
-```
+- [ ] В `backend/config/settings/base.py` INSTALLED_APPS: добавить `"rest_framework_simplejwt.token_blacklist"`
+- [ ] В `backend/config/drf_settings.py` SIMPLE_JWT: добавить `"BLACKLIST_AFTER_ROTATION": True`
+- [ ] Создать миграцию: `cd backend && uv run python manage.py makemigrations && uv run python manage.py migrate`
 
-### 2.3 Обернуть App в ThemeProvider (`frontend/App.tsx`)
+### 2.8 TenantCreateMixin: обработать DoesNotExist
 
-```tsx
-import { ThemeProvider } from './context/ThemeContext';
-// обернуть всё:
-<ThemeProvider>
-  <AuthProvider>
-    ...
-  </AuthProvider>
-</ThemeProvider>
-```
+- [ ] В `backend/apps/core/mixins.py` строка 44: `Organization.objects.get(pk=org_id)` → обернуть в try/except, при DoesNotExist вернуть `ValidationError({"organization": f"Организация с id={org_id} не найдена."})`
 
-### 2.4 Кнопка переключения темы в Layout (`frontend/components/Layout.tsx`)
+**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
 
-Добавить рядом с language switcher:
-```tsx
-import { Sun, Moon } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+**Коммит**: `fix(security): Django password validators, JWT 30min, HSTS 1yr, token blacklist, Swagger auth`
 
-const { theme, toggleTheme } = useTheme();
-// ...
-<button
-  onClick={toggleTheme}
-  aria-label="Toggle theme"
-  className="p-2 rounded-xl hover:bg-[var(--bg-surface-2)] text-[var(--text-secondary)] transition-colors"
->
-  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-</button>
-```
+- [ ] Phase 2 complete
 
-### 2.5 Обновить ключевые компоненты с CSS переменными
+---
 
-Минимальные замены в `Layout.tsx`, `Button.tsx` (secondary variant), `Input.tsx`, `Select.tsx`,
-`Modal.tsx`, заголовки и фон таблиц в `Dashboard.tsx`, `QuickInput.tsx`, `Settings.tsx`:
+## Phase 3: Backend Performance — N+1, Export Limits, Serializer Alignment
 
-| Tailwind класс | CSS переменная |
-|---|---|
+**Проблема**: KitchenReportView делает 6N SQL запросов. ViewSets без select_related("organization"). Export без лимита. Serializer max_digits не совпадает с моделью.
+
+### 3.1 KitchenReportView: уменьшить запросы
+
+- [ ] В `backend/apps/operations/views.py` строки 251-297: вместо цикла `for kitchen in kitchens` с 6 aggregate вызовами — сделать 6 запросов с `values("kitchen").annotate(...)` + собрать в dict по kitchen_id. Итого 6 запросов вместо 6N
+
+### 3.2 select_related в ViewSets
+
+- [ ] В `backend/apps/kitchens/views.py` строка 13: `Kitchen.objects.select_related("organization").all()`
+- [ ] В `backend/apps/products/views.py` строка 13 (CategoryViewSet): `Category.objects.select_related("organization").all()`
+- [ ] В `backend/apps/products/views.py` строка 22 (ProductViewSet): добавить `"organization"` к существующему `select_related("category")`
+
+### 3.3 Export Excel: лимит записей
+
+- [ ] В `backend/apps/operations/views.py` (export_excel action): добавить `qs = qs[:10_000]` перед итерацией — защита от OOM
+
+### 3.4 OperationEntrySerializer.price: привести к модели
+
+- [ ] В `backend/apps/operations/serializers.py` строка 36: `max_digits=12, decimal_places=2` вместо `max_digits=30, decimal_places=15`
+
+### 3.5 Pagination docstring
+
+- [ ] В `backend/apps/core/pagination.py`: исправить docstring — `200 элементов на страницу` вместо `20`
+
+**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
+
+**Коммит**: `perf: KitchenReport 6N→6 queries, select_related, export limit, serializer alignment`
+
+- [ ] Phase 3 complete
+
+---
+
+## Phase 4: Dark Theme Completion + Light Theme Polish
+
+**Проблема**: Phase 2 прошлого цикла добавила CSS переменные и ThemeContext, но 141+ мест в views всё ещё используют hardcoded `bg-white`, `text-slate-*`, `border-slate-*`. Dark theme визуально сломан. Светлая тема требует мелких premium-улучшений (тени, hover-эффекты, border-radius).
+
+### Таблица замен
+
+| Hardcoded | CSS переменная |
+|-----------|---------------|
 | `bg-white` | `bg-[var(--bg-surface)]` |
-| `bg-slate-50` / `bg-slate-50/80` | `bg-[var(--bg-surface-2)]` |
-| `bg-slate-100` | `bg-[var(--bg-surface-2)]` |
+| `bg-slate-50`, `bg-slate-100` | `bg-[var(--bg-surface-2)]` |
 | `text-slate-800`, `text-slate-900` | `text-[var(--text-primary)]` |
 | `text-slate-500`, `text-slate-600` | `text-[var(--text-secondary)]` |
 | `text-slate-400` | `text-[var(--text-muted)]` |
 | `border-slate-100` | `border-[var(--border-light)]` |
 | `border-slate-200` | `border-[var(--border-color)]` |
+| `bg-slate-900` (кнопки/primary) | `bg-[var(--color-primary)]` |
 
-### 2.6 Исправить hardcoded chart цвета в Dashboard.tsx
+### 4.1 Компоненты
 
-Заменить `backgroundColor: '#18181b'` в tooltip на CSS переменные через `useTheme()`:
-```tsx
-const { theme } = useTheme();
-const tooltipBg = theme === 'dark' ? '#1e293b' : '#ffffff';
-const tooltipBorder = theme === 'dark' ? '#334155' : '#e2e8f0';
+- [ ] `frontend/components/Modal.tsx`: заменить все `bg-white`, `border-slate-*`, `text-slate-*` на CSS переменные
+- [ ] `frontend/components/StatsCard.tsx`: заменить `bg-white`, `text-slate-900`, `text-slate-400/500`, `border-slate-100`, `bg-slate-300`
+- [ ] `frontend/components/Skeleton.tsx`: заменить строковую конкатенацию className на `cn()`
+- [ ] `frontend/components/ErrorBoundary.tsx`: `bg-slate-900` → `bg-[var(--color-primary)]`
+- [ ] `frontend/components/Layout.tsx` строки 39-46 (`getLinkClasses`): заменить hardcoded `bg-slate-*`, `text-slate-*` на CSS переменные. Также sidebar logo/nav
+
+### 4.2 Views
+
+- [ ] `frontend/views/Login.tsx`: все `bg-slate-50`, `bg-white`, `border-slate-*`, `text-slate-*` → CSS переменные
+- [ ] `frontend/views/Dashboard.tsx`: все hardcoded цвета (grep `bg-white|text-slate-|border-slate-|bg-slate-`)
+- [ ] `frontend/views/QuickInput.tsx`: `bg-white/90`, `bg-white`, `border-slate-*`, `text-slate-*`
+- [ ] `frontend/views/Settings.tsx`: `bg-white`, `border-slate-*`, `text-slate-*`
+- [ ] `frontend/views/Kitchens.tsx`: `bg-white`, `border-slate-*`, `text-slate-*`
+- [ ] `frontend/views/Products.tsx`: `bg-white`, `border-slate-*`, `text-slate-*`
+- [ ] `frontend/views/superadmin/AdminDashboard.tsx`: все hardcoded цвета
+
+### 4.3 Light Theme Polish
+
+- [ ] В `frontend/index.html` CSS переменные `:root`: обновить `--shadow-card` для более premium тени:
+```css
+--shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
 ```
+- [ ] Обновить hover-эффекты: добавить `transition-all duration-200` на карточки и кнопки где не хватает
+- [ ] Sidebar: добавить subtle `border-r border-[var(--border-light)]` вместо shadow для разделения
 
-**Проверка**: `cd frontend && npm run build`. Переключить тему — всё меняется плавно.
+**Проверка**: `cd frontend && npm run build`. Визуально проверить dark/light theme на каждой странице.
 
-**Коммит**: `feat: добавить Light/Dark тему с CSS переменными и ThemeContext`
+**Коммит**: `fix(theme): заменить 141+ hardcoded цветов на CSS переменные, polish light theme`
 
-- [x] Phase 2 complete
+- [ ] Phase 4 complete
 
 ---
 
-## Phase 3: i18n — Заполнить недостающие переводы
+## Phase 5: Frontend DataContext & API Client Stability
 
-**Проблема**: 20+ hardcoded строк на английском в QuickInput.tsx, Settings.tsx, Dashboard.tsx
-не проходят через систему переводов.
+**Проблема**: DataContext value не мемоизирован — cascade re-renders всех consumers. Нет AbortController для отмены запросов при навигации. Token refresh race condition при двух параллельных 401.
 
-**Файлы**: `frontend/context/LanguageContext.tsx`, все view файлы.
+### 5.1 useMemo для DataContext value
 
-**Решение**: Добавить в `LanguageContext.tsx` следующие ключи для EN/RU/UZ:
+- [ ] В `frontend/context/DataContext.tsx` строка 344-380: обернуть объект value в `useMemo` с правильным dependency array
 
-```
-# QuickInput
-qi.edit_entry      — "Edit Entry" / "Редактировать" / "Tahrirlash"
-qi.date            — "Date" / "Дата" / "Sana"
-qi.time            — "Time" / "Время" / "Vaqt"
-qi.product_details — "Product Details" / "Детали продукта" / "Mahsulot tafsilotlari"
-qi.quantity        — "Quantity" / "Количество" / "Miqdor"
-qi.unit_price      — "Unit Price" / "Цена за ед." / "Birlik narxi"
-qi.total_price     — "Total Price" / "Итого" / "Jami narx"
-qi.delete_confirm  — "Are you sure you want to delete this operation?" / "Вы уверены?" / "O'chirilsinmi?"
+### 5.2 useCallback для action handlers
 
-# Settings billing
-set.billing.desc        — "Manage your subscription and billing details." / "Управление подпиской." / "Obunani boshqarish."
-set.billing.history     — "Payment History" / "История платежей" / "To'lov tarixi"
-set.billing.th_date     — "Date" / "Дата" / "Sana"
-set.billing.th_plan     — "Plan" / "Тариф" / "Tarif"
-set.billing.th_amount   — "Amount" / "Сумма" / "Summa"
-set.billing.th_status   — "Status" / "Статус" / "Holat"
-set.billing.recommended — "Recommended" / "Рекомендуем" / "Tavsiya"
+- [ ] В `frontend/context/DataContext.tsx`: обернуть все handler функции (addKitchen, updateKitchen, deleteKitchen, etc.) в `useCallback`
 
-# Settings profile
-set.profile.identity — "Identity & Contact" / "Личные данные" / "Shaxsiy ma'lumotlar"
-set.threshold_help   — "Setting this threshold highlights low-stock products in reports." / "Порог выделит продукты красным при низком остатке." / "Chegara past qoldiqli mahsulotlarni ajratib ko'rsatadi."
+### 5.3 AbortController в fetchData
 
-# Common
-common.loading — "Loading..." / "Загрузка..." / "Yuklanmoqda..."
-common.cancel  — "Cancel" / "Отмена" / "Bekor qilish"
-common.save    — "Save" / "Сохранить" / "Saqlash"
-common.edit    — "Edit" / "Редактировать" / "Tahrirlash"
-common.delete  — "Delete" / "Удалить" / "O'chirish"
-```
+- [ ] В `frontend/context/DataContext.tsx` useEffect: добавить `AbortController`, передать `signal` в запросы, `controller.abort()` в cleanup
 
-Заменить все hardcoded строки в JSX на `{t('key')}`.
-Также заменить `"Loading..."` в `Dashboard.tsx:295` на `{t('common.loading')}`.
+### 5.4 Token refresh: promise-based lock
 
-**Проверка**: `cd frontend && npm run build` + переключить язык и проверить каждую страницу.
-
-**Коммит**: `feat: добавить недостающие переводы EN/RU/UZ для QuickInput, Settings, Dashboard`
-
-- [x] Phase 3 complete
-
----
-
-## Phase 4: Frontend UX — Error Boundary, Skeleton, Accessibility
-
-### 4.1 Error Boundary
-
-Создать `frontend/components/ErrorBoundary.tsx`:
-```tsx
-import { Component, ErrorInfo, ReactNode } from 'react';
-
-interface State { hasError: boolean; error: Error | null; }
-
-export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
-  state: State = { hasError: false, error: null };
-
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('ErrorBoundary caught:', error, info);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
-          <div className="text-center p-8 max-w-md">
-            <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
-              Что-то пошло не так
-            </h2>
-            <p className="text-[var(--text-secondary)] text-sm mb-6">
-              {this.state.error?.message}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-700 transition-colors"
-            >
-              Обновить страницу
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
+- [ ] В `frontend/api/client.ts`: добавить `let refreshPromise: Promise<string> | null = null` — при первом 401 создать promise для refresh, при параллельных 401 переиспользовать тот же promise
+```ts
+if (!refreshPromise) {
+  refreshPromise = axios.post(...).then(({data}) => {
+    localStorage.setItem('km_access_token', data.access);
+    if (data.refresh) localStorage.setItem('km_refresh_token', data.refresh);
+    return data.access;
+  }).finally(() => { refreshPromise = null; });
 }
+const newToken = await refreshPromise;
 ```
 
-Обернуть корневой `<App />` в `App.tsx` или `main.tsx`.
+### 5.5 ChartTooltip из render scope
 
-### 4.2 Skeleton Loading компонент
-
-Создать `frontend/components/Skeleton.tsx`:
-```tsx
-interface SkeletonProps { rows?: number; className?: string; }
-
-export function Skeleton({ rows = 5, className = '' }: SkeletonProps) {
-  return (
-    <div className={`p-4 space-y-3 animate-pulse ${className}`}>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-10 bg-[var(--bg-surface-2)] rounded-xl" />
-      ))}
-    </div>
-  );
-}
-```
-
-Заменить `"Loading..."` в `Dashboard.tsx:295` на `<Skeleton rows={5} />`.
-
-### 4.3 ARIA Labels для icon-only кнопок
-
-В `QuickInput.tsx` для edit/delete кнопок добавить `aria-label`:
-```tsx
-<button aria-label={t('common.edit')} title={t('common.edit')} onClick={...}>
-  <Edit size={14} />
-</button>
-<button aria-label={t('common.delete')} title={t('common.delete')} onClick={...}>
-  <Trash2 size={14} />
-</button>
-```
-
-### 4.4 Modal Accessibility
-
-В `frontend/components/Modal.tsx` добавить `role`, `aria-modal`, `aria-label`.
-Backdrop кнопка закрытия — `role="button"` и `aria-label="Close"`.
-
-### 4.5 Исправить undefined `setEditUnitPrice`
-
-`frontend/views/QuickInput.tsx` — найти вызов `setEditUnitPrice(...)` (строка ~273)
-и заменить правильным setter `setEditUnitPriceStr(...)`.
+- [ ] В `frontend/views/Dashboard.tsx`: вынести `ChartTooltip` за пределы компонента Dashboard — определить как отдельный компонент или `React.memo`'d функцию на уровне модуля
 
 **Проверка**: `cd frontend && npm run build`
 
-**Коммит**: `feat: добавить ErrorBoundary, Skeleton loader, ARIA атрибуты, исправить undefined setter`
+**Коммит**: `fix(frontend): memoize DataContext, AbortController, token refresh lock, extract ChartTooltip`
 
-- [x] Phase 4 complete
-
----
-
-## Phase 5: Backend Security Hardening
-
-### 5.1 Password минимум 8 символов + валидация сложности
-
-`backend/apps/accounts/serializers.py`:
-```python
-password = serializers.CharField(write_only=True, min_length=8)
-
-def validate_password(self, value: str) -> str:
-    if value.isdigit():
-        raise serializers.ValidationError(
-            "Пароль не может состоять только из цифр."
-        )
-    return value
-```
-
-### 5.2 DRF Throttling (rate limiting)
-
-`backend/config/drf_settings.py`:
-```python
-'DEFAULT_THROTTLE_CLASSES': [
-    'rest_framework.throttling.AnonRateThrottle',
-],
-'DEFAULT_THROTTLE_RATES': {
-    'anon': '60/minute',
-    'user': '300/minute',
-    'login': '5/minute',
-}
-```
-
-Создать `backend/apps/accounts/throttles.py`:
-```python
-from rest_framework.throttling import AnonRateThrottle
-
-class LoginRateThrottle(AnonRateThrottle):
-    rate = '5/minute'
-    scope = 'login'
-```
-
-Применить на login view.
-
-### 5.3 DEBUG и ALLOWED_HOSTS безопасные defaults
-
-`backend/config/settings/base.py`:
-```python
-DEBUG = os.getenv("DEBUG", "0") == "1"  # было "1"
-_hosts = os.getenv("ALLOWED_HOSTS", "")
-ALLOWED_HOSTS: list[str] = [h.strip() for h in _hosts.split(",") if h.strip()]
-```
-
-В `dev.py` добавить:
-```python
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
-```
-
-### 5.4 Добавить комментарий к @csrf_exempt
-
-`backend/apps/payments/payme_views.py:18`:
-```python
-@csrf_exempt  # Payme использует HTTP Basic auth — это CSRF-защита для данного endpoint
-```
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
-
-**Коммит**: `fix(security): password min 8, rate limiting, безопасные defaults DEBUG/ALLOWED_HOSTS`
-
-- [x] Phase 5 complete
+- [ ] Phase 5 complete
 
 ---
 
-## Phase 6: Backend Performance — N+1 Fix + DB Indexes
+## Phase 6: i18n — Непереведённые строки + Hardcoded Labels
 
-### 6.1 N+1 в OrganizationSerializer
+**Проблема**: 30+ строк на English/Russian/Uzbek hardcoded в views, не проходящие через систему переводов. OPERATION_TYPES в constants.ts с Uzbek-only labels. ErrorBoundary hardcoded Russian.
 
-`backend/apps/organizations/views.py` — добавить annotate:
-```python
-from django.db.models import Count
+### 6.1 LanguageContext: добавить ключи
 
-queryset = Organization.objects.annotate(
-    kitchen_count=Count('kitchens', distinct=True),
-    user_count=Count('users', distinct=True),
-)
-```
+- [ ] Добавить в `frontend/context/LanguageContext.tsx` ключи для EN/RU/UZ:
+  - Login: "Demo Credentials", "Client Admin", "Kitchen Staff", form labels
+  - Settings: billing strings (если остались), "Enterprise" plan features, "Edit Member", "Save Member"
+  - Products: "Categories", "Cancel", "Delete", "Manage Categories", "New Category Name..."
+  - Kitchens: "Pro Plan Includes:", "Advanced Analytics", "Priority Support", "Cancel"
+  - AdminDashboard: все English-only строки
 
-`backend/apps/organizations/serializers.py` — использовать annotated поля:
-```python
-kitchen_count = serializers.IntegerField(read_only=True)
-user_count = serializers.IntegerField(read_only=True)
-```
+### 6.2 Заменить hardcoded строки в views
 
-### 6.2 DB Indexes для OperationEntry
+- [ ] `frontend/views/Login.tsx`: все hardcoded → `t('key')`
+- [ ] `frontend/views/Settings.tsx`: все оставшиеся hardcoded
+- [ ] `frontend/views/Products.tsx`: "Categories", "Cancel", "Delete", "Manage Categories"
+- [ ] `frontend/views/Kitchens.tsx`: "Pro Plan Includes:", "Cancel"
+- [ ] `frontend/views/superadmin/AdminDashboard.tsx`: все English-only строки
 
-`backend/apps/operations/models.py` — добавить в Meta:
-```python
-class Meta:
-    indexes = [
-        models.Index(fields=['organization', 'date'], name='operation_org_date_idx'),
-        models.Index(fields=['organization', 'op_type'], name='operation_org_type_idx'),
-        models.Index(
-            fields=['organization', 'kitchen', 'date'],
-            name='operation_org_kitchen_date_idx',
-        ),
-    ]
-```
+### 6.3 OPERATION_TYPES: i18n labels
 
-Запустить `uv run python manage.py makemigrations operations`.
+- [ ] В `frontend/constants.ts`: заменить hardcoded Uzbek labels на функцию `getOperationTypes(t)` или использовать ключи из LanguageContext
+- [ ] Обновить все места использования OPERATION_TYPES
 
-### 6.3 ProductHistoryView — валидация product_id
+### 6.4 ErrorBoundary: i18n без хуков
 
-`backend/apps/operations/views.py` (~line 184):
-```python
-from django.shortcuts import get_object_or_404
-from apps.products.models import Product
+- [ ] В `frontend/components/ErrorBoundary.tsx`: читать `km_lang` из localStorage и выбирать текст из статического объекта `{ en: {...}, ru: {...}, uz: {...} }`
 
-product = get_object_or_404(
-    Product, pk=product_id, organization=request.user.organization
-)
-```
+**Проверка**: `cd frontend && npm run build`. Переключить язык на каждой странице.
 
-**Проверка**: `cd backend && uv run python manage.py makemigrations && uv run python manage.py migrate && uv run pytest -v`
+**Коммит**: `feat(i18n): перевести 30+ строк, i18n для OPERATION_TYPES и ErrorBoundary`
 
-**Коммит**: `perf: исправить N+1 в OrganizationSerializer, добавить индексы БД, валидация product_id`
-
-- [x] Phase 6 complete
+- [ ] Phase 6 complete
 
 ---
 
-## Phase 7: Backend Test Coverage
+## Phase 7: Accessibility — Modal ARIA, Focus Trap, ConfirmModal, Loading States
 
-### 7.1 `backend/tests/test_categories.py` — Category CRUD
+**Проблема**: Modal без `role="dialog"` / `aria-modal` / focus trap. Нет loading states в Kitchens, Products, Settings billing. `window.confirm()` не accessible.
 
-Написать тесты:
-- TENANT_ADMIN создаёт категорию → 201
-- KITCHEN_USER создаёт категорию → 403
-- Категории изолированы по организации (другая org → пустой список)
-- Update/Delete категории TENANT_ADMIN → 200/204
+### 7.1 Modal.tsx: ARIA атрибуты
 
-### 7.2 `backend/tests/test_analytics.py` — Analytics views
+- [ ] Добавить `role="dialog"`, `aria-modal="true"`, `aria-labelledby="modal-title"`
+- [ ] На `<h3>` заголовок: `id="modal-title"`
 
-Написать тесты:
-- `KitchenReportView` без параметров → 400
-- `KitchenReportView` с `date_from`/`date_to` → 200 с полями `kitchens`, `totals`
-- `KitchenReportView` пустые данные → нули, не crash
-- `KitchenReportView` XLSX export → content-type `application/vnd.openxmlformats-officedocument`
-- `DashboardView` → 200, возвращает `total_revenue`, `total_expense`, `operation_count`
+### 7.2 Modal.tsx: Focus trap
 
-### 7.3 Расширить `backend/tests/test_organizations.py`
+- [ ] При `isOpen` фокус на первый focusable элемент
+- [ ] Tab/Shift+Tab циклит внутри модалки
+- [ ] Escape закрывает модалку
 
-Добавить:
-- N+1 regression: list организаций делает ≤ 3 SQL запросов (через `assertNumQueries`)
-- SUPER_ADMIN может изменить `plan` организации → 200
+### 7.3 Loading states
 
-### 7.4 Rate limiting тест
+- [ ] `frontend/views/Kitchens.tsx`: показать `<Skeleton />` при `loading` из DataContext
+- [ ] `frontend/views/Products.tsx`: аналогично
+- [ ] `frontend/views/Settings.tsx` (billing tab): показать loading при загрузке заказов
 
-```python
-def test_login_rate_limit(self):
-    for _ in range(5):
-        self.client.post('/api/auth/login/', {...})
-    response = self.client.post('/api/auth/login/', {...})
-    self.assertEqual(response.status_code, 429)
-```
+### 7.4 ConfirmModal компонент
+
+- [ ] Создать `frontend/components/ConfirmModal.tsx` — accessible confirmation dialog (title, message, onConfirm, onCancel, variant: "danger" | "warning")
+- [ ] Использовать вместо inline confirm-подобных паттернов в Kitchens.tsx, Products.tsx, Settings.tsx (delete actions)
+
+**Проверка**: `cd frontend && npm run build`
+
+**Коммит**: `feat(a11y): Modal ARIA + focus trap, loading states, ConfirmModal`
+
+- [ ] Phase 7 complete
+
+---
+
+## Phase 8: TypeScript Strictness & Type Safety
+
+**Проблема**: Нет `strict: true` в tsconfig. 4 места с `any`. API сервисы типизированы как `Record<string, unknown>`.
+
+### 8.1 tsconfig.json: strict mode
+
+- [ ] Добавить `"strict": true` в compilerOptions
+- [ ] Исправить все ошибки компиляции (implicit any, null checks, etc.)
+
+### 8.2 Убрать any
+
+- [ ] `frontend/views/Kitchens.tsx:40`: `kitchen: any` → `Kitchen`
+- [ ] `frontend/views/Products.tsx:72`: `product: any` → `Product`
+- [ ] `frontend/views/QuickInput.tsx:277`: `value: any` → правильный union type (`string | number`)
+- [ ] `frontend/views/superadmin/AdminDashboard.tsx:259`: `as any` → правильный enum cast
+
+### 8.3 API сервисы типизация
+
+- [ ] Заменить `Record<string, unknown>` на конкретные типы в: `kitchens.ts`, `organizations.ts`, `operations.ts`, `users.ts`, `categories.ts`, `products.ts`
+- [ ] Обновить DataContext: убрать `as Record<string, unknown>` casts (11 мест)
+
+### 8.4 QuickInput мемоизация
+
+- [ ] В `frontend/views/QuickInput.tsx`: добавить `useMemo` для фильтрованных списков, `useCallback` для event handlers
+
+**Проверка**: `cd frontend && npm run build` — 0 ошибок в strict mode
+
+**Коммит**: `refactor(ts): strict mode, убрать any, типизировать API, мемоизация QuickInput`
+
+- [ ] Phase 8 complete
+
+---
+
+## Phase 9: Backend Test Coverage — Недостающие Сценарии
+
+**Проблема**: Нет тестов для User CRUD, Export Excel, KitchenReport xlsx, Payme timeout, новых валидаций из Phase 1.
+
+### 9.1 User CRUD тесты
+
+- [ ] В `backend/tests/test_auth.py` или новый `test_users.py`: TENANT_ADMIN creates user → 201, KITCHEN_USER creates user → 403, update user → 200, delete user → 204
+
+### 9.2 Export Excel
+
+- [ ] В `backend/tests/test_operations.py`: GET /api/operations/export/ → 200 + content-type xlsx, с фильтрами → правильная фильтрация
+
+### 9.3 KitchenReport xlsx
+
+- [ ] В `backend/tests/test_analytics.py`: GET /api/analytics/kitchen-report/?format=xlsx → 200 + xlsx content-type
+
+### 9.4 Payme timeout
+
+- [ ] В `backend/tests/test_payments.py`: `PaymeTransaction.is_timed_out` — True после 12h, False до 12h
+
+### 9.5 Phase 1 валидации
+
+- [ ] В `backend/tests/test_payments.py`: создание второго PENDING заказа → 400, заказ на текущий план → 400
+
+### 9.6 TenantCreateMixin с несуществующим org_id
+
+- [ ] В `backend/tests/test_permissions.py`: SUPER_ADMIN POST с organization=99999 → 400 (не 500)
 
 **Проверка**: `cd backend && uv run pytest -v --tb=short`
 
-**Коммит**: `test: добавить тесты для категорий, аналитики, N+1 regression, rate limiting`
+**Коммит**: `test: User CRUD, Excel export, xlsx, Payme timeout, duplicate order, org validation`
 
-- [x] Phase 7 complete
+- [ ] Phase 9 complete
 
 ---
 
-## Phase 8: Code Quality Cleanup
+## Phase 10: Code Quality Cleanup
 
-### 8.1 TypeScript — убрать `as any` в api/client.ts
+**Проблема**: Мелкие quality issues — stable React keys, ruff warnings, build warnings.
 
-Создать `frontend/vite-env.d.ts` (если не существует):
-```ts
-/// <reference types="vite/client" />
+### 10.1 Stable React keys
 
-interface ImportMetaEnv {
-  readonly VITE_API_URL: string;
-  readonly VITE_GEMINI_API_KEY?: string;
-}
+- [ ] `frontend/views/Settings.tsx`: `key={i}` → `key={feature}` (или stable id) для features list
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
-```
+### 10.2 Ruff cleanup
 
-`frontend/api/client.ts`:
-```ts
-// убрать (import.meta as any).env
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-```
+- [ ] `cd backend && uv run ruff check --fix .`
 
-### 8.2 PlanConfigAdmin — убрать list_editable
+### 10.3 Frontend build warnings
 
-`backend/apps/payments/admin.py`:
-```python
-# Убрать из list_editable поля price, max_kitchens, max_users, is_active
-# Оставить только list_display — редактирование через форму (audit trail)
-```
+- [ ] `cd frontend && npm run build` — исправить все warnings
 
-### 8.3 Очистить пустой middleware.py
+### 10.4 Skeleton.tsx: cn()
 
-`backend/apps/core/middleware.py` — добавить заглушку:
-```python
-# Reserved for future request middleware implementations
-```
-
-### 8.4 Исправить использование index как key в Settings.tsx
-
-`frontend/views/Settings.tsx:349`:
-```tsx
-// Было: key={i}
-// Стало: key={feature} (если feature — строка) или добавить stable id
-plan.features.map((feature) => (
-  <li key={feature} ...>
-```
-
-### 8.5 Ruff cleanup backend
-
-```bash
-cd backend && uv run ruff check --fix .
-```
+- [ ] `frontend/components/Skeleton.tsx`: заменить строковую конкатенацию на `cn()` (если не сделано в Phase 4)
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v && cd ../frontend && npm run build`
 
-**Коммит**: `chore: code quality — TypeScript типы, убрать list_editable, стабильные React keys`
+**Коммит**: `chore: stable React keys, ruff fixes, build warnings cleanup`
 
-- [x] Phase 8 complete
+- [ ] Phase 10 complete
 
 ---
 
@@ -595,8 +423,8 @@ cd ../frontend
 npm run build
 
 # Docker
+cd ..
 docker compose -f docker-compose.coolify.yml config
-docker compose -f docker-compose.stage.yml config
 ```
 
-- [x] ALL PHASES COMPLETE
+- [ ] ALL PHASES COMPLETE

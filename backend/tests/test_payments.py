@@ -424,14 +424,15 @@ class TestOrderAPI:
         settings.PAYME_MERCHANT_ID = "test_merchant"
         settings.PAYME_CHECKOUT_URL = "https://test.paycom.uz"
         settings.PAYME_CALLBACK_URL = "http://localhost:3000"
+        # org fixture has plan=PRO, so upgrade to ENTERPRISE
         resp = tenant_admin_client.post(
             "/api/payments/orders/",
-            {"target_plan": "PRO", "amount": 4_900_000},
+            {"target_plan": "ENTERPRISE", "amount": 19_900_000},
             format="json",
         )
         assert resp.status_code == 201
         data = resp.json()
-        assert data["targetPlan"] == "PRO"
+        assert data["targetPlan"] == "ENTERPRISE"
         assert data["status"] == "PENDING"
 
     def test_kitchen_user_cannot_create_order(self, kitchen_user_client):

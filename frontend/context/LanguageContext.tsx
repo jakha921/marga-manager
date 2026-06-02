@@ -204,6 +204,7 @@ const translations: Record<Language, Record<string, string>> = {
     'set.gen.saved': 'Settings saved successfully',
 
     // Billing
+    'bill.free': 'Free',
     'bill.current': 'Current Plan',
     'bill.cycle': '/ month',
     'bill.feature.kitchens': 'Kitchens',
@@ -459,6 +460,7 @@ const translations: Record<Language, Record<string, string>> = {
     'set.gen.saved': 'Настройки сохранены',
 
     // Billing
+    'bill.free': 'Бесплатно',
     'bill.current': 'Текущий тариф',
     'bill.cycle': '/ мес',
     'bill.feature.kitchens': 'Кухни',
@@ -714,6 +716,7 @@ const translations: Record<Language, Record<string, string>> = {
     'set.gen.saved': 'Sozlamalar saqlandi',
 
     // Billing
+    'bill.free': 'Bepul',
     'bill.current': 'Joriy tarif',
     'bill.cycle': '/ oy',
     'bill.feature.kitchens': 'Oshxonalar',

@@ -7,19 +7,6 @@ export const OPERATION_TYPES = [
   { id: 'SALE', label: 'Sotuv', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
 ] as const;
 
-// Цены в тийинах (1 UZS = 100 тийин). Phase 7 заменит на PlanConfig API.
-export const PLAN_PRICES: Record<SubscriptionPlan, number> = {
-  BASIC: 0,
-  PRO: 4_900_000,
-  ENTERPRISE: 19_900_000,
-};
-
-export const PLAN_PRICES_DISPLAY: Record<SubscriptionPlan, string> = {
-  BASIC: 'Бесплатно',
-  PRO: '49 000 UZS/мес',
-  ENTERPRISE: '199 000 UZS/мес',
-};
-
 export const PLAN_LIMITS: Record<SubscriptionPlan, { kitchens: number | string; users: number | string }> = {
   BASIC: { kitchens: 3, users: 10 },
   PRO: { kitchens: 10, users: 50 },
