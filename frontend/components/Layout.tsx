@@ -40,9 +40,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     flex items-center gap-3 px-4 py-2.5 mx-3 rounded-xl
     font-display text-[13px] font-medium tracking-wide
     transition-all duration-200
-    ${isActive 
-      ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10' 
-      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
+    ${isActive
+      ? 'bg-[var(--color-primary)] text-[var(--bg-surface)] shadow-md'
+      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)]'}
   `;
 
   const getPageTitle = () => {
@@ -76,19 +76,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="h-24 flex items-center px-8 border-b border-transparent">
-          <div className="flex items-center gap-3 text-slate-900">
-            <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold font-display text-sm shadow-lg shadow-slate-900/20">
+          <div className="flex items-center gap-3 text-[var(--text-primary)]">
+            <div className="w-9 h-9 bg-[var(--color-primary)] rounded-xl flex items-center justify-center text-[var(--bg-surface)] font-bold font-display text-sm shadow-lg shadow-[var(--color-primary)]/20">
               MM
             </div>
             <div>
               <span className="font-display font-bold text-lg tracking-tight block leading-none">MARGA</span>
-              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block mt-0.5">MANAGER</span>
+              <span className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider block mt-0.5">MANAGER</span>
             </div>
           </div>
         </div>
         
         <div className="flex-1 overflow-y-auto py-8 sidebar-scroll">
-          <div className="px-8 mb-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <div className="px-8 mb-3 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
             {t('nav.main_menu')}
           </div>
           <nav className="flex flex-col gap-1 mb-10">
@@ -96,7 +96,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <NavLink key={item.path} to={item.path} className={getLinkClasses}>
                 {({ isActive }) => (
                   <>
-                    <item.icon size={18} className={isActive ? "text-slate-200" : "text-slate-400"} strokeWidth={2} />
+                    <item.icon size={18} className={isActive ? "text-[var(--bg-surface-2)]" : "text-[var(--text-muted)]"} strokeWidth={2} />
                     {item.label}
                   </>
                 )}
@@ -106,7 +106,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {visibleExploreItems.length > 0 && (
             <>
-              <div className="px-8 mb-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="px-8 mb-3 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                 {t('nav.explore')}
               </div>
               <nav className="flex flex-col gap-1">
@@ -114,7 +114,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <NavLink key={item.path} to={item.path} className={getLinkClasses}>
                     {({ isActive }) => (
                       <>
-                        <item.icon size={18} className={isActive ? "text-slate-200" : "text-slate-400"} strokeWidth={2} />
+                        <item.icon size={18} className={isActive ? "text-[var(--bg-surface-2)]" : "text-[var(--text-muted)]"} strokeWidth={2} />
                         {item.label}
                       </>
                     )}
@@ -140,10 +140,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div>
              {/* Mobile Menu Button */}
              <div className="lg:hidden flex items-center gap-3 mb-2">
-                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600">
+                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-[var(--text-secondary)]">
                   <Menu size={24} />
                 </button>
-                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-xs">MM</div>
+                <div className="w-8 h-8 bg-[var(--color-primary)] rounded-lg flex items-center justify-center text-[var(--bg-surface)] font-bold text-xs">MM</div>
              </div>
              
              <h1 className="font-display font-bold text-2xl text-[var(--text-primary)] tracking-tight">
@@ -176,7 +176,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="text-[13px] font-bold text-[var(--text-primary)] leading-tight">{t('header.greeting')}</div>
                 <div className="text-[11px] font-medium text-[var(--text-muted)]">{t('header.role')}</div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-slate-900/10">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)] text-[var(--bg-surface)] flex items-center justify-center text-xs font-bold shadow-md shadow-[var(--color-primary)]/10">
                 JP
               </div>
             </div>
@@ -193,7 +193,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Mobile Overlay */}
         {isMobileMenuOpen && (
           <div 
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-[var(--color-primary)]/20 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}

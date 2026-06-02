@@ -192,43 +192,43 @@ const Settings: React.FC = () => {
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
       {/* Sidebar Navigation */}
       <div className="w-full lg:w-64 flex-shrink-0">
-        <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-2 overflow-hidden">
+        <div className="bg-[var(--bg-surface)] rounded-2xl shadow-card border border-[var(--border-light)] p-2 overflow-hidden">
            <button 
              onClick={() => setActiveTab('general')}
-             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'general' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'general' ? 'bg-[var(--color-primary)] text-[var(--bg-surface)] shadow-md' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)]'}`}
            >
               <SettingsIcon size={18} /> {t('set.tab.general')}
            </button>
            <button 
              onClick={() => setActiveTab('users')}
-             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'users' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'users' ? 'bg-[var(--color-primary)] text-[var(--bg-surface)] shadow-md' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)]'}`}
            >
               <Users size={18} /> {t('set.tab.users')}
            </button>
            <button 
              onClick={() => setActiveTab('billing')}
-             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'billing' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${activeTab === 'billing' ? 'bg-[var(--color-primary)] text-[var(--bg-surface)] shadow-md' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-2)] hover:text-[var(--text-primary)]'}`}
            >
               <CreditCard size={18} /> {t('set.tab.billing')}
            </button>
         </div>
 
         {/* Plan Summary Mini Card */}
-        <div className="mt-6 bg-slate-900 rounded-2xl p-5 text-white shadow-xl shadow-slate-900/10 relative overflow-hidden">
+        <div className="mt-6 bg-[var(--color-primary)] rounded-2xl p-5 text-[var(--bg-surface)] shadow-xl shadow-[var(--color-primary)]/10 relative overflow-hidden">
            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
            <div className="relative z-10">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Current Plan</h4>
+              <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Current Plan</h4>
               <div className="flex items-center gap-2 mb-4">
                  <Crown size={18} className="text-emerald-400" />
                  <span className="font-display font-bold text-lg">{currentOrganization?.plan}</span>
               </div>
               <div className="space-y-2">
                  <div>
-                    <div className="flex justify-between text-[10px] font-bold uppercase text-slate-400 mb-1">
+                    <div className="flex justify-between text-[10px] font-bold uppercase text-[var(--text-muted)] mb-1">
                        <span>Users</span>
                        <span>{tenantUsers.length} / {maxUsers}</span>
                     </div>
-                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-[var(--border-color)] rounded-full overflow-hidden">
                        <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(tenantUsers.length / maxUsers) * 100}%` }}></div>
                     </div>
                  </div>
@@ -238,15 +238,15 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 bg-white rounded-3xl shadow-card border border-slate-100 p-6 lg:p-8 overflow-y-auto">
+      <div className="flex-1 bg-[var(--bg-surface)] rounded-3xl shadow-card border border-[var(--border-light)] p-6 lg:p-8 overflow-y-auto">
         
         {/* USERS TAB */}
         {activeTab === 'users' && (
            <div className="space-y-6">
               <div className="flex items-center justify-between">
                  <div>
-                    <h2 className="font-display font-bold text-xl text-slate-900">{t('set.tab.users')}</h2>
-                    <p className="text-sm text-slate-500 mt-1">{t('set.users.desc')}</p>
+                    <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{t('set.tab.users')}</h2>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">{t('set.users.desc')}</p>
                  </div>
                  <Button onClick={handleOpenAdd} disabled={!canAddUser}>
                     <Plus size={18} strokeWidth={3} /> {t('set.users.add')}
@@ -261,17 +261,17 @@ const Settings: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {tenantUsers.map(user => (
-                    <div key={user.id} className="group p-5 rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-lg hover:shadow-slate-900/5 transition-all bg-slate-50/50 hover:bg-white flex items-center justify-between">
+                    <div key={user.id} className="group p-5 rounded-2xl border border-[var(--border-light)] hover:border-[var(--border-color)] hover:shadow-lg hover:shadow-slate-900/5 transition-all bg-[var(--bg-surface-2)]/50 hover:bg-[var(--bg-surface)] flex items-center justify-between">
                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-bold shadow-sm ${user.role === 'TENANT_ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-white text-slate-600 border border-slate-200'}`}>
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-bold shadow-sm ${user.role === 'TENANT_ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-color)]'}`}>
                              {user.fullName.charAt(0)}
                           </div>
                           <div>
-                             <h4 className="font-bold text-slate-900">{user.fullName}</h4>
-                             <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mt-0.5">
+                             <h4 className="font-bold text-[var(--text-primary)]">{user.fullName}</h4>
+                             <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)] mt-0.5">
                                 <span className="font-mono">@{user.username}</span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span className={user.role === 'TENANT_ADMIN' ? 'text-purple-600' : 'text-slate-500'}>
+                                <span className="w-1 h-1 rounded-full bg-[var(--border-color)]"></span>
+                                <span className={user.role === 'TENANT_ADMIN' ? 'text-purple-600' : 'text-[var(--text-secondary)]'}>
                                    {user.role === 'TENANT_ADMIN' ? t('set.users.role.admin') : t('set.users.role.kitchen')}
                                 </span>
                              </div>
@@ -281,7 +281,7 @@ const Settings: React.FC = () => {
                        <div className="flex gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                              onClick={() => handleOpenEdit(user)}
-                             className="p-2 text-slate-400 hover:text-slate-900 bg-white rounded-xl shadow-sm border border-slate-100 hover:border-slate-300 transition-all"
+                             className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-light)] hover:border-[var(--border-color)] transition-all"
                           >
                              <Edit2 size={16} />
                           </button>
@@ -289,7 +289,7 @@ const Settings: React.FC = () => {
                           {currentUser?.id !== user.id && (
                              <button 
                                 onClick={() => handleDelete(user.id)}
-                                className="p-2 text-slate-400 hover:text-red-600 bg-white rounded-xl shadow-sm border border-slate-100 hover:border-red-200 transition-all"
+                                className="p-2 text-[var(--text-muted)] hover:text-red-600 bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-light)] hover:border-red-200 transition-all"
                              >
                                 <Trash2 size={16} />
                              </button>
@@ -302,9 +302,9 @@ const Settings: React.FC = () => {
                  {canAddUser && (
                     <button 
                        onClick={handleOpenAdd}
-                       className="p-5 rounded-2xl border border-dashed border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-slate-600 h-full min-h-[100px]"
+                       className="p-5 rounded-2xl border border-dashed border-[var(--border-color)] hover:border-slate-400 hover:bg-[var(--bg-surface-2)] transition-all flex flex-col items-center justify-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] h-full min-h-[100px]"
                     >
-                       <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                       <div className="w-10 h-10 rounded-full bg-[var(--bg-surface-2)] flex items-center justify-center">
                           <Plus size={20} />
                        </div>
                        <span className="text-xs font-bold uppercase tracking-wider">{t('set.users.add')}</span>
@@ -318,7 +318,7 @@ const Settings: React.FC = () => {
         {activeTab === 'billing' && (
           <div className="space-y-8">
             <div>
-              <h2 className="font-display font-bold text-xl text-slate-900">{t('set.tab.billing')}</h2>
+              <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{t('set.tab.billing')}</h2>
               <p className="text-sm text-[var(--text-secondary)] mt-1">{t('set.billing.desc')}</p>
             </div>
 
@@ -345,8 +345,8 @@ const Settings: React.FC = () => {
                     key={plan.id}
                     className={`relative flex flex-col p-6 rounded-3xl border transition-all duration-300 ${
                       isCurrent
-                        ? 'border-emerald-500 ring-4 ring-emerald-500/10 bg-white shadow-lg'
-                        : 'border-slate-100 bg-slate-50/50 hover:bg-white hover:border-slate-200 hover:shadow-md'
+                        ? 'border-emerald-500 ring-4 ring-emerald-500/10 bg-[var(--bg-surface)] shadow-lg'
+                        : 'border-[var(--border-light)] bg-[var(--bg-surface-2)]/50 hover:bg-[var(--bg-surface)] hover:border-[var(--border-color)] hover:shadow-md'
                     }`}
                   >
                     {isCurrent && (
@@ -360,20 +360,20 @@ const Settings: React.FC = () => {
                       </div>
                     )}
 
-                    <h3 className="text-lg font-bold text-slate-900 font-display mb-2">{plan.name}</h3>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] font-display mb-2">{plan.name}</h3>
                     <div className="mb-6">
-                      <span className="text-3xl font-bold text-slate-900">{priceDisplay}</span>
+                      <span className="text-3xl font-bold text-[var(--text-primary)]">{priceDisplay}</span>
                       {planConfig && planConfig.price > 0 && (
-                        <span className="text-sm text-slate-400 font-medium">{t('bill.cycle')}</span>
+                        <span className="text-sm text-[var(--text-muted)] font-medium">{t('bill.cycle')}</span>
                       )}
                     </div>
 
                     <ul className="space-y-3 mb-8 flex-1">
                       {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-3 text-sm text-slate-600">
+                        <li key={feature} className="flex items-start gap-3 text-sm text-[var(--text-secondary)]">
                           <CheckCircle2
                             size={16}
-                            className={`flex-shrink-0 mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-slate-400'}`}
+                            className={`flex-shrink-0 mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-[var(--text-muted)]'}`}
                           />
                           <span className="leading-tight">{feature}</span>
                         </li>
@@ -416,12 +416,12 @@ const Settings: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {paymentOrders.map(order => (
-                        <tr key={order.id} className="hover:bg-slate-50/50">
-                          <td className="px-4 py-3 text-slate-600">
+                        <tr key={order.id} className="hover:bg-[var(--bg-surface-2)]/50">
+                          <td className="px-4 py-3 text-[var(--text-secondary)]">
                             {new Date(order.createdAt).toLocaleDateString()}
                           </td>
-                          <td className="px-4 py-3 font-medium text-slate-900">{order.targetPlan}</td>
-                          <td className="px-4 py-3 text-slate-600">
+                          <td className="px-4 py-3 font-medium text-[var(--text-primary)]">{order.targetPlan}</td>
+                          <td className="px-4 py-3 text-[var(--text-secondary)]">
                             {(order.amount / 100).toLocaleString()} UZS
                           </td>
                           <td className="px-4 py-3">
@@ -431,7 +431,7 @@ const Settings: React.FC = () => {
                                   ? 'bg-emerald-100 text-emerald-700'
                                   : order.status === 'PENDING' || order.status === 'PAYING'
                                     ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-slate-100 text-slate-500'
+                                    : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)]'
                               }`}
                             >
                               {order.status}
@@ -452,8 +452,8 @@ const Settings: React.FC = () => {
            <div className="max-w-3xl space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center justify-between">
                  <div>
-                    <h2 className="font-display font-bold text-xl text-slate-900">{t('set.gen.profile')}</h2>
-                    <p className="text-sm text-slate-500 mt-1">Basic information about your establishment.</p>
+                    <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{t('set.gen.profile')}</h2>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">Basic information about your establishment.</p>
                  </div>
                  <Button onClick={handleSaveGeneral}>
                     <Save size={18} /> {t('set.gen.save')}
@@ -478,14 +478,14 @@ const Settings: React.FC = () => {
                       label={t('set.gen.org_name')} 
                       value={genForm.name || ''} 
                       onChange={e => setGenForm({...genForm, name: e.target.value})}
-                      className="bg-white"
+                      className="bg-[var(--bg-surface)]"
                     />
                     <Input 
                       label={t('set.gen.phone')} 
                       value={genForm.phone || ''} 
                       onChange={e => setGenForm({...genForm, phone: e.target.value})}
                       placeholder="+998 90 123 45 67"
-                      className="bg-white"
+                      className="bg-[var(--bg-surface)]"
                     />
                  </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -494,22 +494,22 @@ const Settings: React.FC = () => {
                       value={genForm.email || ''} 
                       onChange={e => setGenForm({...genForm, email: e.target.value})}
                       placeholder="info@restaurant.com"
-                      className="bg-white"
+                      className="bg-[var(--bg-surface)]"
                     />
                     <Input 
                       label={t('set.gen.address')} 
                       value={genForm.address || ''} 
                       onChange={e => setGenForm({...genForm, address: e.target.value})}
                       placeholder="Street, City"
-                      className="bg-white"
+                      className="bg-[var(--bg-surface)]"
                     />
                  </div>
               </div>
 
               {/* Section 2: Finance */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-6">
-                 <div className="flex items-center gap-3 text-slate-800 font-bold border-b border-slate-200 pb-2 mb-4">
-                    <DollarSign size={20} className="text-slate-400" />
+              <div className="bg-[var(--bg-surface-2)] p-6 rounded-2xl border border-[var(--border-light)] space-y-6">
+                 <div className="flex items-center gap-3 text-[var(--text-primary)] font-bold border-b border-[var(--border-color)] pb-2 mb-4">
+                    <DollarSign size={20} className="text-[var(--text-muted)]" />
                     {t('set.gen.finance')}
                  </div>
                  
@@ -523,7 +523,7 @@ const Settings: React.FC = () => {
                        ]}
                        value={genForm.currency || 'UZS'}
                        onChange={e => setGenForm({...genForm, currency: e.target.value})}
-                       className="bg-white"
+                       className="bg-[var(--bg-surface)]"
                     />
                     <Input 
                       label={t('set.gen.tax')} 
@@ -531,15 +531,15 @@ const Settings: React.FC = () => {
                       value={genForm.taxRate || ''} 
                       onChange={e => setGenForm({...genForm, taxRate: Number(e.target.value)})}
                       placeholder="12"
-                      className="bg-white"
+                      className="bg-[var(--bg-surface)]"
                     />
                  </div>
               </div>
 
               {/* Section 3: Inventory */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-6">
-                 <div className="flex items-center gap-3 text-slate-800 font-bold border-b border-slate-200 pb-2 mb-4">
-                    <Package size={20} className="text-slate-400" />
+              <div className="bg-[var(--bg-surface-2)] p-6 rounded-2xl border border-[var(--border-light)] space-y-6">
+                 <div className="flex items-center gap-3 text-[var(--text-primary)] font-bold border-b border-[var(--border-color)] pb-2 mb-4">
+                    <Package size={20} className="text-[var(--text-muted)]" />
                     {t('set.gen.inventory')}
                  </div>
                  
@@ -550,9 +550,9 @@ const Settings: React.FC = () => {
                       value={genForm.lowStockThreshold || ''} 
                       onChange={e => setGenForm({...genForm, lowStockThreshold: Number(e.target.value)})}
                       placeholder="10"
-                      className="bg-white"
+                      className="bg-[var(--bg-surface)]"
                     />
-                    <div className="flex items-center text-xs text-slate-500 pt-6">
+                    <div className="flex items-center text-xs text-[var(--text-secondary)] pt-6">
                        {t('set.threshold_help')}
                     </div>
                  </div>
@@ -581,23 +581,23 @@ const Settings: React.FC = () => {
             />
             
             <div>
-               <label className="block font-display font-bold text-[11px] text-slate-500 mb-2 ml-1 uppercase tracking-wider">
+               <label className="block font-display font-bold text-[11px] text-[var(--text-secondary)] mb-2 ml-1 uppercase tracking-wider">
                   {t('set.users.role')}
                </label>
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                      onClick={() => setUserForm({...userForm, role: 'TENANT_ADMIN'})}
-                     className={`p-3 rounded-xl border text-left transition-all ${userForm.role === 'TENANT_ADMIN' ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500' : 'border-slate-200 hover:bg-slate-50'}`}
+                     className={`p-3 rounded-xl border text-left transition-all ${userForm.role === 'TENANT_ADMIN' ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500' : 'border-[var(--border-color)] hover:bg-[var(--bg-surface-2)]'}`}
                   >
-                     <div className="font-bold text-sm text-slate-900 mb-0.5">{t('set.users.role.admin')}</div>
-                     <div className="text-[10px] text-slate-500 leading-tight">Full access to settings and reports</div>
+                     <div className="font-bold text-sm text-[var(--text-primary)] mb-0.5">{t('set.users.role.admin')}</div>
+                     <div className="text-[10px] text-[var(--text-secondary)] leading-tight">Full access to settings and reports</div>
                   </button>
                   <button
                      onClick={() => setUserForm({...userForm, role: 'KITCHEN_USER'})}
-                     className={`p-3 rounded-xl border text-left transition-all ${userForm.role === 'KITCHEN_USER' ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-slate-200 hover:bg-slate-50'}`}
+                     className={`p-3 rounded-xl border text-left transition-all ${userForm.role === 'KITCHEN_USER' ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-[var(--border-color)] hover:bg-[var(--bg-surface-2)]'}`}
                   >
-                     <div className="font-bold text-sm text-slate-900 mb-0.5">{t('set.users.role.kitchen')}</div>
-                     <div className="text-[10px] text-slate-500 leading-tight">Limited to Quick Input only</div>
+                     <div className="font-bold text-sm text-[var(--text-primary)] mb-0.5">{t('set.users.role.kitchen')}</div>
+                     <div className="text-[10px] text-[var(--text-secondary)] leading-tight">Limited to Quick Input only</div>
                   </button>
                </div>
             </div>

@@ -11,13 +11,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({ label, error, icon, cl
   return (
     <div className="w-full">
       {label && (
-        <label className="block font-display font-bold text-[11px] text-slate-500 mb-2 ml-1 uppercase tracking-wider">
+        <label className="block font-display font-bold text-[11px] text-[var(--text-secondary)] mb-2 ml-1 uppercase tracking-wider">
           {label}
         </label>
       )}
       <div className="relative group">
         {icon && (
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-600 transition-colors">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-secondary)] transition-colors">
             {icon}
           </div>
         )}

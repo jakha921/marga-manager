@@ -482,23 +482,23 @@ const QuickInput: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Quick Input Form */}
-      <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-lg border border-slate-200/60 p-6 relative lg:sticky lg:top-0 z-30 transition-all duration-300 supports-[backdrop-filter]:bg-white/60">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 border-b border-slate-100/50 pb-4 gap-4">
+      <div className="bg-[var(--bg-surface)]/90 backdrop-blur-xl rounded-3xl shadow-lg border border-[var(--border-color)]/60 p-6 relative lg:sticky lg:top-0 z-30 transition-all duration-300 supports-[backdrop-filter]:bg-[var(--bg-surface)]/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 border-b border-[var(--border-light)]/50 pb-4 gap-4">
            <div className="flex items-center gap-3 w-full sm:w-auto">
-             <div className="p-2 bg-slate-50 rounded-xl">
-                <Zap size={20} className="text-slate-400" fill="currentColor" />
+             <div className="p-2 bg-[var(--bg-surface-2)] rounded-xl">
+                <Zap size={20} className="text-[var(--text-muted)]" fill="currentColor" />
              </div>
-             <h2 className="font-display font-bold text-lg text-slate-800">{t('qi.title')}</h2>
+             <h2 className="font-display font-bold text-lg text-[var(--text-primary)]">{t('qi.title')}</h2>
            </div>
            
-           <div className="flex bg-slate-50 p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
+           <div className="flex bg-[var(--bg-surface-2)] p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
               {OPERATION_TYPES.map(t_op => (
                 <button
                   key={t_op.id}
                   onClick={() => setOpType(t_op.id as OperationType)}
                   className={`
                     flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap
-                    ${opType === t_op.id ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}
+                    ${opType === t_op.id ? 'bg-[var(--bg-surface)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-slate-700'}
                   `}
                 >
                   {getOpTypeLabel(t_op.id)}
@@ -579,7 +579,7 @@ const QuickInput: React.FC = () => {
                   onChange={e => handleQuantityChange(e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, 'quantity')}
                 />
-                 <span className="absolute right-3 top-[40px] text-xs font-bold text-slate-400 pointer-events-none">
+                 <span className="absolute right-3 top-[40px] text-xs font-bold text-[var(--text-muted)] pointer-events-none">
                   {selectedProduct ? selectedProduct.unit : ''}
                 </span>
               </div>
@@ -625,28 +625,28 @@ const QuickInput: React.FC = () => {
       </div>
 
       {/* History Section */}
-      <div className="bg-white rounded-3xl shadow-card border border-slate-100 overflow-hidden">
-        <div className="p-5 border-b border-slate-100">
+      <div className="bg-[var(--bg-surface)] rounded-3xl shadow-card border border-[var(--border-light)] overflow-hidden">
+        <div className="p-5 border-b border-[var(--border-light)]">
             <div className="flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-center">
                 {/* Title Block */}
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-50 rounded-xl">
-                        <Clock size={20} className="text-slate-400" />
+                    <div className="p-2 bg-[var(--bg-surface-2)] rounded-xl">
+                        <Clock size={20} className="text-[var(--text-muted)]" />
                     </div>
-                    <h3 className="font-display font-bold text-lg text-slate-800">{t('qi.history')}</h3>
+                    <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">{t('qi.history')}</h3>
                 </div>
 
                 {/* Filters Grid */}
                 <div className="w-full xl:w-auto grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap items-center gap-3">
                     {/* Search */}
                     <div className="col-span-1 sm:col-span-2 md:w-64 relative group">
-                        <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-600 transition-colors pointer-events-none" />
+                        <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-secondary)] transition-colors pointer-events-none" />
                         <input 
                         type="text" 
                         placeholder={t('qi.search_ph')} 
                         value={histSearch}
                         onChange={e => setHistSearch(e.target.value)}
-                        className="w-full bg-slate-50 border-transparent focus:bg-white border focus:border-slate-300 text-slate-800 text-sm font-medium py-0 pl-10 pr-4 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none transition-all placeholder-slate-400"
+                        className="w-full bg-[var(--bg-surface-2)] border-transparent focus:bg-[var(--bg-surface)] border focus:border-slate-300 text-[var(--text-primary)] text-sm font-medium py-0 pl-10 pr-4 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none transition-all placeholder-slate-400"
                         />
                     </div>
 
@@ -654,28 +654,28 @@ const QuickInput: React.FC = () => {
                     {showKitchenFilter && (
                         <div className="col-span-1 md:w-40 relative group">
                             <select 
-                                className="w-full bg-slate-50 border-transparent focus:bg-white border focus:border-slate-300 text-slate-800 text-sm font-medium py-0 pl-3.5 pr-8 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none appearance-none cursor-pointer transition-all"
+                                className="w-full bg-[var(--bg-surface-2)] border-transparent focus:bg-[var(--bg-surface)] border focus:border-slate-300 text-[var(--text-primary)] text-sm font-medium py-0 pl-3.5 pr-8 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none appearance-none cursor-pointer transition-all"
                                 value={histKitchen}
                                 onChange={e => setHistKitchen(e.target.value)}
                             >
                                 <option value="all">{t('qi.all_kitchens')}</option>
                                 {kitchens.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
                             </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-600" />
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none group-hover:text-[var(--text-secondary)]" />
                         </div>
                     )}
 
                     {/* Type Filter */}
                     <div className={`${showKitchenFilter ? 'col-span-1' : 'col-span-1 sm:col-span-2'} md:w-36 relative group`}>
                         <select 
-                            className="w-full bg-slate-50 border-transparent focus:bg-white border focus:border-slate-300 text-slate-800 text-sm font-medium py-0 pl-3.5 pr-8 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none appearance-none cursor-pointer transition-all"
+                            className="w-full bg-[var(--bg-surface-2)] border-transparent focus:bg-[var(--bg-surface)] border focus:border-slate-300 text-[var(--text-primary)] text-sm font-medium py-0 pl-3.5 pr-8 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none appearance-none cursor-pointer transition-all"
                             value={histType}
                             onChange={e => setHistType(e.target.value)}
                         >
                             <option value="all">{t('qi.all_types')}</option>
                             {OPERATION_TYPES.map(t_op => <option key={t_op.id} value={t_op.id}>{getOpTypeLabel(t_op.id)}</option>)}
                         </select>
-                        <Filter size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-600" />
+                        <Filter size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none group-hover:text-[var(--text-secondary)]" />
                     </div>
 
                     {/* Date Range */}
@@ -684,7 +684,7 @@ const QuickInput: React.FC = () => {
                             type="date" 
                             value={histDateFrom} 
                             onChange={e => setHistDateFrom(e.target.value)} 
-                            className="w-full bg-slate-50 border-transparent focus:bg-white border focus:border-slate-300 text-slate-800 text-sm font-medium py-0 pl-3.5 pr-2 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none transition-all cursor-pointer"
+                            className="w-full bg-[var(--bg-surface-2)] border-transparent focus:bg-[var(--bg-surface)] border focus:border-slate-300 text-[var(--text-primary)] text-sm font-medium py-0 pl-3.5 pr-2 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none transition-all cursor-pointer"
                         />
                     </div>
                     <div className="col-span-1 md:w-36 relative">
@@ -692,13 +692,13 @@ const QuickInput: React.FC = () => {
                             type="date" 
                             value={histDateTo} 
                             onChange={e => setHistDateTo(e.target.value)} 
-                            className="w-full bg-slate-50 border-transparent focus:bg-white border focus:border-slate-300 text-slate-800 text-sm font-medium py-0 pl-3.5 pr-2 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none transition-all cursor-pointer" 
+                            className="w-full bg-[var(--bg-surface-2)] border-transparent focus:bg-[var(--bg-surface)] border focus:border-slate-300 text-[var(--text-primary)] text-sm font-medium py-0 pl-3.5 pr-2 h-11 rounded-xl focus:ring-4 focus:ring-slate-100 focus:outline-none transition-all cursor-pointer" 
                         />
                     </div>
 
                     {/* Excel Export Button */}
                     <div className="col-span-1 sm:col-span-2 md:w-auto">
-                        <Button variant="secondary" onClick={handleExportExcel} className="w-full md:w-11 h-11 p-0 flex items-center justify-center border-slate-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200">
+                        <Button variant="secondary" onClick={handleExportExcel} className="w-full md:w-11 h-11 p-0 flex items-center justify-center border-[var(--border-color)] text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200">
                             <div className="flex items-center gap-2 md:justify-center">
                                 <Download size={20} />
                                 <span className="md:hidden">Export</span>
@@ -714,28 +714,28 @@ const QuickInput: React.FC = () => {
             {filteredHistory.length > 0 ? (
                 <>
                 {/* Summary / Totals Header */}
-                <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 mb-4 flex flex-col lg:flex-row items-center justify-between gap-6 backdrop-blur-sm">
-                    <div className="flex items-center gap-3 text-slate-500 font-medium text-sm">
-                       <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-200">
-                         <Sigma size={18} className="text-slate-400" />
+                <div className="bg-slate-50/80 rounded-2xl p-5 border border-[var(--border-color)] mb-4 flex flex-col lg:flex-row items-center justify-between gap-6 backdrop-blur-sm">
+                    <div className="flex items-center gap-3 text-[var(--text-secondary)] font-medium text-sm">
+                       <div className="p-2 bg-[var(--bg-surface)] rounded-lg shadow-sm border border-[var(--border-color)]">
+                         <Sigma size={18} className="text-[var(--text-muted)]" />
                        </div>
-                       {t('qi.total_count')}: <span className="text-slate-900 font-bold text-lg">{filteredHistory.length}</span>
+                       {t('qi.total_count')}: <span className="text-[var(--text-primary)] font-bold text-lg">{filteredHistory.length}</span>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-center justify-end w-full lg:w-auto">
                        {/* Display quantities by unit */}
                        <div className="flex flex-wrap justify-center gap-3">
                            {Object.entries(totalQuantities).map(([unit, qty]) => (
-                               <div key={unit} className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
-                                  <span className="text-xs text-slate-400 font-bold uppercase">{unit}</span>
-                                  <span className="font-bold text-slate-900">{formatNumber(qty)}</span>
+                               <div key={unit} className="flex items-center gap-2 bg-[var(--bg-surface)] px-3 py-1.5 rounded-xl border border-[var(--border-color)] shadow-sm">
+                                  <span className="text-xs text-[var(--text-muted)] font-bold uppercase">{unit}</span>
+                                  <span className="font-bold text-[var(--text-primary)]">{formatNumber(qty)}</span>
                                </div>
                            ))}
                        </div>
                        
                        {/* Total Price */}
                        {totalAmount > 0 && (
-                           <div className="flex items-center gap-3 bg-white px-5 py-2 rounded-xl border border-emerald-100 shadow-sm ring-4 ring-emerald-50/50">
+                           <div className="flex items-center gap-3 bg-[var(--bg-surface)] px-5 py-2 rounded-xl border border-emerald-100 shadow-sm ring-4 ring-emerald-50/50">
                               <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider">{t('qi.total_amount') || 'Total'}</span>
                               <span className="font-display font-bold text-xl text-emerald-700">{formatNumber(totalAmount)} <span className="text-sm font-medium text-emerald-500">sum</span></span>
                            </div>
@@ -744,7 +744,7 @@ const QuickInput: React.FC = () => {
                  </div>
 
                 {paginatedHistory.map((entry) => (
-                    <div key={entry.id} className="bg-white rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between shadow-sm border border-slate-100 hover:border-slate-200 hover:shadow-md transition-all gap-4 relative">
+                    <div key={entry.id} className="bg-[var(--bg-surface)] rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between shadow-sm border border-[var(--border-light)] hover:border-[var(--border-color)] hover:shadow-md transition-all gap-4 relative">
                         <div className="flex items-start gap-4 flex-1">
                         <div className={`
                             w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm
@@ -758,7 +758,7 @@ const QuickInput: React.FC = () => {
                         
                         <div className="space-y-1.5 flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-bold text-base text-slate-900 truncate">{entry.productName}</span>
+                                <span className="font-bold text-base text-[var(--text-primary)] truncate">{entry.productName}</span>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
                                 entry.type === 'INCOMING' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
                                 entry.type === 'TRANSFER' ? 'bg-purple-50 text-purple-700 border-purple-100' :
@@ -770,22 +770,22 @@ const QuickInput: React.FC = () => {
                             </div>
                             
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-1.5 gap-x-4">
-                                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                                <Calendar size={13} className="text-slate-300" />
-                                {formatDate(entry.date)} <span className="text-slate-200">|</span> {entry.time?.slice(0, 5)}
+                                <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
+                                <Calendar size={13} className="text-[var(--text-muted)]" />
+                                {formatDate(entry.date)} <span className="text-[var(--bg-surface-2)]">|</span> {entry.time?.slice(0, 5)}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                                <MapPin size={13} className="text-slate-300" />
+                                <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
+                                <MapPin size={13} className="text-[var(--text-muted)]" />
                                 {entry.type === 'TRANSFER' ? `${entry.kitchenName} → ${entry.toKitchenName}` : entry.kitchenName}
                                 </div>
                                 {entry.price && (
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-                                    <DollarSign size={13} className="text-slate-300" />
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)]">
+                                    <DollarSign size={13} className="text-[var(--text-muted)]" />
                                     <span className={entry.type === 'SALE' ? 'text-emerald-600' : entry.type === 'INCOMING' ? 'text-blue-600' : ''}>
                                         {/* Display Unit Price: Total Price / Quantity */}
                                         {formatNumber(entry.price / (entry.quantity || 1))}
                                     </span>
-                                    <span className="text-[10px] text-slate-400 font-normal"> / {entry.unit}</span>
+                                    <span className="text-[10px] text-[var(--text-muted)] font-normal"> / {entry.unit}</span>
                                 </div>
                                 )}
                             </div>
@@ -794,15 +794,15 @@ const QuickInput: React.FC = () => {
 
                         <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-none pt-3 md:pt-0">
                         <div className="text-left md:text-right px-2">
-                            <div className="font-display font-bold text-slate-900 text-xl flex items-center gap-2 justify-start md:justify-end">
-                            <Package size={16} className="text-slate-300" />
-                            {formatNumber(Number(entry.quantity))} <span className="text-sm font-body font-medium text-slate-400 uppercase tracking-tighter">{entry.unit}</span>
+                            <div className="font-display font-bold text-[var(--text-primary)] text-xl flex items-center gap-2 justify-start md:justify-end">
+                            <Package size={16} className="text-[var(--text-muted)]" />
+                            {formatNumber(Number(entry.quantity))} <span className="text-sm font-body font-medium text-[var(--text-muted)] uppercase tracking-tighter">{entry.unit}</span>
                             </div>
                             {/* Display Total Price */}
                             {entry.price && (
                                 <div className={`text-sm font-bold mt-1 ${
                                     entry.type === 'SALE' ? 'text-emerald-600' : 
-                                    entry.type === 'INCOMING' ? 'text-blue-600' : 'text-slate-500'
+                                    entry.type === 'INCOMING' ? 'text-blue-600' : 'text-[var(--text-secondary)]'
                                 }`}>
                                     {formatNumber(entry.price)} sum
                                 </div>
@@ -813,7 +813,7 @@ const QuickInput: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => handleOpenEdit(entry)}
-                                className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all border border-slate-100 bg-slate-50 shadow-sm"
+                                className="w-10 h-10 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-slate-100 rounded-xl transition-all border border-[var(--border-light)] bg-[var(--bg-surface-2)] shadow-sm"
                                 title={t('common.edit')}
                                 aria-label={t('common.edit')}
                             >
@@ -823,7 +823,7 @@ const QuickInput: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => handleDelete(entry.id)}
-                                    className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-red-50 bg-red-50/30 shadow-sm"
+                                    className="w-10 h-10 flex items-center justify-center text-[var(--text-muted)] hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-red-50 bg-red-50/30 shadow-sm"
                                     title={t('common.delete')}
                                     aria-label={t('common.delete')}
                                 >
@@ -837,8 +837,8 @@ const QuickInput: React.FC = () => {
 
                 {/* Pagination Controls */}
                 {filteredHistory.length > 0 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[var(--border-light)]">
+                    <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                       <span>{t('common.show')}</span>
                       <select 
                         value={itemsPerPage}
@@ -846,7 +846,7 @@ const QuickInput: React.FC = () => {
                           setItemsPerPage(Number(e.target.value));
                           setCurrentPage(1);
                         }}
-                        className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        className="bg-[var(--bg-surface-2)] border border-[var(--border-color)] rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                       >
                         <option value={5}>5</option>
                         <option value={10}>10</option>
@@ -860,7 +860,7 @@ const QuickInput: React.FC = () => {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600"
+                        className="p-2 rounded-lg border border-[var(--border-color)] hover:bg-[var(--bg-surface-2)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--text-secondary)]"
                       >
                         {t('common.prev')}
                       </button>
@@ -882,7 +882,7 @@ const QuickInput: React.FC = () => {
                               className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                                 currentPage === p
                                   ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'text-slate-600 hover:bg-slate-50'
+                                  : 'text-[var(--text-secondary)] hover:bg-slate-50'
                               }`}
                             >
                               {p}
@@ -894,7 +894,7 @@ const QuickInput: React.FC = () => {
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600"
+                        className="p-2 rounded-lg border border-[var(--border-color)] hover:bg-[var(--bg-surface-2)] disabled:opacity-50 disabled:cursor-not-allowed text-[var(--text-secondary)]"
                       >
                         {t('common.next')}
                       </button>
@@ -903,11 +903,11 @@ const QuickInput: React.FC = () => {
                 )}
                 </>
             ) : (
-              <div className="text-center py-16 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300 shadow-sm">
+              <div className="text-center py-16 bg-slate-50/50 rounded-3xl border border-dashed border-[var(--border-color)]">
+                 <div className="w-12 h-12 bg-[var(--bg-surface)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-[var(--text-muted)] shadow-sm">
                    <Clock size={24} />
                  </div>
-                 <p className="text-slate-400 text-sm font-medium">{t('qi.no_history')}</p>
+                 <p className="text-[var(--text-muted)] text-sm font-medium">{t('qi.no_history')}</p>
               </div>
             )}
           </div>

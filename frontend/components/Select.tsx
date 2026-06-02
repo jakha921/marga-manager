@@ -13,13 +13,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({ label, options, err
   return (
     <div className="w-full relative">
       {label && (
-        <label className="block font-display font-bold text-[11px] text-slate-500 mb-2 ml-1 uppercase tracking-wider">
+        <label className="block font-display font-bold text-[11px] text-[var(--text-secondary)] mb-2 ml-1 uppercase tracking-wider">
           {label}
         </label>
       )}
       <div className="relative group">
         {icon && (
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-600 transition-colors pointer-events-none z-10">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-secondary)] transition-colors pointer-events-none z-10">
             {icon}
           </div>
         )}
@@ -45,7 +45,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({ label, options, err
             </option>
           ))}
         </select>
-        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-[var(--text-muted)]">
           <ChevronDown size={16} />
         </div>
       </div>

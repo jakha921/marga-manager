@@ -302,54 +302,54 @@ const Dashboard: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-[var(--bg-surface-2)] border-b border-[var(--border-light)]">
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display cursor-help" title={t('anl.col.dept.full')}>{t('anl.col.dept')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.start.full')}>{t('anl.col.start')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.in.full')}>{t('anl.col.in')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.exp.full')}>{t('anl.col.exp')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.end.full')}>{t('anl.col.end')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.sales.full')}>{t('anl.col.sales')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.mrk.full')}>{t('anl.col.mrk')}</th>
-                <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right">%</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display cursor-help" title={t('anl.col.dept.full')}>{t('anl.col.dept')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.start.full')}>{t('anl.col.start')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.in.full')}>{t('anl.col.in')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.exp.full')}>{t('anl.col.exp')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.end.full')}>{t('anl.col.end')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.sales.full')}>{t('anl.col.sales')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.mrk.full')}>{t('anl.col.mrk')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right">%</th>
                 {showTransfers && (
                     <>
-                        <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.trns_in.full')}>{t('anl.col.trns_in')}</th>
-                        <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.trns_out.full')}>{t('anl.col.trns_out')}</th>
+                        <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.trns_in.full')}>{t('anl.col.trns_in')}</th>
+                        <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.trns_out.full')}>{t('anl.col.trns_out')}</th>
                     </>
                 )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {displayedTableStats.map(stat => (
-                <tr key={stat.kitchenId} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-bold text-xs text-slate-800">{stat.kitchenName}</td>
-                  <td className="py-3 px-4 text-xs text-slate-600 text-right font-mono">{formatNumber(stat.beginningBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-600 text-right font-mono">{formatNumber(stat.incoming)}</td>
+                <tr key={stat.kitchenId} className="hover:bg-[var(--bg-surface-2)] transition-colors">
+                  <td className="py-3 px-4 font-bold text-xs text-[var(--text-primary)]">{stat.kitchenName}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.beginningBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.incoming)}</td>
                   <td className="py-3 px-4 text-xs text-blue-600 text-right font-mono">{formatNumber(stat.actualExpense)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-800 font-bold text-right font-mono">{formatNumber(stat.endBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] font-bold text-right font-mono">{formatNumber(stat.endBalance)}</td>
                   <td className="py-3 px-4 text-xs text-emerald-600 font-medium text-right font-mono">{formatNumber(stat.salesRevenue)}</td>
                   <td className="py-3 px-4 text-xs text-emerald-600 font-medium text-right font-mono">{formatNumber(stat.markupVal)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-600 text-right font-mono">{stat.markupPercent}%</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{stat.markupPercent}%</td>
                   {showTransfers && (
                       <>
-                        <td className="py-3 px-4 text-xs text-slate-600 text-right font-mono">{formatNumber(stat.transfersIn)}</td>
-                        <td className="py-3 px-4 text-xs text-slate-600 text-right font-mono">{formatNumber(stat.transfersOut)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.transfersIn)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.transfersOut)}</td>
                       </>
                   )}
                 </tr>
               ))}
-               <tr className="bg-slate-50 border-t border-slate-200 font-bold">
-                  <td className="py-3 px-4 text-xs text-slate-900">{t('anl.total')}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.beginningBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.incoming)}</td>
+               <tr className="bg-[var(--bg-surface-2)] border-t border-[var(--border-color)] font-bold">
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)]">{t('anl.total')}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.beginningBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.incoming)}</td>
                   <td className="py-3 px-4 text-xs text-blue-700 text-right font-mono">{formatNumber(tableTotals.actualExpense)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.endBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.endBalance)}</td>
                   <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(tableTotals.salesRevenue)}</td>
                   <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(tableTotals.markupVal)}</td>
-                  <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{tableTotals.markupPercent}%</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{tableTotals.markupPercent}%</td>
                   {showTransfers && (
                       <>
-                        <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.transfersIn)}</td>
-                        <td className="py-3 px-4 text-xs text-slate-900 text-right font-mono">{formatNumber(tableTotals.transfersOut)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.transfersIn)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.transfersOut)}</td>
                       </>
                   )}
                </tr>
@@ -362,34 +362,34 @@ const Dashboard: React.FC = () => {
       {/* 3. Charts Section */}
       <div className="w-full">
         {/* Main Chart Section */}
-        <div className="bg-white rounded-3xl p-6 shadow-card border border-slate-100">
+        <div className="bg-[var(--bg-surface)] rounded-3xl p-6 shadow-card border border-[var(--border-light)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
             <div className="flex items-center gap-3">
-               <div className="p-2 bg-slate-50 rounded-xl">
-                 <CalendarIcon size={20} className="text-slate-400" />
+               <div className="p-2 bg-[var(--bg-surface-2)] rounded-xl">
+                 <CalendarIcon size={20} className="text-[var(--text-muted)]" />
                </div>
-               <h3 className="font-display font-bold text-lg text-slate-900">{t('dash.sales_cost_dynamics')}</h3>
+               <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">{t('dash.sales_cost_dynamics')}</h3>
             </div>
 
             {/* Chart Mode Toggle */}
-            <div className="flex bg-slate-50 p-1 rounded-xl overflow-x-auto max-w-full">
+            <div className="flex bg-[var(--bg-surface-2)] p-1 rounded-xl overflow-x-auto max-w-full">
                <button
                  onClick={() => setChartMode('daily')}
-                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'daily' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'daily' ? 'bg-white shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-slate-700'}`}
                >
                  <BarChart3 size={14} />
                  {t('dash.chart.daily')}
                </button>
                <button
                  onClick={() => setChartMode('cumulative')}
-                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'cumulative' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'cumulative' ? 'bg-white shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-slate-700'}`}
                >
                  <LineChart size={14} />
                  {t('dash.chart.cumulative')}
                </button>
                <button
                  onClick={() => setChartMode('product')}
-                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'product' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'product' ? 'bg-white shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-slate-700'}`}
                >
                  <PieChart size={14} />
                  {t('dash.chart.product')}
@@ -399,7 +399,7 @@ const Dashboard: React.FC = () => {
 
           {/* Product Chart Filters */}
           {chartMode === 'product' && (
-              <div className="flex flex-col sm:flex-row items-end gap-4 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="flex flex-col sm:flex-row items-end gap-4 mb-6 bg-[var(--bg-surface-2)] p-4 rounded-2xl border border-[var(--border-light)]">
                   <div className="w-full sm:w-64">
                       <Select
                           label={t('qi.product')}

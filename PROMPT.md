@@ -164,36 +164,34 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ### 4.1 Компоненты
 
-- [ ] `frontend/components/Modal.tsx`: заменить все `bg-white`, `border-slate-*`, `text-slate-*` на CSS переменные
-- [ ] `frontend/components/StatsCard.tsx`: заменить `bg-white`, `text-slate-900`, `text-slate-400/500`, `border-slate-100`, `bg-slate-300`
-- [ ] `frontend/components/Skeleton.tsx`: заменить строковую конкатенацию className на `cn()`
-- [ ] `frontend/components/ErrorBoundary.tsx`: `bg-slate-900` → `bg-[var(--color-primary)]`
-- [ ] `frontend/components/Layout.tsx` строки 39-46 (`getLinkClasses`): заменить hardcoded `bg-slate-*`, `text-slate-*` на CSS переменные. Также sidebar logo/nav
+- [x] `frontend/components/Modal.tsx`: заменить все `bg-white`, `border-slate-*`, `text-slate-*` на CSS переменные
+- [x] `frontend/components/StatsCard.tsx`: заменить `bg-white`, `text-slate-900`, `text-slate-400/500`, `border-slate-100`, `bg-slate-300`
+- [x] `frontend/components/Skeleton.tsx`: уже использует CSS переменные
+- [x] `frontend/components/ErrorBoundary.tsx`: `bg-slate-900` → `bg-[var(--color-primary)]`
+- [x] `frontend/components/Layout.tsx` строки 39-46 (`getLinkClasses`): заменить hardcoded `bg-slate-*`, `text-slate-*` на CSS переменные. Также sidebar logo/nav
+- [x] `frontend/components/Input.tsx`, `Select.tsx`, `DateFilter.tsx`, `Button.tsx`: заменены
 
 ### 4.2 Views
 
-- [ ] `frontend/views/Login.tsx`: все `bg-slate-50`, `bg-white`, `border-slate-*`, `text-slate-*` → CSS переменные
-- [ ] `frontend/views/Dashboard.tsx`: все hardcoded цвета (grep `bg-white|text-slate-|border-slate-|bg-slate-`)
-- [ ] `frontend/views/QuickInput.tsx`: `bg-white/90`, `bg-white`, `border-slate-*`, `text-slate-*`
-- [ ] `frontend/views/Settings.tsx`: `bg-white`, `border-slate-*`, `text-slate-*`
-- [ ] `frontend/views/Kitchens.tsx`: `bg-white`, `border-slate-*`, `text-slate-*`
-- [ ] `frontend/views/Products.tsx`: `bg-white`, `border-slate-*`, `text-slate-*`
-- [ ] `frontend/views/superadmin/AdminDashboard.tsx`: все hardcoded цвета
+- [x] `frontend/views/Login.tsx`: все `bg-slate-50`, `bg-white`, `border-slate-*`, `text-slate-*` → CSS переменные
+- [x] `frontend/views/Dashboard.tsx`: все hardcoded цвета заменены
+- [x] `frontend/views/QuickInput.tsx`: `bg-white/90`, `bg-white`, `border-slate-*`, `text-slate-*` заменены
+- [x] `frontend/views/Settings.tsx`: `bg-white`, `border-slate-*`, `text-slate-*` заменены
+- [x] `frontend/views/Kitchens.tsx`: `bg-white`, `border-slate-*`, `text-slate-*` заменены
+- [x] `frontend/views/Products.tsx`: `bg-white`, `border-slate-*`, `text-slate-*` заменены
+- [x] `frontend/views/superadmin/AdminDashboard.tsx`: hardcoded цвета заменены (кроме `bg-slate-950/700/800` — intentional dark design для SUPER_ADMIN)
 
 ### 4.3 Light Theme Polish
 
-- [ ] В `frontend/index.html` CSS переменные `:root`: обновить `--shadow-card` для более premium тени:
-```css
---shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
-```
-- [ ] Обновить hover-эффекты: добавить `transition-all duration-200` на карточки и кнопки где не хватает
-- [ ] Sidebar: добавить subtle `border-r border-[var(--border-light)]` вместо shadow для разделения
+- [x] В `frontend/index.html` CSS переменные `:root`: обновить `--shadow-card` для более premium тени + CSS class `.shadow-card`
+- [x] Обновить hover-эффекты: `transition-all duration-200` на StatsCard, кнопки
+- [x] Sidebar уже имеет `border-r border-[var(--border-color)]`
 
 **Проверка**: `cd frontend && npm run build`. Визуально проверить dark/light theme на каждой странице.
 
 **Коммит**: `fix(theme): заменить 141+ hardcoded цветов на CSS переменные, polish light theme`
 
-- [ ] Phase 4 complete
+- [x] Phase 4 complete
 
 ---
 

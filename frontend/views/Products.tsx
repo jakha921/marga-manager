@@ -130,74 +130,74 @@ const Products: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="bg-white p-2.5 rounded-2xl shadow-card flex flex-col sm:flex-row items-center justify-between gap-4 border border-slate-100">
+      <div className="bg-[var(--bg-surface)] p-2.5 rounded-2xl shadow-card flex flex-col sm:flex-row items-center justify-between gap-4 border border-[var(--border-light)]">
          <div className="flex items-center gap-2 w-full sm:w-auto px-2">
            <Input 
              placeholder={t('prod.search_ph')}
              icon={<Search size={16} />}
              value={searchTerm}
              onChange={e => setSearchTerm(e.target.value)}
-             className="border-none bg-slate-50 focus:bg-slate-100 min-w-[280px]"
+             className="border-none bg-[var(--bg-surface-2)] focus:bg-[var(--bg-surface-2)] min-w-[280px]"
            />
            <div className="relative">
              <select 
-               className="appearance-none bg-slate-50 py-3 pl-4 pr-10 rounded-xl text-[13px] font-medium text-slate-600 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors border-none"
+               className="appearance-none bg-[var(--bg-surface-2)] py-3 pl-4 pr-10 rounded-xl text-[13px] font-medium text-[var(--text-secondary)] focus:outline-none cursor-pointer hover:bg-[var(--bg-surface-2)] transition-colors border-none"
                value={categoryFilter}
                onChange={e => setCategoryFilter(e.target.value)}
              >
                 {categoryFilterOptions.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
              </select>
-             <Filter size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+             <Filter size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
            </div>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto px-2">
            <Button variant="secondary" onClick={() => setIsCatModalOpen(true)}>
              <ListTree size={16} /> Categories
            </Button>
-           <Button onClick={handleOpenCreate} className="shadow-lg shadow-slate-900/10">
+           <Button onClick={handleOpenCreate} className="shadow-lg shadow-[var(--color-primary)]/10">
              <Plus size={16} strokeWidth={3} /> {t('prod.add')}
            </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-card overflow-hidden border border-slate-100">
+      <div className="bg-[var(--bg-surface)] rounded-3xl shadow-card overflow-hidden border border-[var(--border-light)]">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="py-5 px-8 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display w-24">{t('prod.code')}</th>
-                <th className="py-5 px-8 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display">{t('prod.name')}</th>
-                <th className="py-5 px-8 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display">{t('prod.category')}</th>
-                <th className="py-5 px-8 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display text-right">{t('prod.unit')}</th>
-                <th className="py-5 px-8 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-display text-right">{t('kit.actions')}</th>
+              <tr className="bg-[var(--bg-surface-2)]/50 border-b border-[var(--border-light)]">
+                <th className="py-5 px-8 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider font-display w-24">{t('prod.code')}</th>
+                <th className="py-5 px-8 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider font-display">{t('prod.name')}</th>
+                <th className="py-5 px-8 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider font-display">{t('prod.category')}</th>
+                <th className="py-5 px-8 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider font-display text-right">{t('prod.unit')}</th>
+                <th className="py-5 px-8 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider font-display text-right">{t('kit.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredProducts.map(product => (
-                <tr key={product.id} className="group hover:bg-slate-50/50 transition-colors">
+                <tr key={product.id} className="group hover:bg-[var(--bg-surface-2)]/50 transition-colors">
                    <td className="py-5 px-8">
-                    <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
+                    <span className="font-mono text-xs font-bold text-[var(--text-secondary)] bg-[var(--bg-surface-2)] px-2 py-1 rounded-lg">
                       {product.code || '-'}
                     </span>
                   </td>
                   <td className="py-5 px-8">
-                    <span className="font-bold text-sm text-slate-900">{product.name}</span>
+                    <span className="font-bold text-sm text-[var(--text-primary)]">{product.name}</span>
                   </td>
                   <td className="py-5 px-8">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold uppercase tracking-wider border border-slate-200">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--bg-surface-2)] text-[var(--text-secondary)] text-[11px] font-bold uppercase tracking-wider border border-[var(--border-color)]">
                        {product.categoryName || categories.find(c => c.id === product.category)?.name || product.category}
                     </span>
                   </td>
-                  <td className="py-5 px-8 text-right font-mono text-sm font-medium text-slate-500">
+                  <td className="py-5 px-8 text-right font-mono text-sm font-medium text-[var(--text-secondary)]">
                      {product.unit}
                   </td>
                   <td className="py-5 px-8 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => handleOpenEdit(product)} className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-lg transition-colors">
+                      <button onClick={() => handleOpenEdit(product)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)] rounded-lg transition-colors">
                         <Edit2 size={16} />
                       </button>
                       {userRole !== 'KITCHEN_USER' && (
-                        <button onClick={() => handleDeleteClick(product.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-white rounded-lg transition-colors">
+                        <button onClick={() => handleDeleteClick(product.id)} className="p-2 text-[var(--text-muted)] hover:text-red-600 hover:bg-[var(--bg-surface)] rounded-lg transition-colors">
                           <Trash2 size={16} />
                         </button>
                       )}
@@ -207,7 +207,7 @@ const Products: React.FC = () => {
               ))}
               {filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center text-slate-400 font-medium">
+                  <td colSpan={5} className="py-16 text-center text-[var(--text-muted)] font-medium">
                     {t('prod.no_data')}
                   </td>
                 </tr>
@@ -277,7 +277,7 @@ const Products: React.FC = () => {
         title={t('prod.delete_title')}
       >
         <div className="space-y-4">
-          <p className="text-slate-600 text-sm">
+          <p className="text-[var(--text-secondary)] text-sm">
             {t('prod.delete_confirm')}
           </p>
           <div className="flex gap-3 justify-end pt-2">
@@ -311,19 +311,19 @@ const Products: React.FC = () => {
 
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
             {categories.map(cat => (
-              <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                <span className="text-sm font-bold text-slate-800">{cat.name}</span>
+              <div key={cat.id} className="flex items-center justify-between p-3 bg-[var(--bg-surface-2)] rounded-xl border border-[var(--border-light)] group">
+                <span className="text-sm font-bold text-[var(--text-primary)]">{cat.name}</span>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => { setEditingCatId(cat.id); setNewCatName(cat.name); }}
-                    className="p-1.5 text-slate-400 hover:text-slate-900"
+                    className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                   >
                     <Edit2 size={14} />
                   </button>
                   {userRole !== 'KITCHEN_USER' && (
                     <button 
                       onClick={() => deleteCategory(cat.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600"
+                      className="p-1.5 text-[var(--text-muted)] hover:text-red-600"
                     >
                       <Trash2 size={14} />
                     </button>

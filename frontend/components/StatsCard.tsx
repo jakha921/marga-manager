@@ -13,9 +13,9 @@ interface StatsCardProps {
 
 const StatsCard: React.FC<StatsCardProps> = ({ title, value, subtitle, trend }) => {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-card flex flex-col items-start justify-between h-full transition-all duration-300 hover:shadow-lg border border-transparent hover:border-slate-100 group">
+    <div className="bg-[var(--bg-surface)] p-6 rounded-2xl shadow-card flex flex-col items-start justify-between h-full transition-all duration-200 hover:shadow-lg border border-[var(--border-light)] hover:border-[var(--border-color)] group">
       <div className="w-full flex items-center justify-between mb-4">
-        <h3 className="font-display text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+        <h3 className="font-display text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
           {title}
         </h3>
         {trend && (
@@ -29,12 +29,12 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, subtitle, trend }) 
         )}
       </div>
       
-      <div className="font-display font-bold text-4xl text-slate-900 tracking-tight mb-2 group-hover:scale-[1.02] transition-transform origin-left">
+      <div className="font-display font-bold text-4xl text-[var(--text-primary)] tracking-tight mb-2 group-hover:scale-[1.02] transition-transform origin-left">
         {value}
       </div>
       
-      <div className="font-body text-xs font-medium text-slate-500 flex items-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+      <div className="font-body text-xs font-medium text-[var(--text-secondary)] flex items-center gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--border-color)]"></span>
         {subtitle}
       </div>
     </div>

@@ -20,15 +20,15 @@ const DateFilter: React.FC<DateFilterProps> = ({ label, value, onChange, classNa
   return (
     <div className={cn('relative', className)}>
       {label && (
-        <label className="block font-display font-bold text-[11px] text-slate-500 mb-2 ml-1 uppercase tracking-wider">
+        <label className="block font-display font-bold text-[11px] text-[var(--text-secondary)] mb-2 ml-1 uppercase tracking-wider">
           {label}
         </label>
       )}
       <div 
-        className="relative w-full bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors rounded-xl h-[46px] flex items-center px-4 cursor-pointer group"
+        className="relative w-full bg-[var(--bg-surface-2)] border border-[var(--border-color)] hover:border-[var(--border-color)] transition-colors rounded-xl h-[46px] flex items-center px-4 cursor-pointer group"
       >
-        <Calendar size={16} className="text-slate-400 mr-3 group-hover:text-slate-600 transition-colors" />
-        <span className="text-[13px] font-medium text-slate-700">
+        <Calendar size={16} className="text-[var(--text-muted)] mr-3 group-hover:text-[var(--text-secondary)] transition-colors" />
+        <span className="text-[13px] font-medium text-[var(--text-primary)]">
           {value ? formatDate(value) : 'Select Date'}
         </span>
         <input

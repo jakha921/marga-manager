@@ -113,7 +113,7 @@ const AdminDashboard: React.FC = () => {
   const selectedOrgName = organizations.find(o => String(o.id) === selectedOrgId)?.name;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-body">
+    <div className="min-h-screen bg-[var(--color-primary)] text-slate-100 font-body">
       {/* Super Admin Header */}
       <header className="bg-slate-950 border-b border-slate-800 px-8 h-20 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -122,10 +122,10 @@ const AdminDashboard: React.FC = () => {
            </div>
            <div>
              <h1 className="font-display font-bold text-lg text-white">SaaS Control Center</h1>
-             <p className="text-xs text-slate-400">Super Admin Dashboard</p>
+             <p className="text-xs text-[var(--text-muted)]">Super Admin Dashboard</p>
            </div>
         </div>
-        <button onClick={logout} className="text-sm font-bold text-slate-400 hover:text-white flex items-center gap-2">
+        <button onClick={logout} className="text-sm font-bold text-[var(--text-muted)] hover:text-white flex items-center gap-2">
            <LogOut size={16} /> Logout
         </button>
       </header>
@@ -134,45 +134,45 @@ const AdminDashboard: React.FC = () => {
         
         {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg"><Building2 size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Tenants</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Tenants</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{totalTenants}</div>
            </div>
-           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg"><DollarSign size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Monthly Revenue</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Monthly Revenue</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">${mrr.toLocaleString()}</div>
            </div>
-           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Activity size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Rate</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Rate</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{Math.round((activeTenants/totalTenants)*100)}%</div>
            </div>
-           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-purple-500/20 text-purple-400 rounded-lg"><Users size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Licensed Users</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Licensed Users</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{totalUsers}</div>
            </div>
         </div>
 
         {/* Tenants Table */}
-        <div className="bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden">
+        <div className="bg-[var(--border-color)] rounded-3xl border border-slate-700 overflow-hidden">
            <div className="p-6 border-b border-slate-700 flex justify-between items-center">
               <h2 className="text-xl font-bold font-display text-white">Organizations</h2>
               <div className="flex gap-3">
                  <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
                     <input 
-                      className="bg-slate-900 border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      className="bg-[var(--color-primary)] border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm text-[var(--bg-surface)] focus:outline-none focus:border-indigo-500"
                       placeholder="Search tenants..."
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
@@ -186,7 +186,7 @@ const AdminDashboard: React.FC = () => {
            
            <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider font-bold">
+                <tr className="bg-[var(--color-primary)]/50 text-[var(--text-muted)] text-xs uppercase tracking-wider font-bold">
                    <th className="p-5">Organization</th>
                    <th className="p-5">Plan</th>
                    <th className="p-5">Status</th>
@@ -199,10 +199,10 @@ const AdminDashboard: React.FC = () => {
                     <tr key={org.id} className="hover:bg-slate-700/50 transition-colors">
                        <td className="p-5">
                           <div className="font-bold text-white">{org.name}</div>
-                          <div className="text-slate-500 text-xs">{org.contactName}</div>
+                          <div className="text-[var(--text-secondary)] text-xs">{org.contactName}</div>
                        </td>
                        <td className="p-5">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${org.plan === 'PRO' ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-600/20 text-slate-300'}`}>
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${org.plan === 'PRO' ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-600/20 text-[var(--text-muted)]'}`}>
                              {org.plan}
                           </span>
                        </td>
@@ -211,7 +211,7 @@ const AdminDashboard: React.FC = () => {
                              {org.status}
                           </span>
                        </td>
-                       <td className="p-5 text-right font-mono text-slate-300">
+                       <td className="p-5 text-right font-mono text-[var(--text-muted)]">
                           ${Number(org.mrr).toLocaleString()}
                        </td>
                        <td className="p-5 text-right">
@@ -219,7 +219,7 @@ const AdminDashboard: React.FC = () => {
                             <button onClick={() => handleManageUsers(org.id)} className="p-2 hover:bg-slate-700 rounded-lg text-blue-400 hover:text-white transition-colors" title="Manage Users">
                                 <Users size={16} />
                             </button>
-                            <button onClick={() => handleEditOrg(org)} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors" title="Edit Org">
+                            <button onClick={() => handleEditOrg(org)} className="p-2 hover:bg-slate-700 rounded-lg text-[var(--text-muted)] hover:text-white transition-colors" title="Edit Org">
                                 <Edit2 size={16} />
                             </button>
                           </div>
@@ -240,9 +240,9 @@ const AdminDashboard: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4">
                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Plan</label>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase">Plan</label>
                   <select 
-                    className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm"
+                    className="w-full p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-sm"
                     value={editingOrg.plan}
                     onChange={e => setEditingOrg({...editingOrg, plan: e.target.value as SubscriptionPlan})}
                   >
@@ -252,9 +252,9 @@ const AdminDashboard: React.FC = () => {
                   </select>
                </div>
                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Status</label>
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase">Status</label>
                   <select 
-                    className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm"
+                    className="w-full p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-sm"
                     value={editingOrg.status}
                     onChange={e => setEditingOrg({...editingOrg, status: e.target.value as any})}
                   >
@@ -280,17 +280,17 @@ const AdminDashboard: React.FC = () => {
          <div className="space-y-6">
             
             {/* Add/Edit User Form */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-               <h4 className="text-xs font-bold uppercase text-slate-500 mb-2">{editingUserId ? 'Edit User' : 'Add New User'}</h4>
+            <div className="bg-[var(--bg-surface-2)] p-4 rounded-xl border border-[var(--border-color)] space-y-3">
+               <h4 className="text-xs font-bold uppercase text-[var(--text-secondary)] mb-2">{editingUserId ? 'Edit User' : 'Add New User'}</h4>
                <div className="grid grid-cols-2 gap-3">
                    <Input 
                       placeholder="Full Name" 
                       value={userForm.fullName || ''} 
                       onChange={e => setUserForm({...userForm, fullName: e.target.value})}
-                      className="bg-white" 
+                      className="bg-[var(--bg-surface)]" 
                    />
                    <select 
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[13px] font-medium"
+                      className="w-full p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-[13px] font-medium"
                       value={userForm.role}
                       onChange={e => setUserForm({...userForm, role: e.target.value as UserRole})}
                    >
@@ -304,7 +304,7 @@ const AdminDashboard: React.FC = () => {
                       icon={<User size={14} />}
                       value={userForm.username || ''} 
                       onChange={e => setUserForm({...userForm, username: e.target.value})}
-                      className="bg-white" 
+                      className="bg-[var(--bg-surface)]" 
                    />
                    <Input 
                       placeholder="Password" 
@@ -312,7 +312,7 @@ const AdminDashboard: React.FC = () => {
                       icon={<Key size={14} />}
                       value={userForm.password || ''} 
                       onChange={e => setUserForm({...userForm, password: e.target.value})}
-                      className="bg-white" 
+                      className="bg-[var(--bg-surface)]" 
                    />
                </div>
                <Button onClick={handleSaveUser} fullWidth size="sm">
@@ -323,22 +323,22 @@ const AdminDashboard: React.FC = () => {
             {/* User List */}
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
                {orgUsers.length === 0 ? (
-                  <p className="text-center text-slate-400 text-sm py-4">No users found.</p>
+                  <p className="text-center text-[var(--text-muted)] text-sm py-4">No users found.</p>
                ) : (
                   orgUsers.map(u => (
-                     <div key={u.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors">
+                     <div key={u.id} className="flex items-center justify-between p-3 border border-[var(--border-light)] rounded-xl hover:bg-[var(--bg-surface-2)] transition-colors">
                         <div className="flex items-center gap-3">
-                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${u.role === 'TENANT_ADMIN' ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-600'}`}>
+                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${u.role === 'TENANT_ADMIN' ? 'bg-purple-100 text-purple-600' : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)]'}`}>
                               {u.fullName.charAt(0)}
                            </div>
                            <div>
-                              <div className="text-sm font-bold text-slate-800">{u.fullName}</div>
-                              <div className="text-xs text-slate-500 font-mono">@{u.username} • {u.role === 'TENANT_ADMIN' ? 'Admin' : 'User'}</div>
+                              <div className="text-sm font-bold text-[var(--text-primary)]">{u.fullName}</div>
+                              <div className="text-xs text-[var(--text-secondary)] font-mono">@{u.username} • {u.role === 'TENANT_ADMIN' ? 'Admin' : 'User'}</div>
                            </div>
                         </div>
                         <div className="flex gap-1">
-                           <button onClick={() => handleEditUser(u)} className="p-1.5 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-white"><Edit2 size={14} /></button>
-                           <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-white"><Trash2 size={14} /></button>
+                           <button onClick={() => handleEditUser(u)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-surface)]"><Edit2 size={14} /></button>
+                           <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-[var(--text-muted)] hover:text-red-600 rounded-lg hover:bg-[var(--bg-surface)]"><Trash2 size={14} /></button>
                         </div>
                      </div>
                   ))
