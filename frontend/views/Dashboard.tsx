@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatDate, formatNumber, formatCompactNumber } from '../utils';
 import { Filter, Download, TrendingUp, Calendar as CalendarIcon, BarChart3, LineChart, PieChart } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
@@ -14,6 +15,7 @@ import { KitchenReportResponse } from '../types';
 const Dashboard: React.FC = () => {
   const { stats, operations, kitchens, products } = useData();
   const { t } = useLanguage();
+  const { theme } = useTheme();
 
   // Helper to get current month range
   const getCurrentMonthRange = () => {
@@ -236,12 +238,14 @@ const Dashboard: React.FC = () => {
     const costEntry = payload.find(p => p.dataKey === 'cost');
     const margin = (salesEntry?.value ?? 0) - (costEntry?.value ?? 0);
 
+    const tooltipBg = theme === 'dark' ? '#1e293b' : '#18181b';
+    const tooltipBorder = theme === 'dark' ? '#334155' : '#333';
     return (
-      <div style={{ backgroundColor: '#18181b', borderRadius: '8px', color: 'white', fontSize: '12px', padding: '8px 12px' }}>
+      <div style={{ backgroundColor: tooltipBg, borderRadius: '8px', color: 'white', fontSize: '12px', padding: '8px 12px' }}>
         <p style={{ marginBottom: 4, fontWeight: 600 }}>{label}</p>
         {salesEntry && <p style={{ color: '#10b981' }}>{salesEntry.name}: {formatNumber(salesEntry.value)}</p>}
         {costEntry && <p style={{ color: '#3b82f6' }}>{costEntry.name}: {formatNumber(costEntry.value)}</p>}
-        <p style={{ color: '#f59e0b', borderTop: '1px solid #333', marginTop: 4, paddingTop: 4 }}>
+        <p style={{ color: '#f59e0b', borderTop: `1px solid ${tooltipBorder}`, marginTop: 4, paddingTop: 4 }}>
           {t('dash.chart.margin')}: {formatNumber(margin)}
         </p>
       </div>
@@ -251,7 +255,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. Filters Bar */}
-      <div className="bg-white p-6 rounded-3xl shadow-card border border-slate-100 flex flex-col lg:flex-row items-end gap-6">
+      <div className="bg-[var(--bg-surface)] p-6 rounded-3xl shadow-card border border-[var(--border-light)] flex flex-col lg:flex-row items-end gap-6">
         <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
           <Select
              label={t('qi.kitchen')}
@@ -281,22 +285,22 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* 2. Detailed Department Analytics Table */}
-      <div className="bg-white rounded-3xl shadow-card border border-slate-100 overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-[var(--bg-surface)] rounded-3xl shadow-card border border-[var(--border-light)] overflow-hidden">
+        <div className="p-6 border-b border-[var(--border-light)] flex items-center justify-between">
            <div className="flex items-center gap-3">
-             <div className="p-2 bg-slate-50 rounded-xl">
-               <TrendingUp size={20} className="text-slate-400" />
+             <div className="p-2 bg-[var(--bg-surface-2)] rounded-xl">
+               <TrendingUp size={20} className="text-[var(--text-muted)]" />
              </div>
-             <h3 className="font-display font-bold text-lg text-slate-800">{t('dash.main_table')}</h3>
+             <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">{t('dash.main_table')}</h3>
            </div>
         </div>
         <div className="overflow-x-auto">
           {reportLoading ? (
-            <div className="p-8 text-center text-slate-400 text-sm">Loading...</div>
+            <div className="p-8 text-center text-[var(--text-muted)] text-sm">Loading...</div>
           ) : (
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-100">
+              <tr className="bg-[var(--bg-surface-2)] border-b border-[var(--border-light)]">
                 <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display cursor-help" title={t('anl.col.dept.full')}>{t('anl.col.dept')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.start.full')}>{t('anl.col.start')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.in.full')}>{t('anl.col.in')}</th>

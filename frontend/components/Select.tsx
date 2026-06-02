@@ -26,12 +26,12 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({ label, options, err
         <select
           ref={ref}
           className={cn(
-            "w-full bg-white border border-slate-200 text-slate-800",
+            "w-full bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)]",
             "font-body text-[13px] font-medium appearance-none",
             "py-3 pr-10 min-h-[46px] rounded-xl",
             "transition-all duration-200 ease-in-out",
-            "focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100",
-            "disabled:opacity-60 disabled:bg-slate-50",
+            "focus:outline-none focus:border-[var(--text-muted)] focus:ring-4 focus:ring-[var(--bg-surface-2)]",
+            "disabled:opacity-60 disabled:bg-[var(--bg-surface-2)]",
             "cursor-pointer",
             icon ? 'pl-10' : 'pl-4',
             error && 'border-red-300 focus:border-red-500',

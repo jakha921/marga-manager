@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, LogOut, Globe } from 'lucide-react';
+import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, LogOut, Globe, Sun, Moon } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { formatDate } from '../utils';
 
 interface LayoutProps {
@@ -15,6 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { t, language, setLanguage } = useLanguage();
   const { logout, userRole } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   React.useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -66,10 +68,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-body selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex font-body selection:bg-emerald-100 selection:text-emerald-900">
       {/* Sidebar (Desktop) */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200/60 transform transition-transform duration-300 ease-out flex flex-col
+        fixed inset-y-0 left-0 z-50 w-72 bg-[var(--bg-surface)] border-r border-[var(--border-color)] transform transition-transform duration-300 ease-out flex flex-col
         lg:translate-x-0 lg:static lg:block
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -123,8 +125,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           )}
         </div>
 
-        <div className="p-6 border-t border-slate-50">
-          <button onClick={logout} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors text-[13px] font-medium">
+        <div className="p-6 border-t border-[var(--border-light)]">
+          <button onClick={logout} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-[var(--text-secondary)] hover:text-red-600 hover:bg-red-50 transition-colors text-[13px] font-medium">
             <LogOut size={18} strokeWidth={2} />
             {t('nav.logout')}
           </button>
@@ -134,7 +136,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main Content */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="h-24 px-8 flex items-center justify-between flex-shrink-0 bg-[#F8FAFC]">
+        <header className="h-24 px-8 flex items-center justify-between flex-shrink-0 bg-[var(--bg-primary)]">
           <div>
              {/* Mobile Menu Button */}
              <div className="lg:hidden flex items-center gap-3 mb-2">
@@ -144,27 +146,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-xs">MM</div>
              </div>
              
-             <h1 className="font-display font-bold text-2xl text-slate-900 tracking-tight">
+             <h1 className="font-display font-bold text-2xl text-[var(--text-primary)] tracking-tight">
                {getPageTitle()}
              </h1>
-             <p className="text-slate-400 text-xs font-medium mt-1">
+             <p className="text-[var(--text-muted)] text-xs font-medium mt-1">
                {getFormattedDate()}
              </p>
           </div>
 
-          <div className="flex items-center gap-6">
-            <button 
-              onClick={handleLanguageChange}
-              className="flex items-center gap-2 px-3 py-2 bg-white rounded-full shadow-sm border border-slate-200 hover:border-slate-300 transition-colors group"
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="p-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-color)] transition-colors shadow-sm"
             >
-               <Globe size={16} className="text-slate-400 group-hover:text-slate-600" />
-               <span className="text-xs font-bold text-slate-600 uppercase w-4 text-center">{language}</span>
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
+            <button
+              onClick={handleLanguageChange}
+              className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-surface)] rounded-full shadow-sm border border-[var(--border-color)] hover:border-[var(--text-muted)] transition-colors group"
+            >
+               <Globe size={16} className="text-[var(--text-muted)] group-hover:text-[var(--text-secondary)]" />
+               <span className="text-xs font-bold text-[var(--text-secondary)] uppercase w-4 text-center">{language}</span>
+            </button>
+
+            <div className="flex items-center gap-3 pl-3 border-l border-[var(--border-color)]">
               <div className="text-right hidden md:block">
-                <div className="text-[13px] font-bold text-slate-900 leading-tight">{t('header.greeting')}</div>
-                <div className="text-[11px] font-medium text-slate-400">{t('header.role')}</div>
+                <div className="text-[13px] font-bold text-[var(--text-primary)] leading-tight">{t('header.greeting')}</div>
+                <div className="text-[11px] font-medium text-[var(--text-muted)]">{t('header.role')}</div>
               </div>
               <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-slate-900/10">
                 JP

@@ -192,7 +192,7 @@ const tooltipBorder = theme === 'dark' ? '#334155' : '#e2e8f0';
 
 **Коммит**: `feat: добавить Light/Dark тему с CSS переменными и ThemeContext`
 
-- [ ] Phase 2 complete
+- [x] Phase 2 complete
 
 ---
 

@@ -12,6 +12,7 @@ import AdminDashboard from './views/superadmin/AdminDashboard';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, userRole } = useAuth();
@@ -39,6 +40,7 @@ const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
 const App: React.FC = () => {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <LanguageProvider>
         <DataProvider>
@@ -68,6 +70,7 @@ const App: React.FC = () => {
         </DataProvider>
       </LanguageProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 };
 
