@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Modal from '../components/Modal';
+import { Skeleton } from '../components/Skeleton';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Search, Plus, Trash2, Edit2, Filter, Crown, AlertTriangle, Check } from 'lucide-react';
 
 const Kitchens: React.FC = () => {
-  const { kitchens, addKitchen, updateKitchen, deleteKitchen, subscription, upgradeSubscription, currentOrganization } = useData();
+  const { kitchens, addKitchen, updateKitchen, deleteKitchen, subscription, upgradeSubscription, currentOrganization, loading } = useData();
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -74,6 +75,8 @@ const Kitchens: React.FC = () => {
     upgradeSubscription('PRO');
     setIsUpgradeModalOpen(false);
   };
+
+  if (loading) return <Skeleton rows={6} />;
 
   return (
     <div className="space-y-6">

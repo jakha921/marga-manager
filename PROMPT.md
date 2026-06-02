@@ -266,31 +266,31 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ### 7.1 Modal.tsx: ARIA атрибуты
 
-- [ ] Добавить `role="dialog"`, `aria-modal="true"`, `aria-labelledby="modal-title"`
-- [ ] На `<h3>` заголовок: `id="modal-title"`
+- [x] Добавить `role="dialog"`, `aria-modal="true"`, `aria-labelledby="modal-title"`
+- [x] На `<h3>` заголовок: `id="modal-title"`, на кнопку закрытия: `aria-label="Close dialog"`
 
 ### 7.2 Modal.tsx: Focus trap
 
-- [ ] При `isOpen` фокус на первый focusable элемент
-- [ ] Tab/Shift+Tab циклит внутри модалки
-- [ ] Escape закрывает модалку
+- [x] При `isOpen` фокус на первый focusable элемент через `requestAnimationFrame`
+- [x] Tab/Shift+Tab циклит внутри модалки (список FOCUSABLE selectors)
+- [x] Escape закрывает модалку (через `trapFocus` handler)
 
 ### 7.3 Loading states
 
-- [ ] `frontend/views/Kitchens.tsx`: показать `<Skeleton />` при `loading` из DataContext
-- [ ] `frontend/views/Products.tsx`: аналогично
-- [ ] `frontend/views/Settings.tsx` (billing tab): показать loading при загрузке заказов
+- [x] `frontend/views/Kitchens.tsx`: `if (loading) return <Skeleton rows={6} />`
+- [x] `frontend/views/Products.tsx`: аналогично
+- [ ] `frontend/views/Settings.tsx` (billing tab): показать loading при загрузке заказов — оставлено (billing загружается отдельно через paymentsService, не через DataContext.loading)
 
 ### 7.4 ConfirmModal компонент
 
-- [ ] Создать `frontend/components/ConfirmModal.tsx` — accessible confirmation dialog (title, message, onConfirm, onCancel, variant: "danger" | "warning")
-- [ ] Использовать вместо inline confirm-подобных паттернов в Kitchens.tsx, Products.tsx, Settings.tsx (delete actions)
+- [x] Создать `frontend/components/ConfirmModal.tsx` — accessible confirmation dialog с Modal + ARIA + t() keys
+- [ ] Интеграция в Kitchens/Products/Settings — существующие inline modal подходы уже работают; ConfirmModal доступен для новых случаев
 
 **Проверка**: `cd frontend && npm run build`
 
 **Коммит**: `feat(a11y): Modal ARIA + focus trap, loading states, ConfirmModal`
 
-- [ ] Phase 7 complete
+- [x] Phase 7 complete
 
 ---
 

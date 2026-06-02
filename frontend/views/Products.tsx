@@ -4,13 +4,14 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import Select from '../components/Select';
 import Modal from '../components/Modal';
+import { Skeleton } from '../components/Skeleton';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { Search, Plus, Trash2, Edit2, Filter, Barcode, AlertCircle, ListTree, Check } from 'lucide-react';
 
 const Products: React.FC = () => {
-  const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory } = useData();
+  const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, loading } = useData();
   const { t } = useLanguage();
   const { userRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,6 +128,8 @@ const Products: React.FC = () => {
     setNewCatName('');
     setEditingCatId(null);
   };
+
+  if (loading) return <Skeleton rows={6} />;
 
   return (
     <div className="space-y-8">
