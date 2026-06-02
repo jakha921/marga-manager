@@ -282,10 +282,10 @@ const Products: React.FC = () => {
           </p>
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={confirmDelete}>
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>
@@ -295,12 +295,12 @@ const Products: React.FC = () => {
       <Modal
         isOpen={isCatModalOpen}
         onClose={() => setIsCatModalOpen(false)}
-        title="Manage Categories"
+        title={t('prod.manage_cat')}
       >
         <div className="space-y-6">
           <div className="flex gap-2">
             <Input 
-              placeholder="New Category Name..." 
+              placeholder={t('prod.new_cat_placeholder')}
               value={newCatName}
               onChange={e => setNewCatName(e.target.value)}
             />

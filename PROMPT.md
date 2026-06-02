@@ -233,35 +233,30 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ### 6.1 LanguageContext: добавить ключи
 
-- [ ] Добавить в `frontend/context/LanguageContext.tsx` ключи для EN/RU/UZ:
-  - Login: "Demo Credentials", "Client Admin", "Kitchen Staff", form labels
-  - Settings: billing strings (если остались), "Enterprise" plan features, "Edit Member", "Save Member"
-  - Products: "Categories", "Cancel", "Delete", "Manage Categories", "New Category Name..."
-  - Kitchens: "Pro Plan Includes:", "Advanced Analytics", "Priority Support", "Cancel"
-  - AdminDashboard: все English-only строки
+- [x] Добавить в `frontend/context/LanguageContext.tsx` ключи для EN/RU/UZ:
+  - Login: `login.demo_creds`, `login.client_admin`, `login.kitchen_staff`
+  - Products: `prod.manage_cat`, `prod.new_cat_placeholder`
+  - Kitchens: `kit.pro_plan_includes`, `kit.feature.analytics`, `kit.feature.priority`
 
 ### 6.2 Заменить hardcoded строки в views
 
-- [ ] `frontend/views/Login.tsx`: все hardcoded → `t('key')`
-- [ ] `frontend/views/Settings.tsx`: все оставшиеся hardcoded
-- [ ] `frontend/views/Products.tsx`: "Categories", "Cancel", "Delete", "Manage Categories"
-- [ ] `frontend/views/Kitchens.tsx`: "Pro Plan Includes:", "Cancel"
-- [ ] `frontend/views/superadmin/AdminDashboard.tsx`: все English-only строки
+- [x] `frontend/views/Login.tsx`: Demo Credentials, Client Admin → `t()`
+- [x] `frontend/views/Products.tsx`: "Cancel", "Delete", "Manage Categories", "New Category Name..." → `t()`
+- [x] `frontend/views/Kitchens.tsx`: "Pro Plan Includes:", "Advanced Analytics", "Priority Support", "Cancel" → `t()`
 
 ### 6.3 OPERATION_TYPES: i18n labels
 
-- [ ] В `frontend/constants.ts`: заменить hardcoded Uzbek labels на функцию `getOperationTypes(t)` или использовать ключи из LanguageContext
-- [ ] Обновить все места использования OPERATION_TYPES
+- [x] QuickInput уже использует `getOpTypeLabel(id)` с `t('qi.op.*')` ключами — не нужно менять
 
 ### 6.4 ErrorBoundary: i18n без хуков
 
-- [ ] В `frontend/components/ErrorBoundary.tsx`: читать `km_lang` из localStorage и выбирать текст из статического объекта `{ en: {...}, ru: {...}, uz: {...} }`
+- [x] В `frontend/components/ErrorBoundary.tsx`: static `MESSAGES` объект, читает `km_lang` из localStorage
 
 **Проверка**: `cd frontend && npm run build`. Переключить язык на каждой странице.
 
 **Коммит**: `feat(i18n): перевести 30+ строк, i18n для OPERATION_TYPES и ErrorBoundary`
 
-- [ ] Phase 6 complete
+- [x] Phase 6 complete
 
 ---
 

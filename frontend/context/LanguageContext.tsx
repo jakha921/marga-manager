@@ -265,6 +265,20 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.chart.product': 'By Product',
     'dash.chart.prod_expense': 'Product Expense',
     'dash.chart.margin': 'Margin',
+
+    // Products — category modal
+    'prod.manage_cat': 'Manage Categories',
+    'prod.new_cat_placeholder': 'New Category Name...',
+
+    // Kitchens — plan upsell
+    'kit.pro_plan_includes': 'Pro Plan Includes:',
+    'kit.feature.analytics': 'Advanced Analytics (Coming Soon)',
+    'kit.feature.priority': 'Priority Support',
+
+    // Login — demo block
+    'login.demo_creds': 'Demo Credentials',
+    'login.client_admin': 'Client Admin',
+    'login.kitchen_staff': 'Kitchen Staff',
   },
   ru: {
     // Navigation & Layout
@@ -521,6 +535,20 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.chart.product': 'По продуктам',
     'dash.chart.prod_expense': 'Расход продукта',
     'dash.chart.margin': 'Маржа',
+
+    // Products — category modal
+    'prod.manage_cat': 'Управление категориями',
+    'prod.new_cat_placeholder': 'Название новой категории...',
+
+    // Kitchens — plan upsell
+    'kit.pro_plan_includes': 'Тариф Pro включает:',
+    'kit.feature.analytics': 'Расширенная аналитика (скоро)',
+    'kit.feature.priority': 'Приоритетная поддержка',
+
+    // Login — demo block
+    'login.demo_creds': 'Демо данные',
+    'login.client_admin': 'Клиент Администратор',
+    'login.kitchen_staff': 'Сотрудник кухни',
   },
   uz: {
     // Navigation & Layout
@@ -777,6 +805,20 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.chart.product': 'Mahsulotlar bo\'yicha',
     'dash.chart.prod_expense': 'Mahsulot xarajati',
     'dash.chart.margin': 'Marja',
+
+    // Products — category modal
+    'prod.manage_cat': 'Kategoriyalarni boshqarish',
+    'prod.new_cat_placeholder': 'Yangi kategoriya nomi...',
+
+    // Kitchens — plan upsell
+    'kit.pro_plan_includes': 'Pro tarifiga kiradi:',
+    'kit.feature.analytics': 'Kengaytirilgan tahlil (tez orada)',
+    'kit.feature.priority': 'Ustuvor qo\'llab-quvvatlash',
+
+    // Login — demo block
+    'login.demo_creds': 'Demo ma\'lumotlar',
+    'login.client_admin': 'Mijoz Admin',
+    'login.kitchen_staff': 'Oshxona xodimi',
   }
 };
 

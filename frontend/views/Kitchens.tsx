@@ -251,7 +251,7 @@ const Kitchens: React.FC = () => {
            </p>
 
            <div className="bg-[var(--bg-surface-2)] rounded-2xl p-6 mb-8 text-left border border-[var(--border-light)]">
-              <h4 className="font-bold text-[var(--text-primary)] text-sm mb-4">Pro Plan Includes:</h4>
+              <h4 className="font-bold text-[var(--text-primary)] text-sm mb-4">{t('kit.pro_plan_includes')}</h4>
               <ul className="space-y-3">
                  <li className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
                     <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
@@ -263,13 +263,13 @@ const Kitchens: React.FC = () => {
                     <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
                        <Check size={12} strokeWidth={3} />
                     </div>
-                    Advanced Analytics (Coming Soon)
+                    {t('kit.feature.analytics')}
                  </li>
                  <li className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
                     <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
                        <Check size={12} strokeWidth={3} />
                     </div>
-                    Priority Support
+                    {t('kit.feature.priority')}
                  </li>
               </ul>
            </div>
@@ -281,7 +281,7 @@ const Kitchens: React.FC = () => {
              onClick={() => setIsUpgradeModalOpen(false)}
              className="mt-4 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
            >
-             Cancel
+             {t('common.cancel')}
            </button>
         </div>
       </Modal>

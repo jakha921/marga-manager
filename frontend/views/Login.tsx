@@ -91,16 +91,16 @@ const Login: React.FC = () => {
         </form>
 
         <div className="mt-8 text-center border-t border-[var(--border-light)] pt-6">
-          <p className="text-xs text-[var(--text-muted)] mb-2 font-bold uppercase tracking-wider">Demo Credentials</p>
+          <p className="text-xs text-[var(--text-muted)] mb-2 font-bold uppercase tracking-wider">{t('login.demo_creds')}</p>
           <div className="text-xs text-left bg-[var(--bg-surface-2)] p-3 rounded-lg border border-[var(--border-light)]">
               <div className="flex justify-between items-center mb-1">
-                 <span className="font-bold text-[var(--text-primary)]">Client Admin</span>
+                 <span className="font-bold text-[var(--text-primary)]">{t('login.client_admin')}</span>
                  <span className="text-[10px] text-[var(--text-muted)] uppercase">Tenant 1</span>
               </div>
               <div className="font-mono text-[var(--text-secondary)]">admin / admin123</div>
 
               <div className="flex justify-between items-center mt-2 mb-1">
-                 <span className="font-bold text-[var(--text-primary)]">Client Admin</span>
+                 <span className="font-bold text-[var(--text-primary)]">{t('login.client_admin')}</span>
                  <span className="text-[10px] text-[var(--text-muted)] uppercase">Tenant 2</span>
               </div>
               <div className="font-mono text-[var(--text-secondary)]">oqtepa / admin123</div>
