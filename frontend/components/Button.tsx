@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '../cn';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -6,16 +7,16 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md';
 }
 
-const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  fullWidth = false, 
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  fullWidth = false,
   size = 'md',
-  className = '',
-  ...props 
+  className,
+  ...props
 }) => {
   const baseStyles = "font-body font-medium transition-all duration-200 ease-out active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 rounded-xl";
-  
+
   const variants = {
     primary: "bg-primary text-white hover:bg-slate-800 shadow-sm",
     secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm",
@@ -28,11 +29,9 @@ const Button: React.FC<ButtonProps> = ({
     md: "py-2.5 px-5 text-sm min-h-[44px]",
   };
 
-  const widthClass = fullWidth ? 'w-full' : '';
-
   return (
-    <button 
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${className}`}
+    <button
+      className={cn(baseStyles, variants[variant], sizes[size], fullWidth && 'w-full', className)}
       {...props}
     >
       {children}

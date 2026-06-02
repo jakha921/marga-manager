@@ -1,386 +1,602 @@
-# Marga Manager — Task List for ralph-loop
+# Marga Manager — Ralph Loop Task List
 
-Выполняй фазы по порядку. После каждой фазы: запусти проверку, отметь [x], закоммить.
-Если фаза уже выполнена — переходи к следующей. Не начинай следующую пока текущая не закоммичена.
-
----
-
-## Phase 0: Restore Missing __init__.py Files
-
-**Задача**: Восстановить удалённые `__init__.py` файлы. Без них Django не запустится.
-
-- [x] Создать пустой файл `backend/apps/__init__.py`
-- [x] Создать пустой файл `backend/config/__init__.py`
-- [x] Создать пустой файл `backend/tests/__init__.py`
-- [x] Проверка: `cd backend && uv run python manage.py check`
-- [x] Коммит: `chore: восстановить удалённые __init__.py файлы` (файлы уже существуют и tracked)
+## Запуск
+```bash
+ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Django/marga-manager/PROMPT.md). Найди первую незавершённую задачу [ ]. Выполни её полностью — создай файлы, напиши код, запусти проверку (uv run python manage.py check для бэкенда, npm run build для фронтенда). Отметь [x] в PROMPT.md. Закоммить изменения. Повторяй до ALL PHASES COMPLETE." --max-iterations 70 --completion-promise "ALL PHASES COMPLETE" /compact /senior-qa /senior-backend /senior-frontend /frontend-design:frontend-design /server-advisor
+```
 
 ---
 
-## Phase 1: Commit Untracked Files + Cleanup
+## Порядок выполнения
 
-**Задача**: Закоммитить незакоммиченные файлы, удалить мусорные файлы.
-
-- [x] Закоммитить `backend/apps/core/views.py` (health check view, уже подключён в urls.py)
-- [x] Закоммитить `backend/config/urls.py` если не закоммичен
-- [x] Проверить наличие `screenshot-*.png`, `snapshot-*.txt`, `GSD-GUIDE.md`, `.playwright-mcp/` — если есть, удалить
-- [x] Проверка: `git status` — должно быть чисто после коммита
-- [x] Коммит: `chore: закоммитить health check view, убрать мусорные файлы`
-
----
-
-## Phase 2: Security — Health Check Info Leak
-
-**Задача**: `backend/apps/core/views.py` возвращает `str(e)` при ошибке БД — утечка деталей подключения.
-
-- [x] Найти в `backend/apps/core/views.py` место где `str(e)` попадает в ответ
-- [x] Заменить на generic строку: `"database unavailable"` (уже исправлено — возвращает `"unavailable"`)
-- [x] Проверка: `cd backend && uv run python manage.py check`
-- [x] Коммит: `fix(security): убрать утечку деталей ошибки БД в health check` (N/A — уже безопасно)
+1. Phase 1 — Button fix (устраняет баг с цветом, база для всех UI-фаз)
+2. Phase 2 — Light/Dark Theme System
+3. Phase 3 — i18n completeness
+4. Phase 4 — Frontend UX (loading states, error boundary, accessibility)
+5. Phase 5 — Backend security hardening
+6. Phase 6 — N+1 & performance fixes
+7. Phase 7 — Backend test coverage
+8. Phase 8 — Code quality cleanup
 
 ---
 
-## Phase 3: Security — Privilege Escalation in OrganizationSerializer
+## Phase 1: Fix Tailwind Class Conflicts — `cn()` utility + Button
 
-**Задача**: `OrganizationSerializer` позволяет TENANT_ADMIN через PATCH обновить `plan`, `max_kitchens`, `max_users`, `mrr`, `status` — privilege escalation.
+**Баг**: Кнопка "Excelga eksport" меняет цвет после обновления страницы. Причина: `Button.tsx:35`
+конкатенирует классы строкой — `bg-white` (из `secondary` variant) конкурирует с `bg-emerald-50`
+(из custom `className` prop). Tailwind CDN разрешает конфликты по порядку в своём stylesheet,
+а не в HTML — результат непредсказуем между рендерами.
 
-- [x] Открыть `backend/apps/organizations/serializers.py`
-- [x] В `OrganizationSerializer.Meta.read_only_fields` добавить: `"plan"`, `"max_kitchens"`, `"max_users"`, `"mrr"`, `"status"`, `"slug"`
-- [x] В `backend/apps/organizations/views.py` убедиться что SUPER_ADMIN может обновлять эти поля (через отдельный `AdminOrganizationSerializer` или `get_serializer_class`):
-  - Создать `AdminOrganizationSerializer(OrganizationSerializer)` без лишних read_only ограничений
-  - В `OrganizationViewSet.get_serializer_class()` — вернуть `AdminOrganizationSerializer` если `request.user.role == 'SUPER_ADMIN'`
-- [x] Проверка: `cd backend && uv run pytest -v`
-- [x] Коммит: `fix(security): запретить TENANT_ADMIN изменять plan и лимиты организации`
+**Решение**:
+1. Установить `tailwind-merge` и `clsx`:
+   ```bash
+   cd frontend && npm install tailwind-merge clsx
+   ```
+2. Создать `frontend/utils/cn.ts`:
+   ```ts
+   import { twMerge } from 'tailwind-merge';
+   import { clsx, type ClassValue } from 'clsx';
+   export function cn(...inputs: ClassValue[]) {
+     return twMerge(clsx(inputs));
+   }
+   ```
+3. Обновить `frontend/components/Button.tsx` — заменить строковую конкатенацию на `cn()`:
+   ```tsx
+   import { cn } from '../utils/cn';
+   // ...
+   className={cn(baseStyles, variants[variant], sizes[size], widthClass, className)}
+   ```
+4. Применить `cn()` во всех компонентах: `Input.tsx`, `Select.tsx`, `Modal.tsx`, `Layout.tsx`.
+5. Убедиться что `Dashboard.tsx:277` и `Settings.tsx:365` корректно переопределяют цвета.
 
----
+**Проверка**: `cd frontend && npm run build`
 
-## Phase 4: Security — Payme Auth Hardening
+**Коммит**: `fix: добавить tailwind-merge для правильного разрешения конфликтов CSS классов`
 
-**Задача**: `backend/apps/payments/payme_errors.py` — `verify_payme_auth()` уязвима к пустому ключу и timing attack.
-
-- [x] Открыть `backend/apps/payments/payme_errors.py`
-- [x] В функции `verify_payme_auth` добавить:
-  1. Проверку что `settings.PAYME_MERCHANT_KEY` не пустой — если пустой, сразу возвращать `False`
-  2. Заменить `key == settings.PAYME_MERCHANT_KEY` на `hmac.compare_digest(key, settings.PAYME_MERCHANT_KEY)`
-  3. Добавить `import hmac` в начало файла
-- [x] Проверка: `cd backend && uv run pytest -v`
-- [x] Коммит: `fix(security): защита от пустого ключа и timing attack в Payme auth`
-
----
-
-## Phase 5: Dead Code Cleanup — Frontend
-
-**Задача**: Удалить ~650+ строк мёртвого кода.
-
-### 5a: Удалить мёртвые файлы
-- [x] Удалить `frontend/views/Analytics.tsx` (193 строки, нет маршрута в App.tsx)
-- [x] Удалить `frontend/views/Reports.tsx` (импортируется но нет маршрута — убрать импорт из App.tsx тоже)
-- [x] В `frontend/App.tsx` удалить импорт `Reports` и любые неиспользуемые импорты
-
-### 5b: Очистить constants.ts
-- [x] Открыть `frontend/constants.ts`
-- [x] Удалить все `MOCK_*` константы (MOCK_USERS, MOCK_ORGANIZATIONS, MOCK_PRODUCTS, MOCK_OPERATIONS и т.д.) — это ~450 строк с plaintext паролями
-- [x] Оставить только реально используемые константы; если файл пустой — удалить и убрать импорты
-
-### 5c: Убрать password из типов
-- [x] Открыть `frontend/types.ts`
-- [x] Найти `User` interface — удалить поле `password: string` (комментарий "for mock purposes")
-
-### 5d: Убрать неиспользуемые импорты/переменные
-- [x] `frontend/views/QuickInput.tsx` — убрать: импорт `DateFilter`, state `editUnitPrice`, функции `getYesterday` и `getFutureDate`
-- [x] `frontend/views/Dashboard.tsx` — убрать: импорт `KitchenReportEntry`, неиспользуемые destructure из `stats`
-- [x] `frontend/components/Layout.tsx` — убрать импорт `HelpCircle`
-- [x] `frontend/views/superadmin/AdminDashboard.tsx` — убрать импорт `StatsCard`
-
-### 5e: Убрать billing bypass
-- [x] Открыть `frontend/context/DataContext.tsx`
-- [x] Найти `upgradeSubscription()` функцию (~lines 212-220) — она делает прямой PATCH на `/api/organizations/{id}/`, обходя Payme
-- [x] Заменить реализацию: вместо API-вызова — навигация к Settings billing tab (`window.location.hash = '#/settings'`)
-- [x] Открыть `frontend/views/Kitchens.tsx` ~line 74 — проверить что вызов `upgradeSubscription()` корректно работает (переходит в Settings)
-
-### Проверка:
-- [x] `cd frontend && npm run build` — должен собраться без ошибок
-- [x] Коммит: `refactor: удалить мёртвый код, MOCK данные с паролями, billing bypass`
+- [x] Phase 1 complete
 
 ---
 
-## Phase 6: Dead Code Cleanup — Backend Middleware
+## Phase 2: Light/Dark Theme System
 
-**Задача**: Проверить `OrganizationMiddleware` — вероятно мёртвый код.
+**Задача**: Добавить красивую светлую и тёмную тему, переключатель Sun/Moon в header,
+сохранение выбора в localStorage под ключом `km_theme`.
 
-- [x] Найти все использования `request.organization` в codebase: `grep -r "request\.organization" backend/`
-- [x] Если `request.organization` нигде не читается (только middleware устанавливает) — удалить:
-  - Удалить класс из `backend/apps/core/middleware.py`
-  - Убрать `'apps.core.middleware.OrganizationMiddleware'` из `MIDDLEWARE` в `backend/config/settings/base.py`
-- [x] Если используется — оставить, отметить задачу как N/A
-- [x] Проверка: `cd backend && uv run python manage.py check && uv run pytest -v`
-- [x] Коммит: `refactor: удалить мёртвый OrganizationMiddleware` (или skip если N/A)
+### 2.1 CSS переменные в `frontend/index.html`
+
+Добавить в `<style>` секцию:
+```css
+:root {
+  --bg-primary: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --border-light: #f1f5f9;
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --color-primary: #0f172a;
+  --color-accent: #10b981;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-surface-2: #162032;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --border-color: #334155;
+  --border-light: #1e293b;
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --color-primary: #f1f5f9;
+  --color-accent: #10b981;
+}
+```
+
+Обновить `body` стиль: `background-color: var(--bg-primary); color: var(--text-primary);`
+
+### 2.2 ThemeContext `frontend/context/ThemeContext.tsx`
+
+```tsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
+
+type Theme = 'light' | 'dark';
+
+interface ThemeContextValue {
+  theme: Theme;
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextValue>({ theme: 'light', toggleTheme: () => {} });
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(
+    () => (localStorage.getItem('km_theme') as Theme) ?? 'light'
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('km_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => (t === 'light' ? 'dark' : 'light'));
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export const useTheme = () => useContext(ThemeContext);
+```
+
+### 2.3 Обернуть App в ThemeProvider (`frontend/App.tsx`)
+
+```tsx
+import { ThemeProvider } from './context/ThemeContext';
+// обернуть всё:
+<ThemeProvider>
+  <AuthProvider>
+    ...
+  </AuthProvider>
+</ThemeProvider>
+```
+
+### 2.4 Кнопка переключения темы в Layout (`frontend/components/Layout.tsx`)
+
+Добавить рядом с language switcher:
+```tsx
+import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+
+const { theme, toggleTheme } = useTheme();
+// ...
+<button
+  onClick={toggleTheme}
+  aria-label="Toggle theme"
+  className="p-2 rounded-xl hover:bg-[var(--bg-surface-2)] text-[var(--text-secondary)] transition-colors"
+>
+  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+</button>
+```
+
+### 2.5 Обновить ключевые компоненты с CSS переменными
+
+Минимальные замены в `Layout.tsx`, `Button.tsx` (secondary variant), `Input.tsx`, `Select.tsx`,
+`Modal.tsx`, заголовки и фон таблиц в `Dashboard.tsx`, `QuickInput.tsx`, `Settings.tsx`:
+
+| Tailwind класс | CSS переменная |
+|---|---|
+| `bg-white` | `bg-[var(--bg-surface)]` |
+| `bg-slate-50` / `bg-slate-50/80` | `bg-[var(--bg-surface-2)]` |
+| `bg-slate-100` | `bg-[var(--bg-surface-2)]` |
+| `text-slate-800`, `text-slate-900` | `text-[var(--text-primary)]` |
+| `text-slate-500`, `text-slate-600` | `text-[var(--text-secondary)]` |
+| `text-slate-400` | `text-[var(--text-muted)]` |
+| `border-slate-100` | `border-[var(--border-light)]` |
+| `border-slate-200` | `border-[var(--border-color)]` |
+
+### 2.6 Исправить hardcoded chart цвета в Dashboard.tsx
+
+Заменить `backgroundColor: '#18181b'` в tooltip на CSS переменные через `useTheme()`:
+```tsx
+const { theme } = useTheme();
+const tooltipBg = theme === 'dark' ? '#1e293b' : '#ffffff';
+const tooltipBorder = theme === 'dark' ? '#334155' : '#e2e8f0';
+```
+
+**Проверка**: `cd frontend && npm run build`. Переключить тему — всё меняется плавно.
+
+**Коммит**: `feat: добавить Light/Dark тему с CSS переменными и ThemeContext`
+
+- [ ] Phase 2 complete
 
 ---
 
-## Phase 7: PlanConfig — Цены и лимиты через Django Admin
+## Phase 3: i18n — Заполнить недостающие переводы
 
-**Задача**: Создать модель `PlanConfig` чтобы SUPER_ADMIN мог менять цены/лимиты планов через admin без деплоя.
+**Проблема**: 20+ hardcoded строк на английском в QuickInput.tsx, Settings.tsx, Dashboard.tsx
+не проходят через систему переводов.
 
-### 7a: Backend — модель и миграция
-- [x] Открыть `backend/apps/payments/models.py`
-- [x] Добавить модель `PlanConfig` ПОСЛЕ существующих моделей:
-  ```python
-  class PlanConfig(TimeStampedModel):
-      class Plan(models.TextChoices):
-          BASIC = "BASIC", "Basic"
-          PRO = "PRO", "Pro"
-          ENTERPRISE = "ENTERPRISE", "Enterprise"
+**Файлы**: `frontend/context/LanguageContext.tsx`, все view файлы.
 
-      plan = models.CharField(max_length=20, choices=Plan.choices, unique=True)
-      price = models.BigIntegerField(help_text="Цена в тийинах (1 UZS = 100 тийин)")
-      max_kitchens = models.PositiveIntegerField()
-      max_users = models.PositiveIntegerField()
-      is_active = models.BooleanField(default=True)
+**Решение**: Добавить в `LanguageContext.tsx` следующие ключи для EN/RU/UZ:
 
-      class Meta:
-          verbose_name = "Plan Config"
-          verbose_name_plural = "Plan Configs"
+```
+# QuickInput
+qi.edit_entry      — "Edit Entry" / "Редактировать" / "Tahrirlash"
+qi.date            — "Date" / "Дата" / "Sana"
+qi.time            — "Time" / "Время" / "Vaqt"
+qi.product_details — "Product Details" / "Детали продукта" / "Mahsulot tafsilotlari"
+qi.quantity        — "Quantity" / "Количество" / "Miqdor"
+qi.unit_price      — "Unit Price" / "Цена за ед." / "Birlik narxi"
+qi.total_price     — "Total Price" / "Итого" / "Jami narx"
+qi.delete_confirm  — "Are you sure you want to delete this operation?" / "Вы уверены?" / "O'chirilsinmi?"
 
-      def __str__(self):
-          return f"{self.plan} — {self.price // 100:,} UZS"
-  ```
-- [x] Создать миграцию: `cd backend && uv run python manage.py makemigrations payments`
-- [x] Создать data migration для seed начальных значений — взять текущие значения из `PLAN_PRICES` и `PLAN_LIMITS`
-- [x] Применить: `cd backend && uv run python manage.py migrate`
+# Settings billing
+set.billing.desc        — "Manage your subscription and billing details." / "Управление подпиской." / "Obunani boshqarish."
+set.billing.history     — "Payment History" / "История платежей" / "To'lov tarixi"
+set.billing.th_date     — "Date" / "Дата" / "Sana"
+set.billing.th_plan     — "Plan" / "Тариф" / "Tarif"
+set.billing.th_amount   — "Amount" / "Сумма" / "Summa"
+set.billing.th_status   — "Status" / "Статус" / "Holat"
+set.billing.recommended — "Recommended" / "Рекомендуем" / "Tavsiya"
 
-### 7b: Backend — Admin
-- [x] Открыть `backend/apps/payments/admin.py`
-- [x] Зарегистрировать `PlanConfig`:
-  ```python
-  @admin.register(PlanConfig)
-  class PlanConfigAdmin(ModelAdmin):
-      list_display = ["plan", "price", "max_kitchens", "max_users", "is_active"]
-      list_editable = ["price", "max_kitchens", "max_users", "is_active"]
-  ```
+# Settings profile
+set.profile.identity — "Identity & Contact" / "Личные данные" / "Shaxsiy ma'lumotlar"
+set.threshold_help   — "Setting this threshold highlights low-stock products in reports." / "Порог выделит продукты красным при низком остатке." / "Chegara past qoldiqli mahsulotlarni ajratib ko'rsatadi."
 
-### 7c: Backend — Использовать PlanConfig
-- [x] В `Order.mark_as_paid()` — брать лимиты из `PlanConfig.objects.get(plan=self.target_plan)` вместо `PLAN_LIMITS`
-- [x] В `OrderSerializer.validate()` или `OrderViewSet.create()` — брать цену из `PlanConfig` вместо `PLAN_PRICES`
-- [x] Удалить `PLAN_PRICES` и `PLAN_LIMITS` из `models.py` после замены
+# Common
+common.loading — "Loading..." / "Загрузка..." / "Yuklanmoqda..."
+common.cancel  — "Cancel" / "Отмена" / "Bekor qilish"
+common.save    — "Save" / "Сохранить" / "Saqlash"
+common.edit    — "Edit" / "Редактировать" / "Tahrirlash"
+common.delete  — "Delete" / "Удалить" / "O'chirish"
+```
 
-### 7d: Backend — Public API endpoint
-- [x] В `backend/apps/payments/views.py` добавить:
-  ```python
-  class PlanConfigListView(generics.ListAPIView):
-      permission_classes = [AllowAny]
-      serializer_class = PlanConfigSerializer
-      queryset = PlanConfig.objects.filter(is_active=True)
-  ```
-- [x] В `backend/apps/payments/serializers.py` создать `PlanConfigSerializer` с полями: `plan`, `price`, `max_kitchens`, `max_users`
-- [x] В `backend/apps/payments/urls.py` добавить маршрут: `path("plans/", PlanConfigListView.as_view())`
+Заменить все hardcoded строки в JSX на `{t('key')}`.
+Также заменить `"Loading..."` в `Dashboard.tsx:295` на `{t('common.loading')}`.
 
-### 7e: Frontend — получать цены с API
-- [x] В `frontend/api/services/payments.ts` добавить:
-  ```typescript
-  export async function getPlans(): Promise<PlanConfig[]> {
-    const res = await apiClient.get('/payments/plans/');
-    return res.data.results ?? res.data;
+**Проверка**: `cd frontend && npm run build` + переключить язык и проверить каждую страницу.
+
+**Коммит**: `feat: добавить недостающие переводы EN/RU/UZ для QuickInput, Settings, Dashboard`
+
+- [ ] Phase 3 complete
+
+---
+
+## Phase 4: Frontend UX — Error Boundary, Skeleton, Accessibility
+
+### 4.1 Error Boundary
+
+Создать `frontend/components/ErrorBoundary.tsx`:
+```tsx
+import { Component, ErrorInfo, ReactNode } from 'react';
+
+interface State { hasError: boolean; error: Error | null; }
+
+export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
+  state: State = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
-  ```
-- [x] В `frontend/types.ts` добавить тип `PlanConfig`
-- [x] В `frontend/views/Settings.tsx` billing tab — заменить хардкодные цены на данные из `getPlans()`
 
-### Проверка:
-- [x] `cd backend && uv run python manage.py check && uv run python manage.py makemigrations --check && uv run pytest -v`
-- [x] `cd frontend && npm run build`
-- [x] Коммит: `feat: PlanConfig — управление ценами планов через Django Admin`
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('ErrorBoundary caught:', error, info);
+  }
 
----
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+          <div className="text-center p-8 max-w-md">
+            <div className="text-4xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+              Что-то пошло не так
+            </h2>
+            <p className="text-[var(--text-secondary)] text-sm mb-6">
+              {this.state.error?.message}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-700 transition-colors"
+            >
+              Обновить страницу
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+```
 
-## Phase 8: CancelTransaction — Откат плана организации
+Обернуть корневой `<App />` в `App.tsx` или `main.tsx`.
 
-**Задача**: Когда Payme отменяет транзакцию ПОСЛЕ выполнения (`STATE_CANCELLED_AFTER`), план организации не откатывается.
+### 4.2 Skeleton Loading компонент
 
-- [x] Открыть `backend/apps/payments/models.py`
-- [x] В модель `Order` добавить поле:
-  ```python
-  previous_plan = models.CharField(max_length=20, blank=True, default="")
-  ```
-- [x] В `Order.mark_as_paid()` — перед обновлением плана сохранить текущий:
-  ```python
-  self.previous_plan = self.organization.plan
-  ```
-- [x] Добавить метод `Order.revert_plan()`:
-  ```python
-  def revert_plan(self):
-      if not self.previous_plan:
-          return
-      try:
-          config = PlanConfig.objects.get(plan=self.previous_plan)
-      except PlanConfig.DoesNotExist:
-          return
-      org = self.organization
-      org.plan = self.previous_plan
-      org.max_kitchens = config.max_kitchens
-      org.max_users = config.max_users
-      org.save(update_fields=["plan", "max_kitchens", "max_users", "updated_at"])
-  ```
-- [x] Создать и применить миграцию
-- [x] В `backend/apps/payments/payme_views.py` — в `_cancelTransaction`, ветка `elif txn.state == STATE_PERFORMED`:
-  - После `txn.save(...)` добавить: `txn.order.revert_plan()`
-- [x] Проверка: `cd backend && uv run python manage.py makemigrations --check && uv run pytest -v`
-- [x] Коммит: `fix: откатывать план организации при отмене выполненной транзакции Payme`
+Создать `frontend/components/Skeleton.tsx`:
+```tsx
+interface SkeletonProps { rows?: number; className?: string; }
 
----
+export function Skeleton({ rows = 5, className = '' }: SkeletonProps) {
+  return (
+    <div className={`p-4 space-y-3 animate-pulse ${className}`}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="h-10 bg-[var(--bg-surface-2)] rounded-xl" />
+      ))}
+    </div>
+  );
+}
+```
 
-## Phase 9: Prod/Stage Environments via Coolify
+Заменить `"Loading..."` в `Dashboard.tsx:295` на `<Skeleton rows={5} />`.
 
-**Задача**: Создать раздельные конфигурации для prod и stage. Все секреты — через Coolify env vars.
+### 4.3 ARIA Labels для icon-only кнопок
 
-### 9a: Обновить docker-compose.coolify.yml (prod)
-- [x] Открыть `docker-compose.coolify.yml`
-- [x] В секцию `backend.environment` добавить:
-  ```yaml
-  PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID}
-  PAYME_MERCHANT_KEY: ${PAYME_MERCHANT_KEY}
-  PAYME_CHECKOUT_URL: ${PAYME_CHECKOUT_URL:-https://checkout.paycom.uz}
-  PAYME_CALLBACK_URL: ${PAYME_CALLBACK_URL:-https://marga.fullfocus.dev/#/settings}
-  ```
+В `QuickInput.tsx` для edit/delete кнопок добавить `aria-label`:
+```tsx
+<button aria-label={t('common.edit')} title={t('common.edit')} onClick={...}>
+  <Edit size={14} />
+</button>
+<button aria-label={t('common.delete')} title={t('common.delete')} onClick={...}>
+  <Trash2 size={14} />
+</button>
+```
 
-### 9b: Создать docker-compose.stage.yml
-- [x] Создать файл `docker-compose.stage.yml`:
-  ```yaml
-  # Stage environment — для тестирования с Payme sandbox (test.paycom.uz)
-  # Env vars для Coolify:
-  #   PAYME_MERCHANT_ID — тестовый merchant ID
-  #   PAYME_MERCHANT_KEY — тестовый ключ
-  #   PAYME_CHECKOUT_URL — https://test.paycom.uz (default)
-  #   ALLOWED_HOSTS — stage домен
-  #   SECRET_KEY, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
-  services:
-    db:
-      image: postgres:16-alpine
-      volumes:
-        - postgres_data_stage:/var/lib/postgresql/data
-      environment:
-        POSTGRES_DB: ${POSTGRES_DB:-marga_stage}
-        POSTGRES_USER: ${POSTGRES_USER:-marga}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marga123}
-      healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marga} -d ${POSTGRES_DB:-marga_stage}"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
+### 4.4 Modal Accessibility
 
-    backend:
-      image: jakha921/marga-backend:latest
-      expose:
-        - "8000"
-      environment:
-        SECRET_KEY: ${SECRET_KEY:-change-me-in-stage}
-        DEBUG: "0"
-        DJANGO_SETTINGS_MODULE: config.settings.prod
-        ALLOWED_HOSTS: ${ALLOWED_HOSTS:-marga-stage.fullfocus.dev},localhost,127.0.0.1
-        POSTGRES_DB: ${POSTGRES_DB:-marga_stage}
-        POSTGRES_USER: ${POSTGRES_USER:-marga}
-        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marga123}
-        POSTGRES_HOST: db
-        POSTGRES_PORT: "5432"
-        CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://marga-stage.fullfocus.dev}
-        PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID}
-        PAYME_MERCHANT_KEY: ${PAYME_MERCHANT_KEY}
-        PAYME_CHECKOUT_URL: ${PAYME_CHECKOUT_URL:-https://test.paycom.uz}
-        PAYME_CALLBACK_URL: ${PAYME_CALLBACK_URL:-https://marga-stage.fullfocus.dev/#/settings}
-      depends_on:
-        db:
-          condition: service_healthy
-      volumes:
-        - static_files_stage:/app/staticfiles
-      healthcheck:
-        test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(5); s.connect(('127.0.0.1',8000)); s.close()\" 2>/dev/null"]
-        interval: 30s
-        timeout: 15s
-        retries: 5
-        start_period: 120s
+В `frontend/components/Modal.tsx` добавить `role`, `aria-modal`, `aria-label`.
+Backdrop кнопка закрытия — `role="button"` и `aria-label="Close"`.
 
-    frontend:
-      image: jakha921/marga-frontend:latest
-      expose:
-        - "80"
-      depends_on:
-        - backend
-      volumes:
-        - static_files_stage:/app/static:ro
-      healthcheck:
-        test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
-        interval: 30s
-        timeout: 5s
-        retries: 3
+### 4.5 Исправить undefined `setEditUnitPrice`
 
-  volumes:
-    postgres_data_stage:
-    static_files_stage:
-  ```
+`frontend/views/QuickInput.tsx` — найти вызов `setEditUnitPrice(...)` (строка ~273)
+и заменить правильным setter `setEditUnitPriceStr(...)`.
 
-### 9c: Backend settings — читать Payme из env
-- [x] Открыть `backend/config/settings/prod.py`
-- [x] Добавить:
-  ```python
-  PAYME_MERCHANT_ID = env("PAYME_MERCHANT_ID", default="")
-  PAYME_MERCHANT_KEY = env("PAYME_MERCHANT_KEY", default="")
-  PAYME_CHECKOUT_URL = env("PAYME_CHECKOUT_URL", default="https://checkout.paycom.uz")
-  PAYME_CALLBACK_URL = env("PAYME_CALLBACK_URL", default="")
-  ```
-- [x] Открыть `backend/config/settings/base.py` — убедиться что те же настройки есть с dev defaults (test.paycom.uz)
+**Проверка**: `cd frontend && npm run build`
 
-### 9d: Документировать .env.example
-- [x] Открыть `.env.example` (или создать)
-- [x] Добавить секцию:
-  ```
-  # Payme / Paycom integration
-  # Test sandbox: https://test.paycom.uz  (для stage)
-  # Production:   https://checkout.paycom.uz  (для prod)
-  PAYME_MERCHANT_ID=
-  PAYME_MERCHANT_KEY=
-  PAYME_CHECKOUT_URL=https://test.paycom.uz
-  PAYME_CALLBACK_URL=http://localhost:3000/#/settings
-  ```
+**Коммит**: `feat: добавить ErrorBoundary, Skeleton loader, ARIA атрибуты, исправить undefined setter`
 
-### Проверка:
-- [x] `docker compose -f docker-compose.coolify.yml config` — без ошибок
-- [x] `docker compose -f docker-compose.stage.yml config` — без ошибок
-- [x] `cd backend && uv run python manage.py check`
-- [x] Коммит: `feat: добавить stage окружение и Payme env vars в docker-compose`
+- [ ] Phase 4 complete
 
 ---
 
-## Phase 10: Payme Integration Tests
+## Phase 5: Backend Security Hardening
 
-**Задача**: Написать интеграционные тесты для Payme webhook и REST API.
+### 5.1 Password минимум 8 символов + валидация сложности
 
-- [x] Создать `backend/tests/test_payments.py`
-- [x] Написать тесты (pytest + django.test.Client, реальная БД — НЕ mock):
-  - `test_payme_auth_no_header` — запрос без Authorization → -32504
-  - `test_payme_auth_wrong_key` — неверный ключ → -32504
-  - `test_payme_empty_key_blocked` — при пустом PAYME_MERCHANT_KEY → -32504 (не пропускает)
-  - `test_check_perform_valid` — валидный заказ, верная сумма → `{"allow": true}`
-  - `test_check_perform_wrong_amount` — неверная сумма → -31001
-  - `test_check_perform_not_found` — несуществующий order_id → -31050
-  - `test_create_transaction_new` — создаёт транзакцию, order становится PAYING
-  - `test_create_transaction_idempotent` — повторный вызов с тем же id → те же данные
-  - `test_perform_transaction_success` — выполняется, order становится PAID, org получает plan
-  - `test_cancel_before_perform` — отмена до perform → STATE_CANCELLED_BEFORE, order CANCELLED
-  - `test_cancel_after_perform_reverts_plan` — отмена после perform → STATE_CANCELLED_AFTER, org plan откатывается
-  - `test_check_transaction_found` — возвращает правильный state
-  - `test_check_transaction_not_found` — -31003
-  - `test_get_statement_range` — возвращает транзакции за период
-  - `test_plan_config_list_public` — `GET /api/payments/plans/` без auth → 200 со списком планов
-  - `test_org_plan_readonly_for_tenant_admin` — PATCH `/api/organizations/{id}/` с `plan=PRO` → поле игнорируется, остаётся прежнее значение
-- [x] Проверка: `cd backend && uv run pytest tests/test_payments.py -v`
-- [x] Коммит: `test: интеграционные тесты Payme webhook и PlanConfig API`
+`backend/apps/accounts/serializers.py`:
+```python
+password = serializers.CharField(write_only=True, min_length=8)
+
+def validate_password(self, value: str) -> str:
+    if value.isdigit():
+        raise serializers.ValidationError(
+            "Пароль не может состоять только из цифр."
+        )
+    return value
+```
+
+### 5.2 DRF Throttling (rate limiting)
+
+`backend/config/drf_settings.py`:
+```python
+'DEFAULT_THROTTLE_CLASSES': [
+    'rest_framework.throttling.AnonRateThrottle',
+],
+'DEFAULT_THROTTLE_RATES': {
+    'anon': '60/minute',
+    'user': '300/minute',
+    'login': '5/minute',
+}
+```
+
+Создать `backend/apps/accounts/throttles.py`:
+```python
+from rest_framework.throttling import AnonRateThrottle
+
+class LoginRateThrottle(AnonRateThrottle):
+    rate = '5/minute'
+    scope = 'login'
+```
+
+Применить на login view.
+
+### 5.3 DEBUG и ALLOWED_HOSTS безопасные defaults
+
+`backend/config/settings/base.py`:
+```python
+DEBUG = os.getenv("DEBUG", "0") == "1"  # было "1"
+_hosts = os.getenv("ALLOWED_HOSTS", "")
+ALLOWED_HOSTS: list[str] = [h.strip() for h in _hosts.split(",") if h.strip()]
+```
+
+В `dev.py` добавить:
+```python
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
+```
+
+### 5.4 Добавить комментарий к @csrf_exempt
+
+`backend/apps/payments/payme_views.py:18`:
+```python
+@csrf_exempt  # Payme использует HTTP Basic auth — это CSRF-защита для данного endpoint
+```
+
+**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
+
+**Коммит**: `fix(security): password min 8, rate limiting, безопасные defaults DEBUG/ALLOWED_HOSTS`
+
+- [ ] Phase 5 complete
 
 ---
 
-## DONE
+## Phase 6: Backend Performance — N+1 Fix + DB Indexes
 
-Когда все фазы выполнены и все тесты проходят:
-1. `cd backend && uv run pytest -v` — все тесты green
-2. `cd frontend && npm run build` — frontend собирается без ошибок
-3. `git log --oneline -12` — видны коммиты всех фаз
-4. Вывести: `<promise>ALL PHASES COMPLETE</promise>`
+### 6.1 N+1 в OrganizationSerializer
+
+`backend/apps/organizations/views.py` — добавить annotate:
+```python
+from django.db.models import Count
+
+queryset = Organization.objects.annotate(
+    kitchen_count=Count('kitchens', distinct=True),
+    user_count=Count('users', distinct=True),
+)
+```
+
+`backend/apps/organizations/serializers.py` — использовать annotated поля:
+```python
+kitchen_count = serializers.IntegerField(read_only=True)
+user_count = serializers.IntegerField(read_only=True)
+```
+
+### 6.2 DB Indexes для OperationEntry
+
+`backend/apps/operations/models.py` — добавить в Meta:
+```python
+class Meta:
+    indexes = [
+        models.Index(fields=['organization', 'date'], name='operation_org_date_idx'),
+        models.Index(fields=['organization', 'op_type'], name='operation_org_type_idx'),
+        models.Index(
+            fields=['organization', 'kitchen', 'date'],
+            name='operation_org_kitchen_date_idx',
+        ),
+    ]
+```
+
+Запустить `uv run python manage.py makemigrations operations`.
+
+### 6.3 ProductHistoryView — валидация product_id
+
+`backend/apps/operations/views.py` (~line 184):
+```python
+from django.shortcuts import get_object_or_404
+from apps.products.models import Product
+
+product = get_object_or_404(
+    Product, pk=product_id, organization=request.user.organization
+)
+```
+
+**Проверка**: `cd backend && uv run python manage.py makemigrations && uv run python manage.py migrate && uv run pytest -v`
+
+**Коммит**: `perf: исправить N+1 в OrganizationSerializer, добавить индексы БД, валидация product_id`
+
+- [ ] Phase 6 complete
+
+---
+
+## Phase 7: Backend Test Coverage
+
+### 7.1 `backend/tests/test_categories.py` — Category CRUD
+
+Написать тесты:
+- TENANT_ADMIN создаёт категорию → 201
+- KITCHEN_USER создаёт категорию → 403
+- Категории изолированы по организации (другая org → пустой список)
+- Update/Delete категории TENANT_ADMIN → 200/204
+
+### 7.2 `backend/tests/test_analytics.py` — Analytics views
+
+Написать тесты:
+- `KitchenReportView` без параметров → 400
+- `KitchenReportView` с `date_from`/`date_to` → 200 с полями `kitchens`, `totals`
+- `KitchenReportView` пустые данные → нули, не crash
+- `KitchenReportView` XLSX export → content-type `application/vnd.openxmlformats-officedocument`
+- `DashboardView` → 200, возвращает `total_revenue`, `total_expense`, `operation_count`
+
+### 7.3 Расширить `backend/tests/test_organizations.py`
+
+Добавить:
+- N+1 regression: list организаций делает ≤ 3 SQL запросов (через `assertNumQueries`)
+- SUPER_ADMIN может изменить `plan` организации → 200
+
+### 7.4 Rate limiting тест
+
+```python
+def test_login_rate_limit(self):
+    for _ in range(5):
+        self.client.post('/api/auth/login/', {...})
+    response = self.client.post('/api/auth/login/', {...})
+    self.assertEqual(response.status_code, 429)
+```
+
+**Проверка**: `cd backend && uv run pytest -v --tb=short`
+
+**Коммит**: `test: добавить тесты для категорий, аналитики, N+1 regression, rate limiting`
+
+- [ ] Phase 7 complete
+
+---
+
+## Phase 8: Code Quality Cleanup
+
+### 8.1 TypeScript — убрать `as any` в api/client.ts
+
+Создать `frontend/vite-env.d.ts` (если не существует):
+```ts
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_API_URL: string;
+  readonly VITE_GEMINI_API_KEY?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+```
+
+`frontend/api/client.ts`:
+```ts
+// убрать (import.meta as any).env
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+```
+
+### 8.2 PlanConfigAdmin — убрать list_editable
+
+`backend/apps/payments/admin.py`:
+```python
+# Убрать из list_editable поля price, max_kitchens, max_users, is_active
+# Оставить только list_display — редактирование через форму (audit trail)
+```
+
+### 8.3 Очистить пустой middleware.py
+
+`backend/apps/core/middleware.py` — добавить заглушку:
+```python
+# Reserved for future request middleware implementations
+```
+
+### 8.4 Исправить использование index как key в Settings.tsx
+
+`frontend/views/Settings.tsx:349`:
+```tsx
+// Было: key={i}
+// Стало: key={feature} (если feature — строка) или добавить stable id
+plan.features.map((feature) => (
+  <li key={feature} ...>
+```
+
+### 8.5 Ruff cleanup backend
+
+```bash
+cd backend && uv run ruff check --fix .
+```
+
+**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v && cd ../frontend && npm run build`
+
+**Коммит**: `chore: code quality — TypeScript типы, убрать list_editable, стабильные React keys`
+
+- [ ] Phase 8 complete
+
+---
+
+## Final Verification
+
+После всех фаз:
+```bash
+# Backend
+cd backend
+uv run python manage.py check
+uv run python manage.py makemigrations --check
+uv run pytest -v
+
+# Frontend
+cd ../frontend
+npm run build
+
+# Docker
+docker compose -f docker-compose.coolify.yml config
+docker compose -f docker-compose.stage.yml config
+```
+
+- [ ] ALL PHASES COMPLETE

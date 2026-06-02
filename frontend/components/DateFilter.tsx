@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Calendar } from 'lucide-react';
 import { formatDate } from '../utils';
+import { cn } from '../cn';
 
 interface DateFilterProps {
   label?: string;
@@ -17,7 +18,7 @@ const DateFilter: React.FC<DateFilterProps> = ({ label, value, onChange, classNa
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={cn('relative', className)}>
       {label && (
         <label className="block font-display font-bold text-[11px] text-slate-500 mb-2 ml-1 uppercase tracking-wider">
           {label}
