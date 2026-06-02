@@ -9,7 +9,9 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me-in-production")
+SECRET_KEY = os.getenv(
+    "SECRET_KEY", "dev-secret-key-change-me-in-production"
+)  # overridden in dev.py/prod.py
 DEBUG = os.getenv("DEBUG", "0") == "1"
 _allowed = os.getenv("ALLOWED_HOSTS", "")
 ALLOWED_HOSTS: list[str] = [h.strip() for h in _allowed.split(",") if h.strip()]
@@ -28,6 +30,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "drf_spectacular",

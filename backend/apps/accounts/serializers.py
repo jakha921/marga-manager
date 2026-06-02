@@ -55,8 +55,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_password(self, value: str) -> str:
-        if value.isdigit():
-            raise serializers.ValidationError("Пароль не может состоять только из цифр.")
+        from django.contrib.auth.password_validation import (
+            validate_password as django_validate_password,
+        )
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        try:
+            django_validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
         return value
 
     def create(self, validated_data):

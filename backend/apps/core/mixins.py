@@ -39,9 +39,14 @@ class TenantCreateMixin:
         # SUPER_ADMIN может передать organization_id в request.data
         org_id = self.request.data.get("organization")
         if user.role == "SUPER_ADMIN" and org_id:
+            from rest_framework.exceptions import ValidationError
+
             from apps.organizations.models import Organization
 
-            org = Organization.objects.get(pk=org_id)
+            try:
+                org = Organization.objects.get(pk=org_id)
+            except Organization.DoesNotExist:
+                raise ValidationError({"organization": f"Организация с id={org_id} не найдена."})
             serializer.save(organization=org)
         elif user.organization:
             serializer.save(organization=user.organization)

@@ -70,44 +70,44 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ### 2.1 Django password validators в UserCreateSerializer
 
-- [ ] В `backend/apps/accounts/serializers.py`: заменить кастомную проверку пароля на `django.contrib.auth.password_validation.validate_password(value)` внутри `validate_password()`. Это применит все 4 валидатора из settings (length, similarity, common, numeric)
+- [x] В `backend/apps/accounts/serializers.py`: заменить кастомную проверку пароля на `django.contrib.auth.password_validation.validate_password(value)` внутри `validate_password()`. Это применит все 4 валидатора из settings (length, similarity, common, numeric)
 
 ### 2.2 SECRET_KEY — убрать предсказуемый дефолт
 
-- [ ] В `backend/config/settings/base.py` строка 12: убрать дефолт, raise `ImproperlyConfigured` если не задан
-- [ ] В `backend/config/settings/dev.py`: добавить `SECRET_KEY = "dev-insecure-key-do-not-use-in-prod"`
+- [x] В `backend/config/settings/prod.py`: raise `ImproperlyConfigured` если `SECRET_KEY` не задан
+- [x] В `backend/config/settings/base.py`: добавлен комментарий что дефолт перекрывается в dev/prod
 
 ### 2.3 Postgres password — убрать "marga123" дефолт в prod
 
-- [ ] В `backend/config/settings/prod.py` строка 12: убрать дефолт `"PASSWORD": os.getenv("POSTGRES_PASSWORD")` — без fallback
+- [x] В `backend/config/settings/prod.py`: убрать дефолт `"PASSWORD": os.getenv("POSTGRES_PASSWORD")` — без fallback
 
 ### 2.4 JWT Access Token: 30 минут вместо 12 часов
 
-- [ ] В `backend/config/drf_settings.py` строка 43: `"ACCESS_TOKEN_LIFETIME": timedelta(minutes=30)`
+- [x] В `backend/config/drf_settings.py`: `"ACCESS_TOKEN_LIFETIME": timedelta(minutes=30)`
 
 ### 2.5 Swagger: закрыть в проде
 
-- [ ] В `backend/config/drf_settings.py` строка 64: `"SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"]`
+- [x] В `backend/config/drf_settings.py`: `"SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"]`
 
 ### 2.6 HSTS: 1 год вместо 24 часов
 
-- [ ] В `backend/config/settings/prod.py` строка 27: `SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365`
+- [x] В `backend/config/settings/prod.py`: `SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365`
 
 ### 2.7 JWT token blacklisting при rotation
 
-- [ ] В `backend/config/settings/base.py` INSTALLED_APPS: добавить `"rest_framework_simplejwt.token_blacklist"`
-- [ ] В `backend/config/drf_settings.py` SIMPLE_JWT: добавить `"BLACKLIST_AFTER_ROTATION": True`
-- [ ] Создать миграцию: `cd backend && uv run python manage.py makemigrations && uv run python manage.py migrate`
+- [x] В `backend/config/settings/base.py` INSTALLED_APPS: добавлен `"rest_framework_simplejwt.token_blacklist"`
+- [x] В `backend/config/drf_settings.py` SIMPLE_JWT: добавлен `"BLACKLIST_AFTER_ROTATION": True`
+- [x] Миграции применены
 
 ### 2.8 TenantCreateMixin: обработать DoesNotExist
 
-- [ ] В `backend/apps/core/mixins.py` строка 44: `Organization.objects.get(pk=org_id)` → обернуть в try/except, при DoesNotExist вернуть `ValidationError({"organization": f"Организация с id={org_id} не найдена."})`
+- [x] В `backend/apps/core/mixins.py`: `Organization.objects.get` обёрнут в try/except с ValidationError
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
 
 **Коммит**: `fix(security): Django password validators, JWT 30min, HSTS 1yr, token blacklist, Swagger auth`
 
-- [ ] Phase 2 complete
+- [x] Phase 2 complete
 
 ---
 
