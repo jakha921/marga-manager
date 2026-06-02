@@ -256,7 +256,7 @@ const AdminDashboard: React.FC = () => {
                   <select 
                     className="w-full p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-sm"
                     value={editingOrg.status}
-                    onChange={e => setEditingOrg({...editingOrg, status: e.target.value as any})}
+                    onChange={e => setEditingOrg({...editingOrg, status: e.target.value as 'ACTIVE' | 'SUSPENDED'})}
                   >
                      <option value="ACTIVE">ACTIVE</option>
                      <option value="SUSPENDED">SUSPENDED</option>

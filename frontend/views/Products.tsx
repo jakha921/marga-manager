@@ -8,6 +8,7 @@ import { Skeleton } from '../components/Skeleton';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { Product } from '../types';
 import { Search, Plus, Trash2, Edit2, Filter, Barcode, AlertCircle, ListTree, Check } from 'lucide-react';
 
 const Products: React.FC = () => {
@@ -70,7 +71,7 @@ const Products: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (product: any) => {
+  const handleOpenEdit = (product: Product) => {
     setEditingId(product.id);
     setError(null);
     setFormData({

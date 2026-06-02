@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Select from '../components/Select';
@@ -274,7 +274,7 @@ const QuickInput: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleEditChange = (field: keyof OperationEntry, value: any) => {
+  const handleEditChange = (field: keyof OperationEntry, value: string | number | null) => {
       setEditFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -415,16 +415,16 @@ const QuickInput: React.FC = () => {
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
-  const paginatedHistory = filteredHistory.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  const paginatedHistory = useMemo(
+    () => filteredHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [filteredHistory, currentPage, itemsPerPage]
   );
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
-  };
+  }, [totalPages]);
 
   // Excel Export via server
   const handleExportExcel = async () => {

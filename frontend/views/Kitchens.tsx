@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import { Skeleton } from '../components/Skeleton';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
+import { Kitchen } from '../types';
 import { Search, Plus, Trash2, Edit2, Filter, Crown, AlertTriangle, Check } from 'lucide-react';
 
 const Kitchens: React.FC = () => {
@@ -38,7 +39,7 @@ const Kitchens: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (kitchen: any) => {
+  const handleOpenEdit = (kitchen: Kitchen) => {
     setEditingId(kitchen.id);
     setFormData({
       name: kitchen.name,
