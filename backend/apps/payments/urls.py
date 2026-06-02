@@ -7,6 +7,7 @@ from .views import OrderViewSet, PlanConfigListView
 router = DefaultRouter()
 router.register("payments/orders", OrderViewSet, basename="payment-orders")
 
+# Public endpoint (no auth) — must come before router.urls to avoid pk capture
 urlpatterns = [
     path("payments/payme/", PaymeWebhookView.as_view(), name="payme-webhook"),
     path("payments/plans/", PlanConfigListView.as_view(), name="plan-config-list"),
