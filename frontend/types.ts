@@ -117,6 +117,14 @@ export interface LastIncomingResponse {
 
 export type OrderStatus = 'PENDING' | 'PAYING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
 
+export interface PlanConfig {
+  plan: SubscriptionPlan;
+  price: number; // в тийинах
+  priceUzs: number; // в UZS
+  maxKitchens: number;
+  maxUsers: number;
+}
+
 export interface SubscriptionOrder {
   id: number;
   organizationId: number;

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
-from .models import Order, PaymeTransaction
+from .models import Order, PaymeTransaction, PlanConfig
 
 
 @admin.register(Order)
@@ -32,3 +32,13 @@ class PaymeTransactionAdmin(ModelAdmin):
         "updated_at",
     ]
     raw_id_fields = ["order"]
+
+
+@admin.register(PlanConfig)
+class PlanConfigAdmin(ModelAdmin):
+    list_display = ["plan", "price_display", "max_kitchens", "max_users", "is_active"]
+    list_editable = ["max_kitchens", "max_users", "is_active"]
+
+    @admin.display(description="Цена (UZS)")
+    def price_display(self, obj):
+        return f"{obj.price // 100:,} UZS"

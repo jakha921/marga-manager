@@ -21,19 +21,6 @@ class Order(TimeStampedModel):
         CANCELLED = "CANCELLED", "Отменён"
         EXPIRED = "EXPIRED", "Истёк"
 
-    # Цены в тийинах (1 UZS = 100 тийин)
-    PLAN_PRICES = {
-        "BASIC": 0,
-        "PRO": 4_900_000,  # 49 000 UZS
-        "ENTERPRISE": 19_900_000,  # 199 000 UZS
-    }
-
-    PLAN_LIMITS = {
-        "BASIC": {"max_kitchens": 3, "max_users": 10},
-        "PRO": {"max_kitchens": 10, "max_users": 50},
-        "ENTERPRISE": {"max_kitchens": 999, "max_users": 999},
-    }
-
     organization = models.ForeignKey(
         "organizations.Organization",
         on_delete=models.CASCADE,
@@ -78,11 +65,20 @@ class Order(TimeStampedModel):
         self.paid_at = timezone.now()
         self.save(update_fields=["status", "paid_at", "updated_at"])
 
-        limits = self.PLAN_LIMITS.get(self.target_plan, {})
+        try:
+            config = PlanConfig.objects.get(plan=self.target_plan)
+            max_kitchens = config.max_kitchens
+            max_users = config.max_users
+        except PlanConfig.DoesNotExist:
+            max_kitchens = None
+            max_users = None
+
         org = self.organization
         org.plan = self.target_plan
-        org.max_kitchens = limits.get("max_kitchens", org.max_kitchens)
-        org.max_users = limits.get("max_users", org.max_users)
+        if max_kitchens is not None:
+            org.max_kitchens = max_kitchens
+        if max_users is not None:
+            org.max_users = max_users
         org.mrr = self.amount / 100  # конвертация тийин → UZS
         org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
 
@@ -133,3 +129,29 @@ class PaymeTransaction(TimeStampedModel):
             return False
         now_ms = int(time.time() * 1000)
         return (now_ms - self.payme_create_time) > self.PAYME_TIMEOUT_MS
+
+
+class PlanConfig(TimeStampedModel):
+    """Конфигурация тарифных планов — управляется через Django Admin без деплоя."""
+
+    class Plan(models.TextChoices):
+        BASIC = "BASIC", "Basic"
+        PRO = "PRO", "Pro"
+        ENTERPRISE = "ENTERPRISE", "Enterprise"
+
+    plan = models.CharField(max_length=20, choices=Plan.choices, unique=True, verbose_name="План")
+    price = models.BigIntegerField(
+        verbose_name="Цена (тийин)",
+        help_text="Цена в тийинах (1 UZS = 100 тийин). BASIC = 0 (бесплатно).",
+    )
+    max_kitchens = models.PositiveIntegerField(verbose_name="Макс. кухонь")
+    max_users = models.PositiveIntegerField(verbose_name="Макс. пользователей")
+    is_active = models.BooleanField(default=True, verbose_name="Активен")
+
+    class Meta:
+        verbose_name = "Тариф (PlanConfig)"
+        verbose_name_plural = "Тарифы (PlanConfig)"
+        ordering = ["plan"]
+
+    def __str__(self) -> str:
+        return f"{self.plan} — {self.price // 100:,} UZS"

@@ -1,4 +1,4 @@
-import type { SubscriptionOrder } from '../../types';
+import type { PlanConfig, SubscriptionOrder } from '../../types';
 import apiClient from '../client';
 
 interface CreateOrderData {
@@ -22,4 +22,7 @@ export const paymentsService = {
 
   getCheckoutUrl: (orderId: number) =>
     apiClient.post<CheckoutUrlResponse>(`/payments/orders/${orderId}/checkout_url/`),
+
+  getPlans: () =>
+    apiClient.get<PlanConfig[]>('/payments/plans/'),
 };

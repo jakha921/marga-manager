@@ -1,6 +1,17 @@
 from rest_framework import serializers
 
-from .models import Order, PaymeTransaction
+from .models import Order, PaymeTransaction, PlanConfig
+
+
+class PlanConfigSerializer(serializers.ModelSerializer):
+    price_uzs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PlanConfig
+        fields = ["plan", "price", "price_uzs", "max_kitchens", "max_users"]
+
+    def get_price_uzs(self, obj) -> int:
+        return obj.price // 100
 
 
 class PaymeTransactionSerializer(serializers.ModelSerializer):
@@ -55,8 +66,14 @@ class OrderSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         target_plan = attrs.get("target_plan")
         amount = attrs.get("amount")
-        expected = Order.PLAN_PRICES.get(target_plan)
-        if expected is not None and amount != expected:
+        try:
+            config = PlanConfig.objects.get(plan=target_plan, is_active=True)
+            expected = config.price
+        except PlanConfig.DoesNotExist:
+            raise serializers.ValidationError(
+                {"target_plan": f"Тариф {target_plan} не найден или неактивен"}
+            )
+        if amount != expected:
             raise serializers.ValidationError(
                 {"amount": f"Сумма для плана {target_plan} должна быть {expected} тийин"}
             )
