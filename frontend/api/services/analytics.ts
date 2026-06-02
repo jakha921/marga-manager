@@ -8,7 +8,7 @@ export const analyticsService = {
     apiClient.get('/analytics/kitchen-report/', { params }),
   getKitchenReportXlsx: (params: Record<string, string>) =>
     apiClient.get('/analytics/kitchen-report/', {
-      params: { ...params, format: 'xlsx' },
+      params: { ...params, output: 'xlsx' },
       responseType: 'blob',
     }),
   getOperationsSummary: (params?: Record<string, string>) =>

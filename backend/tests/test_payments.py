@@ -542,3 +542,90 @@ class TestCancelTransactionRevertsPlan:
 
         org.refresh_from_db()
         assert org.plan == original_plan
+
+
+# ─── TestPaymeTimeout ────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestPaymeTimeout:
+    """9.4 — PaymeTransaction.is_timed_out: True after 12h, False before."""
+
+    def _make_txn(self, order, payme_create_time_ms: int) -> "PaymeTransaction":
+        return PaymeTransaction.objects.create(
+            payme_id=f"txn_timeout_{payme_create_time_ms}",
+            order=order,
+            state=PaymeTransaction.STATE_CREATED,
+            amount=order.amount,
+            payme_time=payme_create_time_ms,
+            payme_create_time=payme_create_time_ms,
+        )
+
+    def test_not_timed_out_when_fresh(self, order):
+        import time as _time
+
+        now_ms = int(_time.time() * 1000)
+        txn = self._make_txn(order, now_ms)
+        assert txn.is_timed_out is False
+
+    def test_timed_out_after_12h(self, order):
+        import time as _time
+
+        # Simulate a transaction created 12h + 1 second ago
+        past_ms = int(_time.time() * 1000) - PaymeTransaction.PAYME_TIMEOUT_MS - 1000
+        txn = self._make_txn(order, past_ms)
+        assert txn.is_timed_out is True
+
+    def test_not_timed_out_when_performed(self, order):
+        import time as _time
+
+        past_ms = int(_time.time() * 1000) - PaymeTransaction.PAYME_TIMEOUT_MS - 1000
+        txn = self._make_txn(order, past_ms)
+        txn.state = PaymeTransaction.STATE_PERFORMED
+        txn.save()
+        assert txn.is_timed_out is False
+
+
+# ─── TestOrderValidations ────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestOrderValidations:
+    """9.5 — Phase 1 validations: duplicate PENDING order → 400, same plan → 400."""
+
+    def test_cannot_create_second_pending_order(self, tenant_admin_client, org, tenant_admin):
+        from apps.payments.models import PlanConfig
+
+        # org.plan == "PRO"; target ENTERPRISE so "same plan" check passes
+        config, _ = PlanConfig.objects.get_or_create(
+            plan="ENTERPRISE",
+            defaults={"price": 9_900_000, "max_kitchens": 20, "max_users": 100},
+        )
+        amount = config.price
+
+        # First order → 201
+        resp1 = tenant_admin_client.post(
+            "/api/payments/orders/",
+            {"target_plan": "ENTERPRISE", "amount": amount},
+        )
+        assert resp1.status_code == 201
+
+        # Second order while first is still PENDING → 400
+        resp2 = tenant_admin_client.post(
+            "/api/payments/orders/",
+            {"target_plan": "ENTERPRISE", "amount": amount},
+        )
+        assert resp2.status_code == 400
+
+    def test_cannot_order_current_plan(self, tenant_admin_client, org):
+        from apps.payments.models import PlanConfig
+
+        # org.plan == "PRO" (from conftest), try to order PRO again → 400
+        PlanConfig.objects.get_or_create(
+            plan="PRO", defaults={"price": 4_900_000, "max_kitchens": 10, "max_users": 50}
+        )
+        resp = tenant_admin_client.post(
+            "/api/payments/orders/",
+            {"target_plan": "PRO", "amount": 4_900_000},
+        )
+        assert resp.status_code == 400

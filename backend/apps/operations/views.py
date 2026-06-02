@@ -337,8 +337,8 @@ class KitchenReportView(APIView):
             else Decimal("0")
         )
 
-        # Проверяем, нужен ли xlsx export
-        fmt = request.query_params.get("format")
+        # Проверяем, нужен ли xlsx export (используем "output" — "format" перехватывается DRF)
+        fmt = request.query_params.get("output")
         if fmt == "xlsx":
             return self._export_xlsx(kitchens_data, totals, date_from, date_to)
 

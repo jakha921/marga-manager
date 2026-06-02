@@ -422,3 +422,30 @@ class TestOperationsSummary:
             f"/api/analytics/operations-summary/?kitchen={kitchen.id}&date_from={today}&date_to={today}"
         )
         assert response.data["count"] == 1
+
+
+@pytest.mark.django_db
+class TestKitchenReportXlsx:
+    """9.3 — GET /api/analytics/kitchen-report/?format=xlsx returns xlsx."""
+
+    XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    def test_kitchen_report_json(self, tenant_admin_client):
+        today = timezone.now().date()
+        resp = tenant_admin_client.get(
+            f"/api/analytics/kitchen-report/?date_from={today}&date_to={today}"
+        )
+        assert resp.status_code == 200
+        assert "kitchens" in resp.data
+
+    def test_kitchen_report_xlsx(self, tenant_admin_client):
+        today = timezone.now().date()
+        resp = tenant_admin_client.get(
+            f"/api/analytics/kitchen-report/?date_from={today}&date_to={today}&output=xlsx"
+        )
+        assert resp.status_code == 200
+        assert self.XLSX_MIME in resp["Content-Type"]
+
+    def test_kitchen_report_unauthenticated(self, api_client):
+        resp = api_client.get("/api/analytics/kitchen-report/")
+        assert resp.status_code == 401

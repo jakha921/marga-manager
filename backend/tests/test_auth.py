@@ -94,3 +94,45 @@ class TestMeEndpoint:
         assert response.status_code == 200
         assert response.data["role"] == "SUPER_ADMIN"
         assert response.data["organization_id"] is None
+
+
+@pytest.mark.django_db
+class TestUserCRUD:
+    """9.1 — User CRUD via /api/users/."""
+
+    def test_tenant_admin_can_create_user(self, tenant_admin_client, org):
+        resp = tenant_admin_client.post(
+            "/api/users/",
+            {
+                "username": "newcook",
+                "password": "securepass",
+                "full_name": "New Cook",
+                "role": "KITCHEN_USER",
+            },
+        )
+        assert resp.status_code == 201
+        assert resp.data["role"] == "KITCHEN_USER"
+
+    def test_kitchen_user_cannot_create_user(self, kitchen_user_client, org):
+        resp = kitchen_user_client.post(
+            "/api/users/",
+            {
+                "username": "hacker",
+                "password": "securepass",
+                "full_name": "Hacker",
+                "role": "TENANT_ADMIN",
+            },
+        )
+        assert resp.status_code == 403
+
+    def test_tenant_admin_can_update_user(self, tenant_admin_client, kitchen_user):
+        resp = tenant_admin_client.patch(
+            f"/api/users/{kitchen_user.id}/",
+            {"full_name": "Updated Name"},
+        )
+        assert resp.status_code == 200
+        assert resp.data["full_name"] == "Updated Name"
+
+    def test_tenant_admin_can_delete_user(self, tenant_admin_client, kitchen_user):
+        resp = tenant_admin_client.delete(f"/api/users/{kitchen_user.id}/")
+        assert resp.status_code == 204

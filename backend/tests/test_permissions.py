@@ -240,3 +240,16 @@ class TestUnauthenticatedAccess:
         for url in endpoints:
             response = api_client.get(url)
             assert response.status_code == 401, f"{url} should return 401"
+
+
+@pytest.mark.django_db
+class TestTenantCreateMixinValidation:
+    """9.6 — SUPER_ADMIN POST with non-existent organization → 400, not 500."""
+
+    def test_nonexistent_org_returns_400(self, super_admin_client):
+        resp = super_admin_client.post(
+            "/api/kitchens/",
+            {"name": "Ghost Kitchen", "organization": 99999},
+        )
+        assert resp.status_code == 400
+        assert "organization" in resp.data

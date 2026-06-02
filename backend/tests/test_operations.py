@@ -334,3 +334,25 @@ class TestOperationTenantIsolation:
         # Should only see own org operations
         for op in response.data["results"]:
             assert op["organization_id"] != org2.id
+
+
+@pytest.mark.django_db
+class TestExcelExport:
+    """9.2 — GET /api/operations/export/ returns xlsx."""
+
+    XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    def test_export_returns_xlsx(self, tenant_admin_client, operation):
+        resp = tenant_admin_client.get("/api/operations/export/")
+        assert resp.status_code == 200
+        assert self.XLSX_MIME in resp["Content-Type"]
+
+    def test_export_unauthenticated(self, api_client):
+        resp = api_client.get("/api/operations/export/")
+        assert resp.status_code == 401
+
+    def test_export_with_date_filter(self, tenant_admin_client, operation):
+        today = date.today()
+        resp = tenant_admin_client.get(f"/api/operations/export/?date_from={today}&date_to={today}")
+        assert resp.status_code == 200
+        assert self.XLSX_MIME in resp["Content-Type"]

@@ -333,33 +333,33 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ### 9.1 User CRUD тесты
 
-- [ ] В `backend/tests/test_auth.py` или новый `test_users.py`: TENANT_ADMIN creates user → 201, KITCHEN_USER creates user → 403, update user → 200, delete user → 204
+- [x] В `backend/tests/test_auth.py` или новый `test_users.py`: TENANT_ADMIN creates user → 201, KITCHEN_USER creates user → 403, update user → 200, delete user → 204
 
 ### 9.2 Export Excel
 
-- [ ] В `backend/tests/test_operations.py`: GET /api/operations/export/ → 200 + content-type xlsx, с фильтрами → правильная фильтрация
+- [x] В `backend/tests/test_operations.py`: GET /api/operations/export/ → 200 + content-type xlsx, с фильтрами → правильная фильтрация
 
 ### 9.3 KitchenReport xlsx
 
-- [ ] В `backend/tests/test_analytics.py`: GET /api/analytics/kitchen-report/?format=xlsx → 200 + xlsx content-type
+- [x] В `backend/tests/test_analytics.py`: GET /api/analytics/kitchen-report/?output=xlsx → 200 + xlsx content-type (param renamed: format→output чтобы избежать конфликта с DRF content negotiation)
 
 ### 9.4 Payme timeout
 
-- [ ] В `backend/tests/test_payments.py`: `PaymeTransaction.is_timed_out` — True после 12h, False до 12h
+- [x] В `backend/tests/test_payments.py`: `PaymeTransaction.is_timed_out` — True после 12h, False до 12h
 
 ### 9.5 Phase 1 валидации
 
-- [ ] В `backend/tests/test_payments.py`: создание второго PENDING заказа → 400, заказ на текущий план → 400
+- [x] В `backend/tests/test_payments.py`: создание второго PENDING заказа → 400, заказ на текущий план → 400
 
 ### 9.6 TenantCreateMixin с несуществующим org_id
 
-- [ ] В `backend/tests/test_permissions.py`: SUPER_ADMIN POST с organization=99999 → 400 (не 500)
+- [x] В `backend/tests/test_permissions.py`: SUPER_ADMIN POST с organization=99999 → 400 (не 500)
 
 **Проверка**: `cd backend && uv run pytest -v --tb=short`
 
 **Коммит**: `test: User CRUD, Excel export, xlsx, Payme timeout, duplicate order, org validation`
 
-- [ ] Phase 9 complete
+- [x] Phase 9 complete
 
 ---
 
