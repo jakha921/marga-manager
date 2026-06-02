@@ -37,7 +37,6 @@ class PaymeTransactionAdmin(ModelAdmin):
 @admin.register(PlanConfig)
 class PlanConfigAdmin(ModelAdmin):
     list_display = ["plan", "price_display", "max_kitchens", "max_users", "is_active"]
-    list_editable = ["max_kitchens", "max_users", "is_active"]
 
     @admin.display(description="Цена (UZS)")
     def price_display(self, obj):

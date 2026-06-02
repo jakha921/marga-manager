@@ -576,7 +576,7 @@ cd backend && uv run ruff check --fix .
 
 **Коммит**: `chore: code quality — TypeScript типы, убрать list_editable, стабильные React keys`
 
-- [ ] Phase 8 complete
+- [x] Phase 8 complete
 
 ---
 

@@ -346,8 +346,8 @@ const Settings: React.FC = () => {
                     </div>
 
                     <ul className="space-y-3 mb-8 flex-1">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-3 text-sm text-slate-600">
                           <CheckCircle2
                             size={16}
                             className={`flex-shrink-0 mt-0.5 ${isCurrent ? 'text-emerald-500' : 'text-slate-400'}`}
