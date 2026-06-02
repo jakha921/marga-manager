@@ -118,24 +118,24 @@ class PaymeWebhookView(View):
                 request_id,
             )
 
-        # Проверка заказа перед созданием транзакции
-        try:
-            order = Order.objects.select_for_update().get(pk=order_id)
-        except (Order.DoesNotExist, ValueError, TypeError):
-            return error_response(PaymeError.ORDER_NOT_FOUND, request_id, "order_id")
-
-        if order.status == Order.Status.PAID:
-            return error_response(PaymeError.ORDER_ALREADY_PAID, request_id)
-
-        if not order.is_payable:
-            return error_response(PaymeError.CANT_PERFORM, request_id)
-
-        if order.amount != amount:
-            return error_response(PaymeError.INVALID_AMOUNT, request_id)
-
-        now_ms = int(time.time() * 1000)
-
+        # select_for_update() requires an atomic block (PostgreSQL enforces this)
         with transaction.atomic():
+            try:
+                order = Order.objects.select_for_update().get(pk=order_id)
+            except (Order.DoesNotExist, ValueError, TypeError):
+                return error_response(PaymeError.ORDER_NOT_FOUND, request_id, "order_id")
+
+            if order.status == Order.Status.PAID:
+                return error_response(PaymeError.ORDER_ALREADY_PAID, request_id)
+
+            if not order.is_payable:
+                return error_response(PaymeError.CANT_PERFORM, request_id)
+
+            if order.amount != amount:
+                return error_response(PaymeError.INVALID_AMOUNT, request_id)
+
+            now_ms = int(time.time() * 1000)
+
             txn = PaymeTransaction.objects.create(
                 payme_id=payme_id,
                 order=order,
@@ -162,41 +162,40 @@ class PaymeWebhookView(View):
     def _performTransaction(self, params: dict, request_id):  # noqa: N802
         payme_id = params.get("id")
 
-        try:
-            txn = (
-                PaymeTransaction.objects.select_related("order")
-                .select_for_update()
-                .get(payme_id=payme_id)
-            )
-        except PaymeTransaction.DoesNotExist:
-            return error_response(PaymeError.TRANSACTION_NOT_FOUND, request_id)
+        with transaction.atomic():
+            try:
+                txn = (
+                    PaymeTransaction.objects.select_related("order")
+                    .select_for_update()
+                    .get(payme_id=payme_id)
+                )
+            except PaymeTransaction.DoesNotExist:
+                return error_response(PaymeError.TRANSACTION_NOT_FOUND, request_id)
 
-        # Идемпотентный ответ если уже выполнена
-        if txn.state == PaymeTransaction.STATE_PERFORMED:
-            return success_response(
-                {
-                    "transaction": str(txn.id),
-                    "perform_time": txn.payme_perform_time,
-                    "state": txn.state,
-                },
-                request_id,
-            )
+            # Идемпотентный ответ если уже выполнена
+            if txn.state == PaymeTransaction.STATE_PERFORMED:
+                return success_response(
+                    {
+                        "transaction": str(txn.id),
+                        "perform_time": txn.payme_perform_time,
+                        "state": txn.state,
+                    },
+                    request_id,
+                )
 
-        if txn.state != PaymeTransaction.STATE_CREATED:
-            return error_response(PaymeError.CANT_PERFORM, request_id)
+            if txn.state != PaymeTransaction.STATE_CREATED:
+                return error_response(PaymeError.CANT_PERFORM, request_id)
 
-        if txn.is_timed_out:
-            now_ms = int(time.time() * 1000)
-            with transaction.atomic():
+            if txn.is_timed_out:
+                now_ms = int(time.time() * 1000)
                 txn.state = PaymeTransaction.STATE_CANCELLED_BEFORE
                 txn.reason = 4
                 txn.payme_cancel_time = now_ms
                 txn.save(update_fields=["state", "reason", "payme_cancel_time", "updated_at"])
                 txn.order.cancel()
-            return error_response(PaymeError.CANT_PERFORM, request_id)
+                return error_response(PaymeError.CANT_PERFORM, request_id)
 
-        now_ms = int(time.time() * 1000)
-        with transaction.atomic():
+            now_ms = int(time.time() * 1000)
             txn.state = PaymeTransaction.STATE_PERFORMED
             txn.payme_perform_time = now_ms
             txn.save(update_fields=["state", "payme_perform_time", "updated_at"])
@@ -218,47 +217,46 @@ class PaymeWebhookView(View):
         payme_id = params.get("id")
         reason = params.get("reason")
 
-        try:
-            txn = (
-                PaymeTransaction.objects.select_related("order")
-                .select_for_update()
-                .get(payme_id=payme_id)
-            )
-        except PaymeTransaction.DoesNotExist:
-            return error_response(PaymeError.TRANSACTION_NOT_FOUND, request_id)
+        with transaction.atomic():
+            try:
+                txn = (
+                    PaymeTransaction.objects.select_related("order")
+                    .select_for_update()
+                    .get(payme_id=payme_id)
+                )
+            except PaymeTransaction.DoesNotExist:
+                return error_response(PaymeError.TRANSACTION_NOT_FOUND, request_id)
 
-        # Идемпотентный ответ если уже отменена
-        if txn.state in (
-            PaymeTransaction.STATE_CANCELLED_BEFORE,
-            PaymeTransaction.STATE_CANCELLED_AFTER,
-        ):
-            return success_response(
-                {
-                    "transaction": str(txn.id),
-                    "cancel_time": txn.payme_cancel_time,
-                    "state": txn.state,
-                },
-                request_id,
-            )
+            # Идемпотентный ответ если уже отменена
+            if txn.state in (
+                PaymeTransaction.STATE_CANCELLED_BEFORE,
+                PaymeTransaction.STATE_CANCELLED_AFTER,
+            ):
+                return success_response(
+                    {
+                        "transaction": str(txn.id),
+                        "cancel_time": txn.payme_cancel_time,
+                        "state": txn.state,
+                    },
+                    request_id,
+                )
 
-        now_ms = int(time.time() * 1000)
+            now_ms = int(time.time() * 1000)
 
-        if txn.state == PaymeTransaction.STATE_CREATED:
-            with transaction.atomic():
+            if txn.state == PaymeTransaction.STATE_CREATED:
                 txn.state = PaymeTransaction.STATE_CANCELLED_BEFORE
                 txn.reason = reason
                 txn.payme_cancel_time = now_ms
                 txn.save(update_fields=["state", "reason", "payme_cancel_time", "updated_at"])
                 txn.order.cancel()
-        elif txn.state == PaymeTransaction.STATE_PERFORMED:
-            with transaction.atomic():
+            elif txn.state == PaymeTransaction.STATE_PERFORMED:
                 txn.state = PaymeTransaction.STATE_CANCELLED_AFTER
                 txn.reason = reason
                 txn.payme_cancel_time = now_ms
                 txn.save(update_fields=["state", "reason", "payme_cancel_time", "updated_at"])
                 txn.order.revert_plan()
-        else:
-            return error_response(PaymeError.CANT_PERFORM, request_id)
+            else:
+                return error_response(PaymeError.CANT_PERFORM, request_id)
 
         return success_response(
             {
