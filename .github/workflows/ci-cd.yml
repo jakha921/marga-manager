@@ -55,6 +55,7 @@ jobs:
             jakha921/marga-backend:latest
             jakha921/marga-backend:${{ github.sha }}
           no-cache: true
+          build-args: BUILD_SHA=${{ github.sha }}
 
   build-frontend:
     needs: [lint, test]
