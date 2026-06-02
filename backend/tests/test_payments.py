@@ -460,7 +460,84 @@ class TestOrderAPI:
         )
         assert resp.status_code == 400
 
+    def test_plan_config_list_public(self):
+        """GET /api/payments/plans/ доступен без аутентификации."""
+        client = Client()
+        resp = client.get("/api/payments/plans/")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert isinstance(data, list)
+        plans = {p["plan"] for p in data}
+        assert {"BASIC", "PRO", "ENTERPRISE"} == plans
+
     def test_tenant_isolation(self, tenant_admin2_client, order):
         # Order belongs to org, tenant_admin2 belongs to org2
         resp = tenant_admin2_client.get(f"/api/payments/orders/{order.id}/")
         assert resp.status_code == 404
+
+
+# ─── Security / Edge Case Tests ──────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestPaymeAuthEdgeCases:
+    def test_empty_merchant_key_blocks_auth(self, settings):
+        """Пустой PAYME_MERCHANT_KEY не должен пропускать никакие запросы."""
+        settings.PAYME_MERCHANT_KEY = ""
+        client = Client()
+        resp = client.post(
+            "/api/payments/payme/",
+            data=json.dumps({"method": "CheckTransaction", "params": {"id": "x"}, "id": 1}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=make_auth_header(""),
+        )
+        data = resp.json()
+        assert data["error"]["code"] == -32504
+
+
+@pytest.mark.django_db
+class TestOrgPlanPrivilegeEscalation:
+    def test_tenant_admin_cannot_change_plan(self, tenant_admin_client, org):
+        """TENANT_ADMIN не должен иметь возможности изменить план организации через PATCH."""
+        original_plan = org.plan
+        resp = tenant_admin_client.patch(
+            f"/api/organizations/{org.id}/",
+            {"plan": "ENTERPRISE"},
+            format="json",
+        )
+        assert resp.status_code == 200
+        org.refresh_from_db()
+        assert org.plan == original_plan
+
+
+@pytest.mark.django_db
+class TestCancelTransactionRevertsPlan:
+    def test_cancel_after_perform_reverts_org_plan(self, order, org, settings):
+        """Отмена уже выполненной транзакции должна откатывать план организации."""
+        settings.PAYME_MERCHANT_KEY = PAYME_KEY
+        original_plan = org.plan
+
+        payme_id = "txn_revert_plan_001"
+        payme_post(
+            {
+                "method": "CreateTransaction",
+                "params": {
+                    "id": payme_id,
+                    "time": int(time.time() * 1000),
+                    "amount": order.amount,
+                    "account": {"order_id": order.id},
+                },
+                "id": 1,
+            }
+        )
+        payme_post({"method": "PerformTransaction", "params": {"id": payme_id}, "id": 2})
+
+        org.refresh_from_db()
+        assert org.plan == order.target_plan
+
+        payme_post(
+            {"method": "CancelTransaction", "params": {"id": payme_id, "reason": 5}, "id": 3}
+        )
+
+        org.refresh_from_db()
+        assert org.plan == original_plan
