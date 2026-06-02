@@ -2,8 +2,14 @@ from datetime import date, time
 
 import pytest
 from rest_framework.test import APIClient
+from rest_framework.throttling import SimpleRateThrottle
 
-# Disable throttling globally for all tests
+from apps.accounts.models import User
+from apps.kitchens.models import Kitchen
+from apps.operations.models import OperationEntry
+from apps.organizations.models import Organization
+from apps.products.models import Category, Product
+
 pytestmark = pytest.mark.django_db
 
 
@@ -17,16 +23,7 @@ def disable_throttling(settings, monkeypatch):
     }
     # SimpleRateThrottle.THROTTLE_RATES is bound at import time to the production
     # rates dict — settings override alone doesn't update it. Patch directly.
-    from rest_framework.throttling import SimpleRateThrottle
-
     monkeypatch.setattr(SimpleRateThrottle, "THROTTLE_RATES", high_rates)
-
-
-from apps.accounts.models import User
-from apps.kitchens.models import Kitchen
-from apps.operations.models import OperationEntry
-from apps.organizations.models import Organization
-from apps.products.models import Category, Product
 
 
 @pytest.fixture
