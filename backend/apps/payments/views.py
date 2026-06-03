@@ -44,15 +44,35 @@ class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def checkout_url(self, request, pk=None):
-        """Сгенерировать URL для редиректа на Payme Checkout."""
+        """Сгенерировать параметры для Payme Checkout (POST для sandbox, GET для прода)."""
         order = self.get_object()
         if not order.is_payable:
             raise drf_serializers.ValidationError("Заказ не может быть оплачен")
 
         merchant_id = settings.PAYME_MERCHANT_ID
         callback = settings.PAYME_CALLBACK_URL
+        checkout_base = settings.PAYME_CHECKOUT_URL
+
+        if "test.paycom.uz" in checkout_base:
+            return Response(
+                {
+                    "method": "POST",
+                    "url": checkout_base,
+                    "fields": [
+                        {"name": "merchant", "value": merchant_id},
+                        {"name": "amount", "value": str(order.amount)},
+                        {"name": "account[order_id]", "value": str(order.id)},
+                        {"name": "lang", "value": "ru"},
+                        {"name": "callback", "value": callback},
+                    ],
+                }
+            )
+
         params = f"m={merchant_id};ac.order_id={order.id};a={order.amount};l=ru;c={callback}"
         encoded = base64.b64encode(params.encode()).decode()
-        checkout_url = f"{settings.PAYME_CHECKOUT_URL}/{encoded}"
-
-        return Response({"checkout_url": checkout_url})
+        return Response(
+            {
+                "method": "GET",
+                "url": f"{checkout_base}/{encoded}",
+            }
+        )

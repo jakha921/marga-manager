@@ -443,15 +443,28 @@ class TestOrderAPI:
         )
         assert resp.status_code == 403
 
-    def test_checkout_url_generated(self, tenant_admin_client, order, settings):
+    def test_checkout_url_generated_sandbox(self, tenant_admin_client, order, settings):
         settings.PAYME_MERCHANT_ID = "test_merchant"
         settings.PAYME_CHECKOUT_URL = "https://test.paycom.uz"
         settings.PAYME_CALLBACK_URL = "http://localhost:3000"
         resp = tenant_admin_client.post(f"/api/payments/orders/{order.id}/checkout_url/")
         assert resp.status_code == 200
         data = resp.json()
-        assert "checkoutUrl" in data
-        assert "test.paycom.uz" in data["checkoutUrl"]
+        assert data["method"] == "POST"
+        assert data["url"] == "https://test.paycom.uz"
+        field_names = {f["name"]: f["value"] for f in data["fields"]}
+        assert field_names["merchant"] == "test_merchant"
+        assert field_names["account[order_id]"] == str(order.id)
+
+    def test_checkout_url_generated_production(self, tenant_admin_client, order, settings):
+        settings.PAYME_MERCHANT_ID = "prod_merchant"
+        settings.PAYME_CHECKOUT_URL = "https://checkout.paycom.uz"
+        settings.PAYME_CALLBACK_URL = "http://localhost:3000"
+        resp = tenant_admin_client.post(f"/api/payments/orders/{order.id}/checkout_url/")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["method"] == "GET"
+        assert data["url"].startswith("https://checkout.paycom.uz/")
 
     def test_wrong_amount_rejected(self, tenant_admin_client):
         resp = tenant_admin_client.post(

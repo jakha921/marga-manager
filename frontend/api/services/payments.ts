@@ -7,7 +7,9 @@ interface CreateOrderData {
 }
 
 interface CheckoutUrlResponse {
-  checkoutUrl: string;
+  method: 'GET' | 'POST';
+  url: string;
+  fields?: { name: string; value: string }[];
 }
 
 export const paymentsService = {

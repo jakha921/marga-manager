@@ -172,7 +172,23 @@ const Settings: React.FC = () => {
       const amount = config?.price ?? 0;
       const orderRes = await paymentsService.createOrder({ targetPlan: plan, amount });
       const urlRes = await paymentsService.getCheckoutUrl(orderRes.data.id);
-      window.location.href = urlRes.data.checkoutUrl;
+      const { method, url, fields } = urlRes.data;
+      if (method === 'POST' && fields) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        for (const { name, value } of fields) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        }
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        window.location.href = url;
+      }
     } catch (err: unknown) {
       const axErr = err as { response?: { data?: { detail?: string; targetPlan?: string[]; amount?: string[] } } };
       const msg =
