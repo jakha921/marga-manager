@@ -70,13 +70,20 @@ class OrderSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request and hasattr(request.user, "organization") and request.user.organization:
             org = request.user.organization
-            # Нет незавершённых заказов
-            if Order.objects.filter(
-                organization=org,
-                status__in=[Order.Status.PENDING, Order.Status.PAYING],
-            ).exists():
+            # Нет незавершённых заказов для другого плана
+            pending = (
+                Order.objects.filter(
+                    organization=org,
+                    status__in=[Order.Status.PENDING, Order.Status.PAYING],
+                )
+                .exclude(target_plan=target_plan)
+                .first()
+            )
+            if pending:
                 raise serializers.ValidationError(
-                    {"non_field_errors": "У организации уже есть незавершённый заказ."}
+                    {
+                        "non_field_errors": "У организации уже есть незавершённый заказ на другой тариф."
+                    }
                 )
             # Org не уже на целевом плане
             if org.plan == target_plan:

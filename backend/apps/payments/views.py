@@ -36,6 +36,18 @@ class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
             return OrderDetailSerializer
         return OrderSerializer
 
+    def create(self, request, *args, **kwargs):
+        target_plan = request.data.get("target_plan")
+        existing = Order.objects.filter(
+            organization=request.user.organization,
+            status__in=[Order.Status.PENDING, Order.Status.PAYING],
+            target_plan=target_plan,
+        ).first()
+        if existing:
+            serializer = self.get_serializer(existing)
+            return Response(serializer.data)
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(
             organization=self.request.user.organization,

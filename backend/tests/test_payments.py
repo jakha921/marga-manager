@@ -623,12 +623,13 @@ class TestOrderValidations:
         )
         assert resp1.status_code == 201
 
-        # Second order while first is still PENDING → 400
+        # Second order for same plan while first is PENDING → 200 (idempotent, returns existing)
         resp2 = tenant_admin_client.post(
             "/api/payments/orders/",
             {"target_plan": "ENTERPRISE", "amount": amount},
         )
-        assert resp2.status_code == 400
+        assert resp2.status_code == 200
+        assert resp2.json()["id"] == resp1.json()["id"]
 
     def test_cannot_order_current_plan(self, tenant_admin_client, org):
         from apps.payments.models import PlanConfig
