@@ -36,6 +36,11 @@ class PaymeWebhookView(View):
         "GetStatement",
     }
 
+    @staticmethod
+    def _get_order_id(account: dict):
+        """Извлечь order_id из account — поддерживаем оба имени поля ('order_id' и 'id')."""
+        return account.get("order_id") or account.get("id")
+
     def post(self, request):
         if not verify_payme_auth(request):
             return error_response(PaymeError.AUTH_FAILED, None)
@@ -62,7 +67,7 @@ class PaymeWebhookView(View):
     # ------------------------------------------------------------------ #
     def _checkPerformTransaction(self, params: dict, request_id):  # noqa: N802
         amount = params.get("amount")
-        order_id = params.get("account", {}).get("order_id")
+        order_id = self._get_order_id(params.get("account", {}))
 
         try:
             order = Order.objects.get(pk=order_id)
@@ -87,7 +92,7 @@ class PaymeWebhookView(View):
         payme_id = params.get("id")
         payme_time = params.get("time")
         amount = params.get("amount")
-        order_id = params.get("account", {}).get("order_id")
+        order_id = self._get_order_id(params.get("account", {}))
 
         # Если транзакция уже существует — идемпотентный ответ
         try:
