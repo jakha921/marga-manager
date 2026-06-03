@@ -53,6 +53,6 @@ class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         callback = settings.PAYME_CALLBACK_URL
         params = f"m={merchant_id};ac.order_id={order.id};a={order.amount};l=ru;c={callback}"
         encoded = base64.b64encode(params.encode()).decode()
-        checkout_url = f"{settings.PAYME_CHECKOUT_URL}/#{encoded}"
+        checkout_url = f"{settings.PAYME_CHECKOUT_URL}/{encoded}"
 
         return Response({"checkout_url": checkout_url})
