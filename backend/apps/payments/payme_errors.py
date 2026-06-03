@@ -48,6 +48,7 @@ PAYME_MESSAGES = {
 def error_response(code: int, request_id, data=None) -> JsonResponse:
     """Вернуть JSON-RPC ошибку в формате Payme."""
     body: dict = {
+        "jsonrpc": "2.0",
         "error": {
             "code": code,
             "message": PAYME_MESSAGES.get(code, {"ru": "Ошибка", "en": "Error"}),
@@ -61,7 +62,7 @@ def error_response(code: int, request_id, data=None) -> JsonResponse:
 
 def success_response(result: dict, request_id) -> JsonResponse:
     """Вернуть JSON-RPC успешный ответ."""
-    return JsonResponse({"result": result, "id": request_id})
+    return JsonResponse({"jsonrpc": "2.0", "result": result, "id": request_id})
 
 
 def verify_payme_auth(request) -> bool:
