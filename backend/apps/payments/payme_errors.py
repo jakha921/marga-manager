@@ -22,26 +22,61 @@ class PaymeError:
 
 
 PAYME_MESSAGES = {
-    PaymeError.PARSE_ERROR: {"ru": "Ошибка разбора JSON", "en": "Parse error"},
-    PaymeError.INVALID_REQUEST: {"ru": "Неверный запрос", "en": "Invalid request"},
-    PaymeError.METHOD_NOT_FOUND: {"ru": "Метод не найден", "en": "Method not found"},
-    PaymeError.AUTH_FAILED: {"ru": "Ошибка авторизации", "en": "Authorization failed"},
-    PaymeError.INTERNAL_ERROR: {"ru": "Внутренняя ошибка", "en": "Internal error"},
-    PaymeError.INVALID_AMOUNT: {"ru": "Неверная сумма платежа", "en": "Invalid amount"},
+    PaymeError.PARSE_ERROR: {
+        "ru": "Ошибка разбора JSON",
+        "en": "Parse error",
+        "uz": "JSON tahlil xatosi",
+    },
+    PaymeError.INVALID_REQUEST: {
+        "ru": "Неверный запрос",
+        "en": "Invalid request",
+        "uz": "Noto'g'ri so'rov",
+    },
+    PaymeError.METHOD_NOT_FOUND: {
+        "ru": "Метод не найден",
+        "en": "Method not found",
+        "uz": "Metod topilmadi",
+    },
+    PaymeError.AUTH_FAILED: {
+        "ru": "Ошибка авторизации",
+        "en": "Authorization failed",
+        "uz": "Avtorizatsiya xatosi",
+    },
+    PaymeError.INTERNAL_ERROR: {
+        "ru": "Внутренняя ошибка",
+        "en": "Internal error",
+        "uz": "Ichki xato",
+    },
+    PaymeError.INVALID_AMOUNT: {
+        "ru": "Неверная сумма платежа",
+        "en": "Invalid amount",
+        "uz": "Noto'g'ri to'lov miqdori",
+    },
     PaymeError.TRANSACTION_NOT_FOUND: {
         "ru": "Транзакция не найдена",
         "en": "Transaction not found",
+        "uz": "Tranzaksiya topilmadi",
     },
     PaymeError.CANT_CANCEL_DELIVERED: {
         "ru": "Невозможно отменить — доставлено",
         "en": "Cannot cancel delivered",
+        "uz": "Bekor qilib bo'lmaydi — yetkazilgan",
     },
     PaymeError.CANT_PERFORM: {
         "ru": "Невозможно выполнить операцию",
         "en": "Cannot perform operation",
+        "uz": "Amalni bajarib bo'lmaydi",
     },
-    PaymeError.ORDER_NOT_FOUND: {"ru": "Заказ не найден", "en": "Order not found"},
-    PaymeError.ORDER_ALREADY_PAID: {"ru": "Заказ уже оплачен", "en": "Order already paid"},
+    PaymeError.ORDER_NOT_FOUND: {
+        "ru": "Заказ не найден",
+        "en": "Order not found",
+        "uz": "Buyurtma topilmadi",
+    },
+    PaymeError.ORDER_ALREADY_PAID: {
+        "ru": "Заказ уже оплачен",
+        "en": "Order already paid",
+        "uz": "Buyurtma allaqachon to'langan",
+    },
 }
 
 
