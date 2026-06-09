@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 from django.db import transaction
@@ -13,6 +14,8 @@ from .payme_errors import (
     success_response,
     verify_payme_auth,
 )
+
+logger = logging.getLogger("apps.payments")
 
 
 @method_decorator(
@@ -43,6 +46,7 @@ class PaymeWebhookView(View):
 
     def post(self, request):
         if not verify_payme_auth(request):
+            logger.warning("Payme auth failed ip=%s", request.META.get("REMOTE_ADDR"))
             return error_response(PaymeError.AUTH_FAILED, None)
 
         try:
@@ -68,19 +72,33 @@ class PaymeWebhookView(View):
     def _checkPerformTransaction(self, params: dict, request_id):  # noqa: N802
         amount = params.get("amount")
         order_id = self._get_order_id(params.get("account", {}))
+        logger.info("CheckPerformTransaction order_id=%s amount=%s", order_id, amount)
 
         try:
             order = Order.objects.get(pk=order_id)
         except (Order.DoesNotExist, ValueError, TypeError):
+            logger.warning("CheckPerformTransaction: order not found order_id=%s", order_id)
             return error_response(PaymeError.ORDER_NOT_FOUND, request_id, "order_id")
 
         if order.status == Order.Status.PAID:
+            logger.warning("CheckPerformTransaction: order already paid order_id=%s", order_id)
             return error_response(PaymeError.ORDER_ALREADY_PAID, request_id)
 
         if not order.is_payable:
+            logger.warning(
+                "CheckPerformTransaction: order not payable order_id=%s status=%s",
+                order_id,
+                order.status,
+            )
             return error_response(PaymeError.CANT_PERFORM, request_id)
 
         if order.amount != amount:
+            logger.warning(
+                "CheckPerformTransaction: wrong amount order_id=%s expected=%s got=%s",
+                order_id,
+                order.amount,
+                amount,
+            )
             return error_response(PaymeError.INVALID_AMOUNT, request_id)
 
         return success_response({"allow": True}, request_id)
@@ -93,6 +111,9 @@ class PaymeWebhookView(View):
         payme_time = params.get("time")
         amount = params.get("amount")
         order_id = self._get_order_id(params.get("account", {}))
+        logger.info(
+            "CreateTransaction payme_id=%s order_id=%s amount=%s", payme_id, order_id, amount
+        )
 
         # Если транзакция уже существует — идемпотентный ответ
         try:
@@ -102,6 +123,7 @@ class PaymeWebhookView(View):
 
         if txn:
             if txn.is_timed_out:
+                logger.warning("CreateTransaction: timed out payme_id=%s", payme_id)
                 now_ms = int(time.time() * 1000)
                 with transaction.atomic():
                     txn.state = PaymeTransaction.STATE_CANCELLED_BEFORE
@@ -114,6 +136,7 @@ class PaymeWebhookView(View):
             if txn.state != PaymeTransaction.STATE_CREATED:
                 return error_response(PaymeError.CANT_PERFORM, request_id)
 
+            logger.info("CreateTransaction: idempotent payme_id=%s txn_id=%s", payme_id, txn.id)
             return success_response(
                 {
                     "create_time": txn.payme_create_time,
@@ -205,6 +228,9 @@ class PaymeWebhookView(View):
             txn.payme_perform_time = now_ms
             txn.save(update_fields=["state", "payme_perform_time", "updated_at"])
             txn.order.mark_as_paid()
+            logger.info(
+                "PerformTransaction: success payme_id=%s order_id=%s", payme_id, txn.order_id
+            )
 
         return success_response(
             {
@@ -254,12 +280,18 @@ class PaymeWebhookView(View):
                 txn.payme_cancel_time = now_ms
                 txn.save(update_fields=["state", "reason", "payme_cancel_time", "updated_at"])
                 txn.order.cancel()
+                logger.info(
+                    "CancelTransaction: before-perform payme_id=%s reason=%s", payme_id, reason
+                )
             elif txn.state == PaymeTransaction.STATE_PERFORMED:
                 txn.state = PaymeTransaction.STATE_CANCELLED_AFTER
                 txn.reason = reason
                 txn.payme_cancel_time = now_ms
                 txn.save(update_fields=["state", "reason", "payme_cancel_time", "updated_at"])
                 txn.order.revert_plan()
+                logger.info(
+                    "CancelTransaction: after-perform payme_id=%s reason=%s", payme_id, reason
+                )
             else:
                 return error_response(PaymeError.CANT_PERFORM, request_id)
 
@@ -301,6 +333,7 @@ class PaymeWebhookView(View):
     def _getStatement(self, params: dict, request_id):  # noqa: N802
         from_ts = params.get("from", 0)
         to_ts = params.get("to", 0)
+        logger.debug("GetStatement from=%s to=%s", from_ts, to_ts)
 
         transactions = (
             PaymeTransaction.objects.filter(

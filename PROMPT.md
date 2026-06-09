@@ -89,17 +89,17 @@ LOGGING = {
 
 ### 1.2 Logging в PaymeWebhookView
 
-- [ ] В `backend/apps/payments/payme_views.py` добавить в начало (после импортов):
+- [x] В `backend/apps/payments/payme_views.py` добавить в начало (после импортов):
   ```python
   import logging
   logger = logging.getLogger("apps.payments")
   ```
-- [ ] В методе `post()` при ошибке авторизации добавить: `logger.warning("Payme auth failed ip=%s", request.META.get("REMOTE_ADDR"))`
-- [ ] В `_checkPerformTransaction()`: INFO в начале, WARNING при ошибках (not found, wrong amount)
-- [ ] В `_createTransaction()`: INFO создание/идемпотентность, WARNING при таймауте
-- [ ] В `_performTransaction()`: INFO успех
-- [ ] В `_cancelTransaction()`: INFO отмена с state и reason
-- [ ] В `_getStatement()`: DEBUG
+- [x] В методе `post()` при ошибке авторизации добавить: `logger.warning("Payme auth failed ip=%s", request.META.get("REMOTE_ADDR"))`
+- [x] В `_checkPerformTransaction()`: INFO в начале, WARNING при ошибках (not found, wrong amount)
+- [x] В `_createTransaction()`: INFO создание/идемпотентность, WARNING при таймауте
+- [x] В `_performTransaction()`: INFO успех
+- [x] В `_cancelTransaction()`: INFO отмена с state и reason
+- [x] В `_getStatement()`: DEBUG
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_payments.py -v`
 **Коммит**: `feat: добавить logging в PaymeWebhookView`
