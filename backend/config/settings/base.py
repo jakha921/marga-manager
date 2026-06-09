@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "apps.products",
     "apps.operations",
     "apps.payments",
+    "django_celery_beat",
 ]
 
 # --- Middleware ---
@@ -152,6 +153,30 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+    },
+}
+
+# --- Celery ---
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    "expire-stale-orders": {
+        "task": "apps.payments.tasks.expire_stale_orders_task",
+        "schedule": crontab(minute=0),
+    },
+    "check-expiring-subscriptions": {
+        "task": "apps.payments.tasks.check_expiring_subscriptions_task",
+        "schedule": crontab(minute=0, hour=9),
+    },
+    "downgrade-expired-subscriptions": {
+        "task": "apps.payments.tasks.downgrade_expired_subscriptions_task",
+        "schedule": crontab(minute=0, hour=0),
     },
 }
 

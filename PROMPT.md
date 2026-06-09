@@ -466,9 +466,9 @@ LOGGING = {
 
 ### 4.3 Celery настройки в settings
 
-- [ ] В `backend/config/settings/base.py`:
-  - В `INSTALLED_APPS` добавить `"django_celery_beat"`
-  - После LOGGING добавить:
+- [x] В `backend/config/settings/base.py`:
+  - [x] В `INSTALLED_APPS` добавить `"django_celery_beat"`
+  - [x] После LOGGING добавить:
     ```python
     # Celery
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
@@ -493,7 +493,7 @@ LOGGING = {
         },
     }
     ```
-- [ ] Запустить: `cd backend && uv run python manage.py migrate`
+- [x] Запустить: `cd backend && uv run python manage.py migrate`
 
 **Проверка**: `cd backend && uv run python manage.py check`
 **Коммит**: `feat: Celery настройки и CELERY_BEAT_SCHEDULE в base.py`
