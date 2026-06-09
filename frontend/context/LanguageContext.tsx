@@ -221,7 +221,8 @@ const translations: Record<Language, Record<string, string>> = {
     'bill.modal.total': 'Total due today',
     'bill.modal.confirm': 'Confirm & Pay',
     'bill.modal.processing': 'Processing...',
-    
+    'bill.pay_now': 'Pay now',
+
     // Common
     'common.show': 'Show',
     'common.entries': 'entries',
@@ -495,6 +496,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bill.modal.total': 'Итого к оплате',
     'bill.modal.confirm': 'Оплатить и перейти',
     'bill.modal.processing': 'Обработка...',
+    'bill.pay_now': 'Оплатить',
 
     // Common
     'common.show': 'Показать',
@@ -769,6 +771,7 @@ const translations: Record<Language, Record<string, string>> = {
     'bill.modal.total': 'Bugungi to\'lov',
     'bill.modal.confirm': 'To\'lash va o\'tish',
     'bill.modal.processing': 'Qayta ishlanmoqda...',
+    'bill.pay_now': 'To\'lov qilish',
 
     // Common
     'common.show': 'Ko\'rsatish',

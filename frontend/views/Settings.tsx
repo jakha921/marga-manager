@@ -202,6 +202,35 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handlePayPendingOrder = async (orderId: number) => {
+    setIsCreatingOrder(true);
+    setBillingError(null);
+    try {
+      const urlRes = await paymentsService.getCheckoutUrl(orderId);
+      const { method, url, fields } = urlRes.data;
+      if (method === 'POST' && fields) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        for (const { name, value } of fields) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        }
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        window.location.href = url;
+      }
+    } catch {
+      setBillingError(t('bill.error') || 'Ошибка при открытии оплаты');
+    } finally {
+      setIsCreatingOrder(false);
+    }
+  };
+
   const currentUser = tenantUsers.find(u => u.username === username);
 
   return (
@@ -441,17 +470,27 @@ const Settings: React.FC = () => {
                             {(order.amount / 100).toLocaleString()} UZS
                           </td>
                           <td className="px-4 py-3">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                order.status === 'PAID'
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : order.status === 'PENDING' || order.status === 'PAYING'
-                                    ? 'bg-amber-100 text-amber-700'
+                            {order.status === 'PENDING' || order.status === 'PAYING' ? (
+                              <button
+                                onClick={() => handlePayPendingOrder(order.id)}
+                                disabled={isCreatingOrder}
+                                title={t('bill.pay_now')}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                {order.status}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+                              </button>
+                            ) : (
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                  order.status === 'PAID'
+                                    ? 'bg-emerald-100 text-emerald-700'
                                     : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)]'
-                              }`}
-                            >
-                              {order.status}
-                            </span>
+                                }`}
+                              >
+                                {order.status}
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
