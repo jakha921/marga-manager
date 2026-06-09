@@ -813,7 +813,7 @@ LOGGING = {
 
 ### 8.3 docs/subscription-lifecycle.md
 
-- [ ] Создать `docs/subscription-lifecycle.md` с:
+- [x] Создать `docs/subscription-lifecycle.md` с:
   1. Flow: создание Order → Payme checkout → mark_as_paid → Subscription created + plan_expires_at
   2. Expiry checking: check_expiring_subscriptions_task (daily 09:00, за 3 дня)
   3. Grace period: 7 дней
