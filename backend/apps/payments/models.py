@@ -101,6 +101,24 @@ class Order(TimeStampedModel):
                 self.previous_plan,
                 self.target_plan,
             )
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.ORDER_STATE_CHANGE,
+                organization=self.organization,
+                target_type="Order",
+                target_id=self.id,
+                old_value={"status": "PENDING_OR_PAYING"},
+                new_value={"status": self.Status.PAID},
+                metadata={"amount": self.amount},
+            )
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.PLAN_CHANGE,
+                organization=self.organization,
+                target_type="Organization",
+                target_id=self.organization_id,
+                old_value={"plan": self.previous_plan},
+                new_value={"plan": self.target_plan},
+                metadata={"order_id": self.id},
+            )
 
     def revert_plan(self) -> None:
         """Откатить план организации к предыдущему (вызывается при отмене выполненной транзакции)."""

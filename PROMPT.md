@@ -321,7 +321,7 @@ LOGGING = {
 
 ### 3.2 AuditLog в Order.mark_as_paid()
 
-- [ ] В `backend/apps/payments/models.py` в методе `Order.mark_as_paid()` после `org.save(...)` добавить:
+- [x] В `backend/apps/payments/models.py` в методе `Order.mark_as_paid()` после `org.save(...)` добавить:
   ```python
   AuditLog.objects.create(
       event_type=AuditLog.EventType.ORDER_STATE_CHANGE,
