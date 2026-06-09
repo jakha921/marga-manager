@@ -418,11 +418,11 @@ LOGGING = {
 
 ### 3.6 Тесты для AuditLog
 
-- [ ] В `backend/tests/test_payments.py` добавить `TestAuditTrail`:
-  - `test_mark_as_paid_creates_order_and_plan_audit_logs` — проверить что ORDER_STATE_CHANGE и PLAN_CHANGE созданы
-  - `test_cancel_creates_audit_log` — проверить ORDER_STATE_CHANGE
-  - `test_revert_plan_creates_plan_revert_audit_log` — проверить PLAN_REVERT
-  - `test_payme_perform_creates_txn_audit_log` — через webhook PerformTransaction, проверить TXN_STATE_CHANGE
+- [x] В `backend/tests/test_payments.py` добавить `TestAuditTrail`:
+  - [x] `test_mark_as_paid_creates_order_and_plan_audit_logs`
+  - [x] `test_cancel_creates_audit_log`
+  - [x] `test_revert_plan_creates_plan_revert_audit_log`
+  - [x] `test_payme_perform_creates_txn_audit_log`
 
 **Проверка**: `cd backend && uv run pytest tests/test_payments.py -v -k "AuditTrail"`
 **Коммит**: `test: тесты для AuditLog audit trail`

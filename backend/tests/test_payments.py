@@ -643,3 +643,78 @@ class TestOrderValidations:
             {"target_plan": "PRO", "amount": 4_900_000},
         )
         assert resp.status_code == 400
+
+
+# ─── TestAuditTrail ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestAuditTrail:
+    def test_mark_as_paid_creates_order_and_plan_audit_logs(self, order):
+        from apps.payments.models import AuditLog
+
+        order.mark_as_paid()
+        assert AuditLog.objects.filter(
+            event_type=AuditLog.EventType.ORDER_STATE_CHANGE,
+            target_type="Order",
+            target_id=order.id,
+        ).exists()
+        assert AuditLog.objects.filter(
+            event_type=AuditLog.EventType.PLAN_CHANGE,
+            target_type="Organization",
+            target_id=order.organization_id,
+        ).exists()
+
+    def test_cancel_creates_audit_log(self, order):
+        from apps.payments.models import AuditLog
+
+        order.cancel()
+        assert AuditLog.objects.filter(
+            event_type=AuditLog.EventType.ORDER_STATE_CHANGE,
+            target_type="Order",
+            target_id=order.id,
+            new_value__status=Order.Status.CANCELLED,
+        ).exists()
+
+    def test_revert_plan_creates_plan_revert_audit_log(self, order):
+        from apps.payments.models import AuditLog
+
+        order.mark_as_paid()
+        order.refresh_from_db()
+        order.revert_plan()
+        assert AuditLog.objects.filter(
+            event_type=AuditLog.EventType.PLAN_REVERT,
+            target_type="Organization",
+            target_id=order.organization_id,
+        ).exists()
+
+    def test_payme_perform_creates_txn_audit_log(self, order, settings):
+        from apps.payments.models import AuditLog
+
+        settings.PAYME_MERCHANT_KEY = PAYME_KEY
+        payme_id = "audit_test_txn_001"
+        # CreateTransaction
+        payme_post(
+            {
+                "method": "CreateTransaction",
+                "params": {
+                    "id": payme_id,
+                    "time": int(time.time() * 1000),
+                    "amount": order.amount,
+                    "account": {"order_id": order.id},
+                },
+                "id": 1,
+            }
+        )
+        # PerformTransaction
+        payme_post(
+            {
+                "method": "PerformTransaction",
+                "params": {"id": payme_id},
+                "id": 2,
+            }
+        )
+        assert AuditLog.objects.filter(
+            event_type=AuditLog.EventType.TXN_STATE_CHANGE,
+            new_value__state=2,
+        ).exists()
