@@ -394,7 +394,7 @@ LOGGING = {
 
 ### 3.5 AuditLog в Django Admin
 
-- [ ] В `backend/apps/payments/admin.py` добавить:
+- [x] В `backend/apps/payments/admin.py` добавить:
   ```python
   from apps.payments.models import AuditLog
 

@@ -1,7 +1,32 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
-from .models import Order, PaymeTransaction, PlanConfig
+from .models import AuditLog, Order, PaymeTransaction, PlanConfig
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(ModelAdmin):
+    list_display = ["event_type", "target_type", "target_id", "organization", "created_at"]
+    list_filter = ["event_type", "created_at"]
+    search_fields = ["organization__name"]
+    readonly_fields = [
+        "event_type",
+        "actor",
+        "organization",
+        "target_type",
+        "target_id",
+        "old_value",
+        "new_value",
+        "metadata",
+        "created_at",
+    ]
+    date_hierarchy = "created_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Order)
