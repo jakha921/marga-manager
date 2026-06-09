@@ -27,6 +27,14 @@ npm run dev      # Dev server (port 3000)
 npm run build    # Production build
 ```
 
+### Celery (Background Tasks)
+```bash
+celery -A config worker -l info                    # Start worker
+celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler  # Start beat
+```
+Tasks: `expire_stale_orders_task` (hourly), `check_expiring_subscriptions_task` (09:00 daily), `downgrade_expired_subscriptions_task` (00:00 daily).
+Broker: Redis via `CELERY_BROKER_URL`.
+
 ### Docker (from project root)
 ```bash
 make dev         # docker-compose up --build (dev)
@@ -45,9 +53,13 @@ make test        # pytest via uv
 
 ### Multi-Tenancy
 Every data model inherits `TenantModel` (adds `organization` FK). Isolation enforced at three layers:
-1. **Middleware** (`apps/core/middleware.py` — `OrganizationMiddleware`) — sets `request.organization`
+1. **Middleware** (`apps/core/middleware.py` — `OrganizationMiddleware`) — sets `request.organization` from `user.organization`. Runs after `AuthenticationMiddleware`.
 2. **ViewSet mixins** (`apps/core/mixins.py`) — `TenantQuerySetMixin` filters queryset by org, `TenantCreateMixin` auto-sets org on create
 3. **SUPER_ADMIN bypass** — sees all orgs, can override org on create via request body
+
+**Cross-FK validation**: `OperationEntrySerializer.validate()` checks that `kitchen`, `to_kitchen`, and `product` belong to the user's org. SUPER_ADMIN bypasses this check.
+
+**Null-org users**: Users without `organization=None` get `PermissionDenied` (403) on analytics endpoints; CRUD endpoints return `qs.none()` (empty 200).
 
 ### Roles (hierarchy: SUPER_ADMIN > TENANT_ADMIN > KITCHEN_USER)
 - `SUPER_ADMIN` — platform-wide access, routed to `/admin/*` in frontend
@@ -71,6 +83,7 @@ Permission classes in `apps/core/permissions.py`: `IsSuperAdmin`, `IsTenantAdmin
 | `kitchens` | Location management | `Kitchen` |
 | `products` | Inventory catalog | `Category`, `Product` (code unique per org) |
 | `operations` | Transaction ledger | `OperationEntry` (INCOMING/DAILY/TRANSFER/SALE) |
+| `payments` | Billing & subscriptions | `Order`, `PaymeTransaction`, `PlanConfig`, `AuditLog`, `Subscription` |
 | `core` | Shared utilities | Abstract models, mixins, permissions, middleware |
 
 Settings split: `config/settings/base.py` → `dev.py` (SQLite) / `prod.py` (PostgreSQL + security headers). DRF config isolated in `config/drf_settings.py`.
@@ -107,6 +120,15 @@ See `.env.example`. Key vars:
 - `CORS_ALLOWED_ORIGINS`
 - `VITE_API_URL` — API base URL for frontend (dev: `http://localhost:8000/api`, prod: `/api`)
 - `GEMINI_API_KEY` — Google GenAI integration (frontend, exposed via Vite define)
+
+## Subscription & Billing
+
+- `Organization.plan_expires_at` — set to `now + 30 days` on each payment
+- **Grace period**: 7 days after expiry before automatic downgrade to BASIC
+- **AuditLog**: records all state changes for `Order`, `PaymeTransaction`, and `Organization.plan`
+- **Subscription model**: historical record created on each `mark_as_paid()`
+- Frontend shows expiry banner in `Layout.tsx` (yellow: ≤7 days; red: expired)
+- See `docs/subscription-lifecycle.md` for full flow
 
 ## CI/CD
 GitHub Actions (`.github/workflows/ci-cd.yml`): ruff lint → pytest → Docker build+push (`jakha921/marga-backend:latest`, `jakha921/marga-frontend:latest`) → Coolify deploy → health poll → smoke tests → Telegram notification.

@@ -830,7 +830,7 @@ LOGGING = {
 
 ### 9.1 Обновить CLAUDE.md
 
-- [ ] В `CLAUDE.md` обновить:
+- [x] В `CLAUDE.md` обновить:
   1. Таблица Django Apps: в строке payments добавить `AuditLog, Subscription` к моделям
   2. Добавить секцию **Celery** после Commands:
      ```
