@@ -18,6 +18,8 @@ ORGANIZATION_FIELDS = [
     "currency",
     "tax_rate",
     "low_stock_threshold",
+    "plan_started_at",
+    "plan_expires_at",
     "kitchen_count",
     "user_count",
     "created_at",
@@ -41,6 +43,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "max_kitchens",
             "max_users",
             "mrr",
+            "plan_started_at",
+            "plan_expires_at",
         ]
 
 

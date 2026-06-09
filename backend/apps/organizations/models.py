@@ -37,6 +37,8 @@ class Organization(TimeStampedModel):
     low_stock_threshold = models.PositiveIntegerField(
         default=10, verbose_name="Порог низкого запаса"
     )
+    plan_started_at = models.DateTimeField(null=True, blank=True, verbose_name="Подписка начата")
+    plan_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Подписка истекает")
 
     class Meta:
         verbose_name = "Организация"

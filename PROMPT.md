@@ -567,13 +567,13 @@ LOGGING = {
 
 ### 5.1 Поля plan_started_at и plan_expires_at на Organization
 
-- [ ] В `backend/apps/organizations/models.py` добавить поля (после `mrr`):
+- [x] В `backend/apps/organizations/models.py` добавить поля (после `mrr`):
   ```python
   plan_started_at = models.DateTimeField(null=True, blank=True, verbose_name="Подписка начата")
   plan_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Подписка истекает")
   ```
-- [ ] В `backend/apps/organizations/serializers.py` добавить `"plan_started_at"` и `"plan_expires_at"` в fields (read_only)
-- [ ] Запустить: `cd backend && uv run python manage.py makemigrations organizations`
+- [x] В `backend/apps/organizations/serializers.py` добавить `"plan_started_at"` и `"plan_expires_at"` в fields (read_only)
+- [x] Запустить: `cd backend && uv run python manage.py makemigrations organizations`
 
 **Проверка**: `cd backend && uv run python manage.py check`
 **Коммит**: `feat: добавить plan_started_at и plan_expires_at на Organization`
