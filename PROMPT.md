@@ -747,7 +747,7 @@ LOGGING = {
   - Создать пользователя без org (organization=None), authenticated
   - Проверить 403 на: /api/analytics/dashboard/, /api/analytics/kitchen-report/, /api/analytics/operations-summary/
 
-- [ ] Добавить тест: пользователь без org → GET /api/operations/ → пустой queryset (200 + empty list)
+- [x] Добавить тест: пользователь без org → GET /api/operations/ → пустой queryset (200 + empty list)
 
 **Проверка**: `cd backend && uv run pytest tests/test_analytics.py -v`
 **Коммит**: `test: null-org пользователи заблокированы в analytics`
