@@ -237,7 +237,7 @@ LOGGING = {
 
 ### 2.5 Реализовать OrganizationMiddleware
 
-- [ ] В `backend/apps/core/middleware.py` (текущий файл — заглушка) заменить содержимое на:
+- [x] В `backend/apps/core/middleware.py` (текущий файл — заглушка) заменить содержимое на:
   ```python
   class OrganizationMiddleware:
       """Устанавливает request.organization из user.organization."""
@@ -255,7 +255,7 @@ LOGGING = {
               request.organization = getattr(request.user, "organization", None)
           return None
   ```
-- [ ] В `backend/config/settings/base.py` в MIDDLEWARE после `"django.contrib.auth.middleware.AuthenticationMiddleware"` добавить: `"apps.core.middleware.OrganizationMiddleware",`
+- [x] В `backend/config/settings/base.py` в MIDDLEWARE после `"django.contrib.auth.middleware.AuthenticationMiddleware"` добавить: `"apps.core.middleware.OrganizationMiddleware",`
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
 **Коммит**: `feat: реализовать OrganizationMiddleware`
