@@ -38,8 +38,8 @@ class PaymeWebhookView(View):
 
     @staticmethod
     def _get_order_id(account: dict):
-        """Извлечь order_id из account — поддерживаем оба имени поля ('order_id' и 'id')."""
-        return account.get("order_id") or account.get("id")
+        """Извлечь order id из account — поле называется 'id' (настройка в кабинете Payme)."""
+        return account.get("id") or account.get("order_id")
 
     def post(self, request):
         if not verify_payme_auth(request):
@@ -72,7 +72,7 @@ class PaymeWebhookView(View):
         try:
             order = Order.objects.get(pk=order_id)
         except (Order.DoesNotExist, ValueError, TypeError):
-            return error_response(PaymeError.ORDER_NOT_FOUND, request_id, "order_id")
+            return error_response(PaymeError.ORDER_NOT_FOUND, request_id, "id")
 
         if order.status == Order.Status.PAID:
             return error_response(PaymeError.ORDER_ALREADY_PAID, request_id)
@@ -128,7 +128,7 @@ class PaymeWebhookView(View):
             try:
                 order = Order.objects.select_for_update().get(pk=order_id)
             except (Order.DoesNotExist, ValueError, TypeError):
-                return error_response(PaymeError.ORDER_NOT_FOUND, request_id, "order_id")
+                return error_response(PaymeError.ORDER_NOT_FOUND, request_id, "id")
 
             if order.status == Order.Status.PAID:
                 return error_response(PaymeError.ORDER_ALREADY_PAID, request_id)
@@ -316,7 +316,7 @@ class PaymeWebhookView(View):
                 "id": txn.payme_id,
                 "time": txn.payme_time,
                 "amount": txn.amount,
-                "account": {"order_id": txn.order_id},
+                "account": {"id": txn.order_id},
                 "create_time": txn.payme_create_time,
                 "perform_time": txn.payme_perform_time,
                 "cancel_time": txn.payme_cancel_time,

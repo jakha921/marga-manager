@@ -117,23 +117,23 @@ class TestCheckPerformTransaction:
         return payme_post({"method": self.method_name, "params": params, "id": 1})
 
     def test_valid_order_returns_allow(self, order, settings):
-        resp = self._post({"amount": order.amount, "account": {"order_id": order.id}}, settings)
+        resp = self._post({"amount": order.amount, "account": {"id": order.id}}, settings)
         data = resp.json()
         assert data["result"]["allow"] is True
 
     def test_wrong_amount(self, order, settings):
-        resp = self._post({"amount": 999, "account": {"order_id": order.id}}, settings)
+        resp = self._post({"amount": 999, "account": {"id": order.id}}, settings)
         data = resp.json()
         assert data["error"]["code"] == -31001
 
     def test_order_not_found(self, settings):
-        resp = self._post({"amount": 4_900_000, "account": {"order_id": 99999}}, settings)
+        resp = self._post({"amount": 4_900_000, "account": {"id": 99999}}, settings)
         data = resp.json()
         assert data["error"]["code"] == -31050
 
     def test_already_paid_order(self, order, settings):
         order.mark_as_paid()
-        resp = self._post({"amount": order.amount, "account": {"order_id": order.id}}, settings)
+        resp = self._post({"amount": order.amount, "account": {"id": order.id}}, settings)
         data = resp.json()
         assert data["error"]["code"] == -31051
 
@@ -157,7 +157,7 @@ class TestCreateTransaction:
                 "id": self.payme_id,
                 "time": int(time.time() * 1000),
                 "amount": order.amount,
-                "account": {"order_id": order.id},
+                "account": {"id": order.id},
             },
             settings,
         )
@@ -175,7 +175,7 @@ class TestCreateTransaction:
                 "id": self.payme_id,
                 "time": int(time.time() * 1000),
                 "amount": order.amount,
-                "account": {"order_id": order.id},
+                "account": {"id": order.id},
             },
             settings,
         )
@@ -185,7 +185,7 @@ class TestCreateTransaction:
                 "id": self.payme_id,
                 "time": int(time.time() * 1000),
                 "amount": order.amount,
-                "account": {"order_id": order.id},
+                "account": {"id": order.id},
             },
             settings,
         )
@@ -199,7 +199,7 @@ class TestCreateTransaction:
                 "id": self.payme_id,
                 "time": int(time.time() * 1000),
                 "amount": 4_900_000,
-                "account": {"order_id": 99999},
+                "account": {"id": 99999},
             },
             settings,
         )
@@ -224,7 +224,7 @@ class TestPerformTransaction:
                     "id": self.payme_id,
                     "time": int(time.time() * 1000),
                     "amount": order.amount,
-                    "account": {"order_id": order.id},
+                    "account": {"id": order.id},
                 },
                 "id": 1,
             }
@@ -274,7 +274,7 @@ class TestCancelTransaction:
                     "id": self.payme_id,
                     "time": int(time.time() * 1000),
                     "amount": order.amount,
-                    "account": {"order_id": order.id},
+                    "account": {"id": order.id},
                 },
                 "id": 1,
             }
@@ -348,7 +348,7 @@ class TestCheckTransaction:
                     "id": payme_id,
                     "time": int(time.time() * 1000),
                     "amount": order.amount,
-                    "account": {"order_id": order.id},
+                    "account": {"id": order.id},
                 },
                 "id": 1,
             }
@@ -386,7 +386,7 @@ class TestGetStatement:
                     "id": "txn_stmt_001",
                     "time": now_ms,
                     "amount": order.amount,
-                    "account": {"order_id": order.id},
+                    "account": {"id": order.id},
                 },
                 "id": 1,
             }
@@ -454,7 +454,7 @@ class TestOrderAPI:
         assert data["url"] == "https://test.paycom.uz"
         field_names = {f["name"]: f["value"] for f in data["fields"]}
         assert field_names["merchant"] == "test_merchant"
-        assert field_names["account[order_id]"] == str(order.id)
+        assert field_names["account[id]"] == str(order.id)
 
     def test_checkout_url_generated_production(self, tenant_admin_client, order, settings):
         settings.PAYME_MERCHANT_ID = "prod_merchant"
@@ -539,7 +539,7 @@ class TestCancelTransactionRevertsPlan:
                     "id": payme_id,
                     "time": int(time.time() * 1000),
                     "amount": order.amount,
-                    "account": {"order_id": order.id},
+                    "account": {"id": order.id},
                 },
                 "id": 1,
             }
