@@ -502,7 +502,7 @@ LOGGING = {
 
 ### 4.4 Создать apps/payments/tasks.py
 
-- [ ] Создать `backend/apps/payments/tasks.py` со следующими задачами:
+- [x] Создать `backend/apps/payments/tasks.py` со следующими задачами:
 
   **expire_stale_orders_task** (hourly):
   ```python
