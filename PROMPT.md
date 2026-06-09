@@ -688,7 +688,7 @@ LOGGING = {
 
 ### 6.1 Malformed JSON webhook
 
-- [ ] В `backend/tests/test_payments.py` добавить `TestPaymeWebhookEdgeCases`:
+- [x] В `backend/tests/test_payments.py` добавить `TestPaymeWebhookEdgeCases`:
   - POST с невалидным JSON → response код Payme PARSE_ERROR (-32700)
   - POST с отсутствующим полем method → ошибка
   - POST с неизвестным method → ошибка METHOD_NOT_FOUND

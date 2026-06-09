@@ -720,6 +720,44 @@ class TestAuditTrail:
         ).exists()
 
 
+# ─── TestPaymeWebhookEdgeCases ───────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestPaymeWebhookEdgeCases:
+    def test_invalid_json_returns_parse_error(self, settings):
+        settings.PAYME_MERCHANT_KEY = PAYME_KEY
+        client = Client()
+        resp = client.post(
+            "/api/payments/payme/",
+            data="not-valid-json{{{",
+            content_type="application/json",
+            HTTP_AUTHORIZATION=make_auth_header(),
+        )
+        assert resp.json()["error"]["code"] == -32700
+
+    def test_missing_method_field_returns_method_not_found(self, settings):
+        settings.PAYME_MERCHANT_KEY = PAYME_KEY
+        resp = payme_post({"params": {}, "id": 1})
+        assert resp.json()["error"]["code"] == -32601
+
+    def test_unknown_method_returns_method_not_found(self, settings):
+        settings.PAYME_MERCHANT_KEY = PAYME_KEY
+        resp = payme_post({"method": "HackTheSystem", "params": {}, "id": 1})
+        assert resp.json()["error"]["code"] == -32601
+
+    def test_empty_body_returns_parse_error(self, settings):
+        settings.PAYME_MERCHANT_KEY = PAYME_KEY
+        client = Client()
+        resp = client.post(
+            "/api/payments/payme/",
+            data="",
+            content_type="application/json",
+            HTTP_AUTHORIZATION=make_auth_header(),
+        )
+        assert resp.json()["error"]["code"] == -32700
+
+
 # ─── TestSubscriptionLogic ───────────────────────────────────────────────────
 
 
