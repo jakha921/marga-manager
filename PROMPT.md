@@ -433,8 +433,8 @@ LOGGING = {
 
 ### 4.1 Зависимости
 
-- [ ] В `backend/pyproject.toml` в dependencies добавить: `"celery>=5.4"`, `"redis>=5.0"`, `"django-celery-beat>=2.7"`
-- [ ] Запустить: `cd backend && uv sync`
+- [x] В `backend/pyproject.toml` в dependencies добавить: `"celery>=5.4"`, `"redis>=5.0"`, `"django-celery-beat>=2.7"`
+- [x] Запустить: `cd backend && uv sync`
 
 **Проверка**: `cd backend && uv run python -c "import celery; print(celery.__version__)"`
 **Коммит**: `chore: добавить celery, redis, django-celery-beat`
