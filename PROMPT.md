@@ -132,9 +132,9 @@ LOGGING = {
 
 ### 1.5 Logging в TenantQuerySetMixin
 
-- [ ] В `backend/apps/core/mixins.py` добавить: `import logging` и `logger = logging.getLogger("apps.core")`
-- [ ] В `TenantQuerySetMixin.get_queryset()` — если non-SUPER_ADMIN и `user.organization is None`: `logger.warning("user %s has no org, returning qs.none()", user.id)`
-- [ ] В `TenantCreateMixin.perform_create()` на последнем else — `logger.warning("user %s has no org, saving without organization", user.id)`
+- [x] В `backend/apps/core/mixins.py` добавить: `import logging` и `logger = logging.getLogger("apps.core")`
+- [x] В `TenantQuerySetMixin.get_queryset()` — если non-SUPER_ADMIN и `user.organization is None`: `logger.warning("user %s has no org, returning qs.none()", user.id)`
+- [x] В `TenantCreateMixin.perform_create()` на последнем else — `logger.warning("user %s has no org, saving without organization", user.id)`
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
 **Коммит**: `feat: добавить logging в TenantQuerySetMixin/CreateMixin`

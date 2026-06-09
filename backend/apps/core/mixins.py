@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
+
+logger = logging.getLogger("apps.core")
 
 
 class TenantQuerySetMixin:
@@ -22,6 +25,9 @@ class TenantQuerySetMixin:
 
         # Остальные видят только свою организацию
         if hasattr(qs.model, "organization"):
+            if not user.organization:
+                logger.warning("user %s has no org, returning qs.none()", user.id)
+                return qs.none()
             return qs.filter(organization=user.organization)
 
         return qs
@@ -51,4 +57,5 @@ class TenantCreateMixin:
         elif user.organization:
             serializer.save(organization=user.organization)
         else:
+            logger.warning("user %s has no org, saving without organization", user.id)
             serializer.save()
