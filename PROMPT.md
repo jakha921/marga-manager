@@ -443,7 +443,7 @@ LOGGING = {
 
 ### 4.2 Создать config/celery.py
 
-- [ ] Создать `backend/config/celery.py`:
+- [x] Создать `backend/config/celery.py`:
   ```python
   import os
   from celery import Celery
@@ -453,7 +453,7 @@ LOGGING = {
   app.config_from_object("django.conf:settings", namespace="CELERY")
   app.autodiscover_tasks()
   ```
-- [ ] В `backend/config/__init__.py` добавить:
+- [x] В `backend/config/__init__.py` добавить:
   ```python
   from .celery import app as celery_app
   __all__ = ("celery_app",)
