@@ -782,8 +782,8 @@ LOGGING = {
 
 ### 8.1 docs/payment-flow.md
 
-- [ ] Создать директорию `docs/` в корне проекта если не существует
-- [ ] Создать `docs/payment-flow.md` с:
+- [x] Создать директорию `docs/` в корне проекта если не существует
+- [x] Создать `docs/payment-flow.md` с:
   1. Mermaid stateDiagram для Order: PENDING → PAYING → PAID / EXPIRED / CANCELLED
   2. Mermaid stateDiagram для PaymeTransaction: 1 (created) → 2 / -1 / -2
   3. Описание 6 методов Payme webhook (CheckPerform, Create, Perform, Cancel, Check, GetStatement)
