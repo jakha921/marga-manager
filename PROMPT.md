@@ -702,7 +702,7 @@ LOGGING = {
 
 ### 6.2 Тесты management commands
 
-- [ ] Создать `backend/tests/test_commands.py`:
+- [x] Создать `backend/tests/test_commands.py`:
   - `test_expire_stale_orders_marks_old_orders` — создать Order с created_at = 13 часов назад, запустить команду, проверить EXPIRED
   - `test_expire_stale_orders_leaves_recent_orders` — недавний Order остаётся PENDING
   - `test_seed_data_runs_without_error` — `call_command("seed_data", "--clear")`
