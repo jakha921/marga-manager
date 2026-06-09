@@ -73,14 +73,14 @@ class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
                     "fields": [
                         {"name": "merchant", "value": merchant_id},
                         {"name": "amount", "value": str(order.amount)},
-                        {"name": "account[id]", "value": str(order.id)},
+                        {"name": "account[order_id]", "value": str(order.id)},
                         {"name": "lang", "value": "ru"},
                         {"name": "callback", "value": callback},
                     ],
                 }
             )
 
-        params = f"m={merchant_id};ac.id={order.id};a={order.amount};l=ru;c={callback}"
+        params = f"m={merchant_id};ac.order_id={order.id};a={order.amount};l=ru;c={callback}"
         encoded = base64.b64encode(params.encode()).decode()
         return Response(
             {
