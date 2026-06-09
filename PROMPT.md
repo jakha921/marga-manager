@@ -798,7 +798,7 @@ LOGGING = {
 
 ### 8.2 docs/tenant-isolation.md
 
-- [ ] Создать `docs/tenant-isolation.md` с:
+- [x] Создать `docs/tenant-isolation.md` с:
   1. Shared-database shared-schema подход
   2. Три слоя: OrganizationMiddleware (request.organization), TenantQuerySetMixin (queryset), Permission classes
   3. SUPER_ADMIN bypass — видит всё
