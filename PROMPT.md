@@ -582,7 +582,7 @@ LOGGING = {
 
 ### 5.2 Модель Subscription
 
-- [ ] В `backend/apps/payments/models.py` добавить модель (после AuditLog):
+- [x] В `backend/apps/payments/models.py` добавить модель (после AuditLog):
   ```python
   class Subscription(TimeStampedModel):
       class Status(models.TextChoices):
@@ -606,7 +606,7 @@ LOGGING = {
       def __str__(self):
           return f"Subscription [{self.organization}] {self.plan} {self.started_at:%Y-%m-%d}"
   ```
-- [ ] Запустить: `cd backend && uv run python manage.py makemigrations payments`
+- [x] Запустить: `cd backend && uv run python manage.py makemigrations payments`
 
 **Проверка**: `cd backend && uv run python manage.py check`
 **Коммит**: `feat: создать модель Subscription`

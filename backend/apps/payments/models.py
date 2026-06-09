@@ -281,3 +281,34 @@ class AuditLog(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"AuditLog [{self.event_type}] {self.target_type}#{self.target_id}"
+
+
+class Subscription(TimeStampedModel):
+    """Запись о подписке организации на тарифный план."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Активна"
+        EXPIRED = "EXPIRED", "Истекла"
+        CANCELLED = "CANCELLED", "Отменена"
+
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+    )
+    plan = models.CharField(max_length=20, choices=Order.Plan.choices)
+    amount = models.BigIntegerField(verbose_name="Сумма (тийин)")
+    started_at = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    order = models.ForeignKey(
+        Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="subscriptions"
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"Subscription [{self.organization}] {self.plan} {self.started_at:%Y-%m-%d}"
