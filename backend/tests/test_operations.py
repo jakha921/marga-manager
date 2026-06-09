@@ -384,3 +384,24 @@ class TestCrossFKValidation:
         resp = tenant_admin_client.post("/api/operations/", payload, format="json")
         assert resp.status_code == 400
         assert "product" in resp.json()
+
+
+@pytest.mark.django_db
+class TestCrossFKIsolation:
+    """SUPER_ADMIN bypass — может создавать операции с любым org."""
+
+    def test_super_admin_can_create_with_any_org(
+        self, super_admin_client, kitchen_other_org, product_other_org, org2
+    ):
+        payload = {
+            "kitchenId": kitchen_other_org.id,
+            "productId": product_other_org.id,
+            "organization": org2.id,
+            "type": "INCOMING",
+            "quantity": "1.000",
+            "price": "100.00",
+            "date": date.today().isoformat(),
+            "time": "12:00:00",
+        }
+        resp = super_admin_client.post("/api/operations/", payload, format="json")
+        assert resp.status_code == 201

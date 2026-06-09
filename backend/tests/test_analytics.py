@@ -498,3 +498,43 @@ class TestNullOrgUserBlocked:
             f"/api/analytics/operations-summary/?date_from={today}&date_to={today}"
         )
         assert resp.status_code == 403
+
+    def test_operations_list_null_org_returns_empty(self, null_org_client):
+        resp = null_org_client.get("/api/operations/")
+        assert resp.status_code == 200
+        data = resp.json()
+        results = data.get("results", data) if isinstance(data, dict) else data
+        assert len(results) == 0
+
+
+@pytest.mark.django_db
+class TestAnalyticsIsolation:
+    """Tenant isolation — каждый tenant видит только свои данные."""
+
+    def test_dashboard_shows_only_own_data(
+        self, tenant_admin_client, tenant_admin2_client, org, kitchen, product
+    ):
+        today = timezone.now().date()
+        # Create operation for org1
+        OperationEntry.objects.create(
+            organization=org,
+            kitchen=kitchen,
+            product=product,
+            type="INCOMING",
+            quantity=5,
+            price=100,
+            date=today,
+            time=time(12, 0),
+            unit=product.unit,
+        )
+        resp1 = tenant_admin_client.get("/api/analytics/dashboard/")
+        resp2 = tenant_admin2_client.get("/api/analytics/dashboard/")
+        assert resp1.status_code == 200
+        assert resp2.status_code == 200
+        # org1 admin sees their operation, org2 admin sees 0
+        assert resp1.json()["todayEntries"] >= 1
+        assert resp2.json()["todayEntries"] == 0
+
+    def test_product_history_other_org_returns_404(self, tenant_admin_client, product_other_org):
+        resp = tenant_admin_client.get(f"/api/analytics/product-history/{product_other_org.id}/")
+        assert resp.status_code == 404

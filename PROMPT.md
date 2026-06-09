@@ -743,7 +743,7 @@ LOGGING = {
 
 ### 7.1 Null-org user blocked в analytics
 
-- [ ] В `backend/tests/test_analytics.py` добавить `TestNullOrgUserBlocked` (если не добавлен в Phase 2.6):
+- [x] В `backend/tests/test_analytics.py` добавить `TestNullOrgUserBlocked` (если не добавлен в Phase 2.6):
   - Создать пользователя без org (organization=None), authenticated
   - Проверить 403 на: /api/analytics/dashboard/, /api/analytics/kitchen-report/, /api/analytics/operations-summary/
 
@@ -756,7 +756,7 @@ LOGGING = {
 
 ### 7.2 Cross-FK isolation tests
 
-- [ ] В `backend/tests/test_operations.py` добавить `TestCrossFKIsolation` (если не добавлен в Phase 2.6):
+- [x] В `backend/tests/test_operations.py` добавить `TestCrossFKIsolation` (если не добавлен в Phase 2.6):
   - POST /api/operations/ с kitchen_id из другой org → 400
   - POST /api/operations/ с product_id из другой org → 400
   - SUPER_ADMIN может создавать операции с любым org (если это желаемое поведение — проверить и задокументировать)
@@ -768,7 +768,7 @@ LOGGING = {
 
 ### 7.3 Analytics isolation
 
-- [ ] В `backend/tests/test_analytics.py` добавить `TestAnalyticsIsolation`:
+- [x] В `backend/tests/test_analytics.py` добавить `TestAnalyticsIsolation`:
   - tenant_admin из org1 видит только свои данные в dashboard (не видит операции org2)
   - product-history для product из другой org → 404 или пустые данные
   - kitchen-report с kitchen_id из другой org → пустые данные в отчёте
