@@ -147,7 +147,7 @@ LOGGING = {
 
 ### 2.1 Фикс _get_tenant_qs() — null-org баг
 
-- [ ] В `backend/apps/operations/views.py` функция `_get_tenant_qs(user)` (строки 206-211):
+- [x] В `backend/apps/operations/views.py` функция `_get_tenant_qs(user)` (строки 206-211):
 
   **Заменить**:
   ```python

@@ -205,10 +205,14 @@ class ProductHistoryView(APIView):
 
 def _get_tenant_qs(user):
     """Получить базовый queryset с фильтрацией по организации."""
+    from rest_framework.exceptions import PermissionDenied
+
     qs = OperationEntry.objects.all()
-    if user.role != "SUPER_ADMIN" and user.organization:
-        qs = qs.filter(organization=user.organization)
-    return qs
+    if user.role == "SUPER_ADMIN":
+        return qs
+    if not user.organization:
+        raise PermissionDenied("Пользователь не привязан к организации.")
+    return qs.filter(organization=user.organization)
 
 
 class KitchenReportView(APIView):
