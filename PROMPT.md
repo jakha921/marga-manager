@@ -348,26 +348,13 @@ LOGGING = {
 
 ### 3.3 AuditLog в Order.cancel() и revert_plan()
 
-- [ ] В `Order.cancel()` после `self.save(...)`:
+- [x] В `Order.cancel()` после `self.save(...)`:
   ```python
-  AuditLog.objects.create(
-      event_type=AuditLog.EventType.ORDER_STATE_CHANGE,
-      organization=self.organization,
-      target_type="Order", target_id=self.id,
-      old_value={"status": "ACTIVE"},
-      new_value={"status": self.Status.CANCELLED},
-  )
+  AuditLog.objects.create(...)
   ```
-- [ ] В `Order.revert_plan()` после `org.save(...)`:
+- [x] В `Order.revert_plan()` после `org.save(...)`:
   ```python
-  AuditLog.objects.create(
-      event_type=AuditLog.EventType.PLAN_REVERT,
-      organization=self.organization,
-      target_type="Organization", target_id=self.organization_id,
-      old_value={"plan": self.target_plan},
-      new_value={"plan": self.previous_plan},
-      metadata={"order_id": self.id, "reason": "payme_cancel"},
-  )
+  AuditLog.objects.create(...)
   ```
 
 **Проверка**: `cd backend && uv run pytest tests/test_payments.py -v`

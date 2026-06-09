@@ -146,6 +146,15 @@ class Order(TimeStampedModel):
                 self.target_plan,
                 self.previous_plan,
             )
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.PLAN_REVERT,
+                organization=self.organization,
+                target_type="Organization",
+                target_id=self.organization_id,
+                old_value={"plan": self.target_plan},
+                new_value={"plan": self.previous_plan},
+                metadata={"order_id": self.id, "reason": "payme_cancel"},
+            )
 
     def cancel(self) -> None:
         """Отменить заказ."""
@@ -153,6 +162,14 @@ class Order(TimeStampedModel):
         self.cancelled_at = timezone.now()
         self.save(update_fields=["status", "cancelled_at", "updated_at"])
         logger.info("Order #%s cancelled: org=%s", self.id, self.organization_id)
+        AuditLog.objects.create(
+            event_type=AuditLog.EventType.ORDER_STATE_CHANGE,
+            organization=self.organization,
+            target_type="Order",
+            target_id=self.id,
+            old_value={"status": "ACTIVE"},
+            new_value={"status": self.Status.CANCELLED},
+        )
 
 
 class PaymeTransaction(TimeStampedModel):
