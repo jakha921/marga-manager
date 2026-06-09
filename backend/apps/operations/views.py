@@ -157,7 +157,11 @@ class DashboardView(APIView):
         user = request.user
 
         qs = OperationEntry.objects.all()
-        if user.role != "SUPER_ADMIN" and user.organization:
+        if user.role != "SUPER_ADMIN":
+            if not user.organization:
+                from rest_framework.exceptions import PermissionDenied
+
+                raise PermissionDenied("Пользователь не привязан к организации.")
             qs = qs.filter(organization=user.organization)
 
         today_qs = qs.filter(date=today)
@@ -186,13 +190,17 @@ class ProductHistoryView(APIView):
     def get(self, request, product_id):
         user = request.user
 
-        if user.role != "SUPER_ADMIN" and user.organization:
+        if user.role != "SUPER_ADMIN":
+            if not user.organization:
+                from rest_framework.exceptions import PermissionDenied
+
+                raise PermissionDenied("Пользователь не привязан к организации.")
             get_object_or_404(Product, pk=product_id, organization=user.organization)
         else:
             get_object_or_404(Product, pk=product_id)
 
         qs = OperationEntry.objects.filter(product_id=product_id)
-        if user.role != "SUPER_ADMIN" and user.organization:
+        if user.role != "SUPER_ADMIN":
             qs = qs.filter(organization=user.organization)
 
         history = (

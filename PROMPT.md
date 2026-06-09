@@ -176,7 +176,7 @@ LOGGING = {
 
 ### 2.2 Фикс DashboardView и ProductHistoryView
 
-- [ ] В `backend/apps/operations/views.py` в `DashboardView.get()` найти inline tenant filter (паттерн `if user.role != "SUPER_ADMIN" and user.organization:`). Заменить на:
+- [x] В `backend/apps/operations/views.py` в `DashboardView.get()` найти inline tenant filter (паттерн `if user.role != "SUPER_ADMIN" and user.organization:`). Заменить на:
   ```python
   if user.role != "SUPER_ADMIN":
       if not user.organization:
@@ -184,7 +184,7 @@ LOGGING = {
           raise PermissionDenied("Пользователь не привязан к организации.")
       qs = qs.filter(organization=user.organization)
   ```
-- [ ] Применить ту же замену в `ProductHistoryView.get()` если там есть inline tenant filtering
+- [x] Применить ту же замену в `ProductHistoryView.get()` если там есть inline tenant filtering
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_analytics.py -v`
 **Коммит**: `fix(security): null-org дыра в DashboardView и ProductHistoryView`
