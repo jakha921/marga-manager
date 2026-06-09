@@ -120,10 +120,10 @@ LOGGING = {
 
 ### 1.4 Logging в accounts views
 
-- [ ] В `backend/apps/accounts/views.py` добавить: `import logging` и `logger = logging.getLogger("apps.accounts")`
-- [ ] В `CustomTokenObtainPairView` переопределить `post()`: логировать успешный логин (INFO) и неудачный (WARNING) с `username` и IP
-- [ ] В `UserViewSet.perform_create()`: `logger.info("User created: %s by %s", instance.username, self.request.user.username)` — определить где вызывается save
-- [ ] В `UserViewSet.perform_destroy()`: `logger.info("User deleted: id=%s by %s", instance.id, self.request.user.username)`
+- [x] В `backend/apps/accounts/views.py` добавить: `import logging` и `logger = logging.getLogger("apps.accounts")`
+- [x] В `CustomTokenObtainPairView` переопределить `post()`: логировать успешный логин (INFO) и неудачный (WARNING) с `username` и IP
+- [x] В `UserViewSet.perform_create()`: `logger.info("User created: %s by %s", instance.username, self.request.user.username)` — определить где вызывается save
+- [x] В `UserViewSet.perform_destroy()`: `logger.info("User deleted: id=%s by %s", instance.id, self.request.user.username)`
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_auth.py -v`
 **Коммит**: `feat: добавить logging в accounts views`
