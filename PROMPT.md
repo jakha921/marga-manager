@@ -364,7 +364,7 @@ LOGGING = {
 
 ### 3.4 AuditLog в PaymeWebhookView
 
-- [ ] В `backend/apps/payments/payme_views.py` в `_createTransaction()` после создания `PaymeTransaction`:
+- [x] В `backend/apps/payments/payme_views.py` в `_createTransaction()` после создания `PaymeTransaction`:
   ```python
   from apps.payments.models import AuditLog
   AuditLog.objects.create(
@@ -375,7 +375,7 @@ LOGGING = {
       metadata={"order_id": order.id},
   )
   ```
-- [ ] В `_performTransaction()` после `order.mark_as_paid()`:
+- [x] В `_performTransaction()` после `order.mark_as_paid()`:
   ```python
   AuditLog.objects.create(
       event_type=AuditLog.EventType.TXN_STATE_CHANGE,
@@ -385,7 +385,7 @@ LOGGING = {
       metadata={"payme_id": txn.payme_id},
   )
   ```
-- [ ] В `_cancelTransaction()` после отмены — AuditLog с new_state (-1 или -2) и reason
+- [x] В `_cancelTransaction()` после отмены — AuditLog с new_state (-1 или -2) и reason
 
 **Проверка**: `cd backend && uv run pytest tests/test_payments.py -v`
 **Коммит**: `feat: AuditLog в PaymeWebhookView`

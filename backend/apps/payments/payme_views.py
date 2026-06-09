@@ -174,6 +174,17 @@ class PaymeWebhookView(View):
             )
             order.status = Order.Status.PAYING
             order.save(update_fields=["status", "updated_at"])
+            from apps.payments.models import AuditLog
+
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.TXN_STATE_CHANGE,
+                organization=order.organization,
+                target_type="PaymeTransaction",
+                target_id=txn.id,
+                old_value={},
+                new_value={"state": 1, "payme_id": payme_id},
+                metadata={"order_id": order.id},
+            )
 
         return success_response(
             {
@@ -231,6 +242,17 @@ class PaymeWebhookView(View):
             logger.info(
                 "PerformTransaction: success payme_id=%s order_id=%s", payme_id, txn.order_id
             )
+            from apps.payments.models import AuditLog
+
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.TXN_STATE_CHANGE,
+                organization=txn.order.organization,
+                target_type="PaymeTransaction",
+                target_id=txn.id,
+                old_value={"state": 1},
+                new_value={"state": 2},
+                metadata={"payme_id": txn.payme_id},
+            )
 
         return success_response(
             {
@@ -274,6 +296,8 @@ class PaymeWebhookView(View):
 
             now_ms = int(time.time() * 1000)
 
+            from apps.payments.models import AuditLog
+
             if txn.state == PaymeTransaction.STATE_CREATED:
                 txn.state = PaymeTransaction.STATE_CANCELLED_BEFORE
                 txn.reason = reason
@@ -283,6 +307,15 @@ class PaymeWebhookView(View):
                 logger.info(
                     "CancelTransaction: before-perform payme_id=%s reason=%s", payme_id, reason
                 )
+                AuditLog.objects.create(
+                    event_type=AuditLog.EventType.TXN_STATE_CHANGE,
+                    organization=txn.order.organization,
+                    target_type="PaymeTransaction",
+                    target_id=txn.id,
+                    old_value={"state": 1},
+                    new_value={"state": PaymeTransaction.STATE_CANCELLED_BEFORE},
+                    metadata={"reason": reason},
+                )
             elif txn.state == PaymeTransaction.STATE_PERFORMED:
                 txn.state = PaymeTransaction.STATE_CANCELLED_AFTER
                 txn.reason = reason
@@ -291,6 +324,15 @@ class PaymeWebhookView(View):
                 txn.order.revert_plan()
                 logger.info(
                     "CancelTransaction: after-perform payme_id=%s reason=%s", payme_id, reason
+                )
+                AuditLog.objects.create(
+                    event_type=AuditLog.EventType.TXN_STATE_CHANGE,
+                    organization=txn.order.organization,
+                    target_type="PaymeTransaction",
+                    target_id=txn.id,
+                    old_value={"state": 2},
+                    new_value={"state": PaymeTransaction.STATE_CANCELLED_AFTER},
+                    metadata={"reason": reason},
                 )
             else:
                 return error_response(PaymeError.CANT_PERFORM, request_id)
