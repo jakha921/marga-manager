@@ -108,10 +108,10 @@ LOGGING = {
 
 ### 1.3 Logging в payment models
 
-- [ ] В `backend/apps/payments/models.py` добавить в начало: `import logging` и `logger = logging.getLogger("apps.payments")`
-- [ ] В `Order.mark_as_paid()`: `logger.info("Order #%s paid: org=%s plan %s->%s", self.id, self.organization_id, self.previous_plan, self.target_plan)`
-- [ ] В `Order.revert_plan()`: `logger.info("Order #%s reverted: org=%s plan %s->%s", self.id, self.organization_id, self.target_plan, self.previous_plan)`
-- [ ] В `Order.cancel()`: `logger.info("Order #%s cancelled: org=%s", self.id, self.organization_id)`
+- [x] В `backend/apps/payments/models.py` добавить в начало: `import logging` и `logger = logging.getLogger("apps.payments")`
+- [x] В `Order.mark_as_paid()`: `logger.info("Order #%s paid: org=%s plan %s->%s", self.id, self.organization_id, self.previous_plan, self.target_plan)`
+- [x] В `Order.revert_plan()`: `logger.info("Order #%s reverted: org=%s plan %s->%s", self.id, self.organization_id, self.target_plan, self.previous_plan)`
+- [x] В `Order.cancel()`: `logger.info("Order #%s cancelled: org=%s", self.id, self.organization_id)`
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_payments.py -v`
 **Коммит**: `feat: добавить logging в payment models`

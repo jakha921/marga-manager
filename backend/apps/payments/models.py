@@ -1,9 +1,12 @@
+import logging
 import time
 
 from django.db import models
 from django.utils import timezone
 
 from apps.core.models import TimeStampedModel
+
+logger = logging.getLogger("apps.payments")
 
 
 class Order(TimeStampedModel):
@@ -91,6 +94,13 @@ class Order(TimeStampedModel):
                 org.max_users = max_users
             org.mrr = self.amount / 100  # конвертация тийин → UZS
             org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
+            logger.info(
+                "Order #%s paid: org=%s plan %s->%s",
+                self.id,
+                self.organization_id,
+                self.previous_plan,
+                self.target_plan,
+            )
 
     def revert_plan(self) -> None:
         """Откатить план организации к предыдущему (вызывается при отмене выполненной транзакции)."""
@@ -111,12 +121,20 @@ class Order(TimeStampedModel):
             org.max_users = config.max_users
             org.mrr = config.price / 100  # откат mrr к цене предыдущего плана
             org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
+            logger.info(
+                "Order #%s reverted: org=%s plan %s->%s",
+                self.id,
+                self.organization_id,
+                self.target_plan,
+                self.previous_plan,
+            )
 
     def cancel(self) -> None:
         """Отменить заказ."""
         self.status = self.Status.CANCELLED
         self.cancelled_at = timezone.now()
         self.save(update_fields=["status", "cancelled_at", "updated_at"])
+        logger.info("Order #%s cancelled: org=%s", self.id, self.organization_id)
 
 
 class PaymeTransaction(TimeStampedModel):
