@@ -279,6 +279,10 @@ const translations: Record<Language, Record<string, string>> = {
     'login.demo_creds': 'Demo Credentials',
     'login.client_admin': 'Client Admin',
     'login.kitchen_staff': 'Kitchen Staff',
+    // Subscription expiry banner
+    'subscription.expiring_soon': 'Your plan expires on {date}. Renew now.',
+    'subscription.expired': 'Your plan has expired. Renew now.',
+    'subscription.renew_now': 'Renew',
   },
   ru: {
     // Navigation & Layout
@@ -549,6 +553,10 @@ const translations: Record<Language, Record<string, string>> = {
     'login.demo_creds': 'Демо данные',
     'login.client_admin': 'Клиент Администратор',
     'login.kitchen_staff': 'Сотрудник кухни',
+    // Subscription expiry banner
+    'subscription.expiring_soon': 'Ваш план истекает {date}.',
+    'subscription.expired': 'Ваш план истёк.',
+    'subscription.renew_now': 'Продлить',
   },
   uz: {
     // Navigation & Layout
@@ -819,6 +827,10 @@ const translations: Record<Language, Record<string, string>> = {
     'login.demo_creds': 'Demo ma\'lumotlar',
     'login.client_admin': 'Mijoz Admin',
     'login.kitchen_staff': 'Oshxona xodimi',
+    // Subscription expiry banner
+    'subscription.expiring_soon': 'Obunangiz {date} tugaydi.',
+    'subscription.expired': 'Obunangiz tugagan.',
+    'subscription.renew_now': 'Yangilash',
   }
 };
 

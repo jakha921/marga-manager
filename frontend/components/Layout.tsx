@@ -4,6 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, LogOut, Globe, Sun, Moon } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
 import { formatDate } from '../utils';
 
@@ -17,6 +18,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { t, language, setLanguage } = useLanguage();
   const { logout, userRole } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { currentOrganization } = useData();
+
+  const expiryBanner = React.useMemo(() => {
+    const exp = currentOrganization?.planExpiresAt;
+    if (!exp || currentOrganization?.plan === 'BASIC') return null;
+    const expiresAt = new Date(exp);
+    const now = new Date();
+    const diffDays = (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    if (diffDays < 0) return 'expired';
+    if (diffDays <= 7) return 'expiring';
+    return null;
+  }, [currentOrganization]);
 
   React.useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -135,6 +148,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
+        {/* Subscription expiry banner */}
+        {expiryBanner === 'expired' && (
+          <div className="bg-red-500 text-white text-sm px-4 py-2 flex items-center justify-between flex-shrink-0">
+            <span>{t('subscription.expired')}</span>
+            <a href="#/settings" className="underline font-semibold ml-4">{t('subscription.renew_now')}</a>
+          </div>
+        )}
+        {expiryBanner === 'expiring' && (
+          <div className="bg-yellow-400 text-yellow-900 text-sm px-4 py-2 flex items-center justify-between flex-shrink-0">
+            <span>{t('subscription.expiring_soon').replace('{date}', currentOrganization?.planExpiresAt ? formatDate(currentOrganization.planExpiresAt) : '')}</span>
+            <a href="#/settings" className="underline font-semibold ml-4">{t('subscription.renew_now')}</a>
+          </div>
+        )}
         {/* Header */}
         <header className="h-24 px-8 flex items-center justify-between flex-shrink-0 bg-[var(--bg-primary)]">
           <div>

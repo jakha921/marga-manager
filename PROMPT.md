@@ -654,12 +654,12 @@ LOGGING = {
 
 ### 5.5 Frontend: expiry banner
 
-- [ ] В `frontend/types.ts` в интерфейс Organization добавить: `planStartedAt: string | null` и `planExpiresAt: string | null`
-- [ ] В `frontend/context/LanguageContext.tsx` добавить переводы (en/ru/uz):
+- [x] В `frontend/types.ts` в интерфейс Organization добавить: `planStartedAt: string | null` и `planExpiresAt: string | null`
+- [x] В `frontend/context/LanguageContext.tsx` добавить переводы (en/ru/uz):
   - `subscription_expiring_soon`: "Your plan expires on {date}. Renew now." / "Ваш план истекает {date}." / "Obunangiz {date} tugaydi."
   - `subscription_expired`: "Your plan has expired. Renew now." / "Ваш план истёк." / "Obunangiz tugagan."
   - `renew_now`: "Renew" / "Продлить" / "Yangilash"
-- [ ] В `frontend/components/Layout.tsx` (основной layout, виден на всех страницах) добавить expiry баннер:
+- [x] В `frontend/components/Layout.tsx` (основной layout, виден на всех страницах) добавить expiry баннер:
   - Если `planExpiresAt` в течение 7 дней → жёлтый баннер
   - Если `planExpiresAt` прошло → красный баннер
   - Баннер со ссылкой `href="#/settings"` для оплаты

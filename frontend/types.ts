@@ -34,6 +34,8 @@ export interface Organization {
   currency?: string;
   taxRate?: number;
   lowStockThreshold?: number;
+  planStartedAt: string | null;
+  planExpiresAt: string | null;
 }
 
 export interface Category {
