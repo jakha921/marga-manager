@@ -24,7 +24,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-        username = request.data.get("username", "")
+        raw = request.data.get("username", "")
+        # Strip control chars to prevent log injection (CWE-117)
+        username = str(raw).replace("\r", "").replace("\n", "")[:64]
         ip = request.META.get("REMOTE_ADDR")
         if response.status_code == 200:
             logger.info("Login success: user=%s ip=%s", username, ip)
@@ -59,7 +61,9 @@ class UserViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet)
         return UserSerializer
 
     def perform_create(self, serializer):
-        instance = serializer.save()
+        # Call super() to preserve TenantCreateMixin org-scoping logic
+        super().perform_create(serializer)
+        instance = serializer.instance
         logger.info("User created: %s by %s", instance.username, self.request.user.username)
 
     def perform_destroy(self, instance):
