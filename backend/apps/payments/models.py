@@ -203,3 +203,46 @@ class PlanConfig(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.plan} — {self.price // 100:,} UZS"
+
+
+class AuditLog(TimeStampedModel):
+    """Аудит-журнал платёжных операций и изменений плана."""
+
+    class EventType(models.TextChoices):
+        ORDER_STATE_CHANGE = "ORDER_STATE_CHANGE", "Изменение статуса заказа"
+        TXN_STATE_CHANGE = "TXN_STATE_CHANGE", "Изменение статуса транзакции"
+        PLAN_CHANGE = "PLAN_CHANGE", "Смена плана"
+        PLAN_REVERT = "PLAN_REVERT", "Откат плана"
+
+    event_type = models.CharField(max_length=50, choices=EventType.choices)
+    actor = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+    target_type = models.CharField(max_length=50)
+    target_id = models.BigIntegerField()
+    old_value = models.JSONField(default=dict)
+    new_value = models.JSONField(default=dict)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        verbose_name = "Аудит-лог"
+        verbose_name_plural = "Аудит-логи"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["event_type", "created_at"]),
+            models.Index(fields=["organization", "created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"AuditLog [{self.event_type}] {self.target_type}#{self.target_id}"

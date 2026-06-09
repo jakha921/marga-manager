@@ -282,7 +282,7 @@ LOGGING = {
 
 ### 3.1 AuditLog модель
 
-- [ ] В `backend/apps/payments/models.py` в конец файла добавить модель:
+- [x] В `backend/apps/payments/models.py` в конец файла добавить модель:
   ```python
   class AuditLog(TimeStampedModel):
       class EventType(models.TextChoices):
@@ -312,7 +312,7 @@ LOGGING = {
       def __str__(self):
           return f"AuditLog [{self.event_type}] {self.target_type}#{self.target_id}"
   ```
-- [ ] Запустить: `cd backend && uv run python manage.py makemigrations payments`
+- [x] Запустить: `cd backend && uv run python manage.py makemigrations payments`
 
 **Проверка**: `cd backend && uv run python manage.py check`
 **Коммит**: `feat: создать модель AuditLog`
