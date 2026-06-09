@@ -66,3 +66,31 @@ class PlanConfigAdmin(ModelAdmin):
     @admin.display(description="Цена (UZS)")
     def price_display(self, obj):
         return f"{obj.price // 100:,} UZS"
+
+
+from .models import Subscription  # noqa: E402
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(ModelAdmin):
+    list_display = ["id", "organization", "plan", "status", "started_at", "expires_at"]
+    list_filter = ["plan", "status"]
+    search_fields = ["organization__name"]
+    readonly_fields = [
+        "organization",
+        "plan",
+        "amount",
+        "started_at",
+        "expires_at",
+        "order",
+        "status",
+        "created_at",
+        "updated_at",
+    ]
+    raw_id_fields = []
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

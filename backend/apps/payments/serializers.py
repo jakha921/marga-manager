@@ -110,3 +110,33 @@ class OrderDetailSerializer(OrderSerializer):
 
     class Meta(OrderSerializer.Meta):
         fields = OrderSerializer.Meta.fields + ["transactions"]
+
+
+from .models import Subscription  # noqa: E402
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = [
+            "id",
+            "organization",
+            "plan",
+            "amount",
+            "started_at",
+            "expires_at",
+            "order",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "organization",
+            "plan",
+            "amount",
+            "started_at",
+            "expires_at",
+            "order",
+            "status",
+            "created_at",
+        ]

@@ -11,7 +11,11 @@ from apps.core.mixins import TenantQuerySetMixin
 from apps.core.permissions import IsTenantAdmin
 
 from .models import Order, PlanConfig
-from .serializers import OrderDetailSerializer, OrderSerializer, PlanConfigSerializer
+from .serializers import (
+    OrderDetailSerializer,
+    OrderSerializer,
+    PlanConfigSerializer,
+)
 
 
 class PlanConfigListView(generics.ListAPIView):
@@ -88,3 +92,17 @@ class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
                 "url": f"{checkout_base}/{encoded}",
             }
         )
+
+
+from rest_framework.generics import ListAPIView  # noqa: E402
+
+from .models import Subscription  # noqa: E402
+from .serializers import SubscriptionSerializer  # noqa: E402
+
+
+class SubscriptionListView(TenantQuerySetMixin, ListAPIView):
+    """GET /api/payments/subscriptions/ — список подписок организации."""
+
+    queryset = Subscription.objects.select_related("organization", "order").all()
+    serializer_class = SubscriptionSerializer
+    permission_classes = [IsTenantAdmin]

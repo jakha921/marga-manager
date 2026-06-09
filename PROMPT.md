@@ -642,10 +642,10 @@ LOGGING = {
 
 ### 5.4 Subscription в Admin и API
 
-- [ ] В `backend/apps/payments/admin.py` зарегистрировать Subscription (list_display, list_filter, readonly_fields)
-- [ ] В `backend/apps/payments/serializers.py` добавить `SubscriptionSerializer` (все поля read_only)
-- [ ] В `backend/apps/payments/views.py` добавить `SubscriptionListView(TenantQuerySetMixin, ListAPIView)` с `permission_classes = [IsTenantAdmin]`
-- [ ] В `backend/apps/payments/urls.py` добавить: `path("payments/subscriptions/", SubscriptionListView.as_view(), name="subscription-list")`
+- [x] В `backend/apps/payments/admin.py` зарегистрировать Subscription (list_display, list_filter, readonly_fields)
+- [x] В `backend/apps/payments/serializers.py` добавить `SubscriptionSerializer` (все поля read_only)
+- [x] В `backend/apps/payments/views.py` добавить `SubscriptionListView(TenantQuerySetMixin, ListAPIView)` с `permission_classes = [IsTenantAdmin]`
+- [x] В `backend/apps/payments/urls.py` добавить: `path("payments/subscriptions/", SubscriptionListView.as_view(), name="subscription-list")`
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
 **Коммит**: `feat: Subscription admin, serializer и API`
