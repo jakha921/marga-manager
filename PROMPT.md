@@ -264,12 +264,12 @@ LOGGING = {
 
 ### 2.6 Тесты на tenant security фиксы
 
-- [ ] В `backend/tests/test_analytics.py` добавить класс `TestNullOrgUserBlocked` с тестами:
+- [x] В `backend/tests/test_analytics.py` добавить класс `TestNullOrgUserBlocked` с тестами:
   - пользователь role=KITCHEN_USER, organization=None → GET /api/analytics/dashboard/ → 403
   - пользователь role=TENANT_ADMIN, organization=None → GET /api/analytics/kitchen-report/ → 403
   - пользователь role=TENANT_ADMIN, organization=None → GET /api/analytics/operations-summary/ → 403
 
-- [ ] В `backend/tests/test_operations.py` добавить класс `TestCrossFKValidation` с тестами:
+- [x] В `backend/tests/test_operations.py` добавить класс `TestCrossFKValidation` с тестами:
   - POST /api/operations/ с kitchen из другой org → 400 с ошибкой "kitchen"
   - POST /api/operations/ с product из другой org → 400 с ошибкой "product"
 

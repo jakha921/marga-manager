@@ -3,7 +3,9 @@ from decimal import Decimal
 
 import pytest
 from django.utils import timezone  # noqa: E402
+from rest_framework.test import APIClient
 
+from apps.accounts.models import User
 from apps.operations.models import OperationEntry
 
 
@@ -449,3 +451,50 @@ class TestKitchenReportXlsx:
     def test_kitchen_report_unauthenticated(self, api_client):
         resp = api_client.get("/api/analytics/kitchen-report/")
         assert resp.status_code == 401
+
+
+@pytest.mark.django_db
+class TestNullOrgUserBlocked:
+    """Пользователи без организации должны получать 403 на аналитических эндпоинтах."""
+
+    @pytest.fixture
+    def null_org_client(self, db):
+        user = User.objects.create_user(
+            username="noorg_admin",
+            password="pass123",
+            role="TENANT_ADMIN",
+            organization=None,
+        )
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
+
+    @pytest.fixture
+    def null_org_kitchen_client(self, db):
+        user = User.objects.create_user(
+            username="noorg_kitchen",
+            password="pass123",
+            role="KITCHEN_USER",
+            organization=None,
+        )
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
+
+    def test_dashboard_null_org_blocked(self, null_org_kitchen_client):
+        resp = null_org_kitchen_client.get("/api/analytics/dashboard/")
+        assert resp.status_code == 403
+
+    def test_kitchen_report_null_org_blocked(self, null_org_client):
+        today = timezone.now().date().isoformat()
+        resp = null_org_client.get(
+            f"/api/analytics/kitchen-report/?date_from={today}&date_to={today}"
+        )
+        assert resp.status_code == 403
+
+    def test_operations_summary_null_org_blocked(self, null_org_client):
+        today = timezone.now().date().isoformat()
+        resp = null_org_client.get(
+            f"/api/analytics/operations-summary/?date_from={today}&date_to={today}"
+        )
+        assert resp.status_code == 403

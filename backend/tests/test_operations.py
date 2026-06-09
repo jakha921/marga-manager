@@ -356,3 +356,31 @@ class TestExcelExport:
         resp = tenant_admin_client.get(f"/api/operations/export/?date_from={today}&date_to={today}")
         assert resp.status_code == 200
         assert self.XLSX_MIME in resp["Content-Type"]
+
+
+@pytest.mark.django_db
+class TestCrossFKValidation:
+    """Cross-FK: нельзя использовать кухни/продукты из другой организации."""
+
+    def _payload(self, kitchen, product):
+        return {
+            "kitchenId": kitchen.id,
+            "productId": product.id,
+            "type": "INCOMING",
+            "quantity": "1.000",
+            "price": "100.00",
+            "date": date.today().isoformat(),
+            "time": "12:00:00",
+        }
+
+    def test_kitchen_from_other_org_rejected(self, tenant_admin_client, kitchen_other_org, product):
+        payload = self._payload(kitchen_other_org, product)
+        resp = tenant_admin_client.post("/api/operations/", payload, format="json")
+        assert resp.status_code == 400
+        assert "kitchen" in resp.json()
+
+    def test_product_from_other_org_rejected(self, tenant_admin_client, kitchen, product_other_org):
+        payload = self._payload(kitchen, product_other_org)
+        resp = tenant_admin_client.post("/api/operations/", payload, format="json")
+        assert resp.status_code == 400
+        assert "product" in resp.json()
