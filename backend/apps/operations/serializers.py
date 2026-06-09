@@ -109,4 +109,22 @@ class OperationEntrySerializer(serializers.ModelSerializer):
                     {"unit": f"Единица измерения не совпадает с продуктом ({product.unit})."}
                 )
 
+        user = self.context["request"].user
+        if user.role != "SUPER_ADMIN" and user.organization:
+            kitchen = attrs.get("kitchen")
+            if kitchen and kitchen.organization_id != user.organization_id:
+                raise serializers.ValidationError(
+                    {"kitchen": "Кухня принадлежит другой организации."}
+                )
+            to_kitchen = attrs.get("to_kitchen")
+            if to_kitchen and to_kitchen.organization_id != user.organization_id:
+                raise serializers.ValidationError(
+                    {"to_kitchen": "Кухня назначения принадлежит другой организации."}
+                )
+            product = attrs.get("product")
+            if product and product.organization_id != user.organization_id:
+                raise serializers.ValidationError(
+                    {"product": "Продукт принадлежит другой организации."}
+                )
+
         return attrs

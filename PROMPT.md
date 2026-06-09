@@ -193,7 +193,7 @@ LOGGING = {
 
 ### 2.3 Guard в TenantQuerySetMixin
 
-- [ ] В `backend/apps/core/mixins.py` строки 23-25:
+- [x] В `backend/apps/core/mixins.py` строки 23-25:
 
   **Заменить**:
   ```python
@@ -215,7 +215,7 @@ LOGGING = {
 
 ### 2.4 Cross-FK валидация в OperationEntrySerializer
 
-- [ ] В `backend/apps/operations/serializers.py` в методе `validate(self, data)` добавить в конец (перед `return data`):
+- [x] В `backend/apps/operations/serializers.py` в методе `validate(self, data)` добавить в конец (перед `return data`):
   ```python
   user = self.context["request"].user
   if user.role != "SUPER_ADMIN" and user.organization:
