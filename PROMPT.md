@@ -615,7 +615,7 @@ LOGGING = {
 
 ### 5.3 Wire mark_as_paid → Subscription + plan_expires_at
 
-- [ ] В `backend/apps/payments/models.py` в `Order.mark_as_paid()` после `org.save(...)` добавить:
+- [x] В `backend/apps/payments/models.py` в `Order.mark_as_paid()` после `org.save(...)` добавить:
   ```python
   from django.utils import timezone as _tz
   _now = _tz.now()

@@ -93,7 +93,30 @@ class Order(TimeStampedModel):
             if max_users is not None:
                 org.max_users = max_users
             org.mrr = self.amount / 100  # конвертация тийин → UZS
-            org.save(update_fields=["plan", "max_kitchens", "max_users", "mrr", "updated_at"])
+            _now = timezone.now()
+            _expires = _now + timezone.timedelta(days=30)
+            org.plan_started_at = _now
+            org.plan_expires_at = _expires
+            org.save(
+                update_fields=[
+                    "plan",
+                    "max_kitchens",
+                    "max_users",
+                    "mrr",
+                    "plan_started_at",
+                    "plan_expires_at",
+                    "updated_at",
+                ]
+            )
+            Subscription.objects.create(
+                organization=org,
+                plan=self.target_plan,
+                amount=self.amount,
+                started_at=_now,
+                expires_at=_expires,
+                order=self,
+                status=Subscription.Status.ACTIVE,
+            )
             logger.info(
                 "Order #%s paid: org=%s plan %s->%s",
                 self.id,
