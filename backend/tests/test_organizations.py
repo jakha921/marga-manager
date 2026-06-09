@@ -139,3 +139,40 @@ class TestOrganizationUnauthenticated:
     def test_list_unauthorized(self, api_client):
         response = api_client.get("/api/organizations/")
         assert response.status_code == 401
+
+
+@pytest.mark.django_db
+class TestOrganizationLimits:
+    def test_can_add_kitchen_true_when_below_limit(self, org):
+        org.max_kitchens = 10
+        org.save()
+        assert org.can_add_kitchen() is True
+
+    def test_can_add_kitchen_false_when_at_limit(self, org, db):
+        from apps.kitchens.models import Kitchen
+
+        org.max_kitchens = 1
+        org.save()
+        Kitchen.objects.create(name="Kitchen 1", organization=org)
+        assert org.can_add_kitchen() is False
+
+    def test_can_add_user_true_when_below_limit(self, org):
+        org.max_users = 100
+        org.save()
+        assert org.can_add_user() is True
+
+    def test_can_add_user_false_when_at_limit(self, org, db):
+        from apps.accounts.models import User
+
+        org.max_users = 1
+        org.save()
+        # One user already exists (tenant_admin from conftest)
+        current_count = org.users.count()
+        for i in range(org.max_users - current_count + 1):
+            User.objects.create_user(
+                username=f"extra_user_{i}",
+                password="pass123",
+                role="KITCHEN_USER",
+                organization=org,
+            )
+        assert org.can_add_user() is False

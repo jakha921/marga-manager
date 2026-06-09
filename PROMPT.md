@@ -715,11 +715,11 @@ LOGGING = {
 
 ### 6.3 Дополнительные model tests
 
-- [ ] В `backend/tests/test_payments.py` добавить `TestPaymeTransactionEdgeCases`:
+- [x] В `backend/tests/test_payments.py` добавить `TestPaymeTransactionEdgeCases`:
   - `test_is_timed_out_exactly_at_boundary` — транзакция созданная ровно 12ч назад — timeout
   - `test_is_timed_out_false_for_performed` — STATE_PERFORMED транзакция не timed_out даже если старая
 
-- [ ] В `backend/tests/test_organizations.py` добавить `TestOrganizationLimits`:
+- [x] В `backend/tests/test_organizations.py` добавить `TestOrganizationLimits`:
   - `test_can_add_kitchen_true_when_below_limit`
   - `test_can_add_kitchen_false_when_at_limit` — создать max_kitchens кухонь, проверить can_add_kitchen() == False
   - `test_can_add_user_true_when_below_limit`

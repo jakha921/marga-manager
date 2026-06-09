@@ -720,6 +720,35 @@ class TestAuditTrail:
         ).exists()
 
 
+# ─── TestPaymeTransactionEdgeCases ──────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestPaymeTransactionEdgeCases:
+    def test_is_timed_out_exactly_at_boundary(self, order):
+        txn = PaymeTransaction.objects.create(
+            payme_id="boundary_test_001",
+            order=order,
+            state=PaymeTransaction.STATE_CREATED,
+            amount=order.amount,
+            payme_time=0,
+            payme_create_time=int(time.time() * 1000) - PaymeTransaction.PAYME_TIMEOUT_MS - 1,
+        )
+        assert txn.is_timed_out is True
+
+    def test_is_timed_out_false_for_performed(self, order):
+        old_create_time = int(time.time() * 1000) - PaymeTransaction.PAYME_TIMEOUT_MS - 1
+        txn = PaymeTransaction.objects.create(
+            payme_id="performed_timeout_001",
+            order=order,
+            state=PaymeTransaction.STATE_PERFORMED,
+            amount=order.amount,
+            payme_time=0,
+            payme_create_time=old_create_time,
+        )
+        assert txn.is_timed_out is False
+
+
 # ─── TestPaymeWebhookEdgeCases ───────────────────────────────────────────────
 
 
