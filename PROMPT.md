@@ -550,13 +550,13 @@ LOGGING = {
 
 ### 4.5 Redis и Celery в docker-compose.coolify.yml
 
-- [ ] В `docker-compose.coolify.yml` добавить сервисы (redis, celery-worker, celery-beat):
+- [x] В `docker-compose.coolify.yml` добавить сервисы (redis, celery-worker, celery-beat):
   - **redis**: `image: redis:7-alpine`, volume `redis_data:/data`
   - **celery-worker**: тот же build что backend, `command: celery -A config worker -l info --concurrency=2`, зависит от db и redis
   - **celery-beat**: `command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler`
   - Оба Celery сервиса получают `CELERY_BROKER_URL=redis://redis:6379/0`
-- [ ] В volumes добавить `redis_data:`
-- [ ] В `.env.example` добавить `CELERY_BROKER_URL=redis://redis:6379/0`
+- [x] В volumes добавить `redis_data:`
+- [x] В `.env.example` добавить `CELERY_BROKER_URL=redis://redis:6379/0`
 
 **Проверка**: `docker compose -f docker-compose.coolify.yml config`
 **Коммит**: `feat: добавить Redis и Celery в docker-compose.coolify.yml`
