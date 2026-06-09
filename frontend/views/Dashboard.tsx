@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useTheme } from '../context/ThemeContext';
+
 import { formatDate, formatNumber, formatCompactNumber } from '../utils';
 import { Filter, Download, TrendingUp, Calendar as CalendarIcon, BarChart3, LineChart, PieChart } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
@@ -19,13 +19,12 @@ const ChartTooltip = React.memo(({ active, payload, label }: {
   label?: string;
 }) => {
   const { t } = useLanguage();
-  const { theme } = useTheme();
   if (!active || !payload?.length) return null;
   const salesEntry = payload.find(p => p.dataKey === 'sales');
   const costEntry = payload.find(p => p.dataKey === 'cost');
   const margin = (salesEntry?.value ?? 0) - (costEntry?.value ?? 0);
-  const tooltipBg = theme === 'dark' ? '#1e293b' : '#18181b';
-  const tooltipBorder = theme === 'dark' ? '#334155' : '#333';
+  const tooltipBg = '#18181b';
+  const tooltipBorder = '#333';
   return (
     <div style={{ backgroundColor: tooltipBg, borderRadius: '8px', color: 'white', fontSize: '12px', padding: '8px 12px' }}>
       <p style={{ marginBottom: 4, fontWeight: 600 }}>{label}</p>
@@ -41,8 +40,6 @@ const ChartTooltip = React.memo(({ active, payload, label }: {
 const Dashboard: React.FC = () => {
   const { stats, operations, kitchens, products } = useData();
   const { t } = useLanguage();
-  const { theme } = useTheme();
-
   // Helper to get current month range
   const getCurrentMonthRange = () => {
     const now = new Date();

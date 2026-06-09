@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, LogOut, Globe, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, LogOut, Globe } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { useTheme } from '../context/ThemeContext';
+
 import { formatDate } from '../utils';
 
 interface LayoutProps {
@@ -17,7 +17,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { t, language, setLanguage } = useLanguage();
   const { logout, userRole } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+
   const { currentOrganization } = useData();
 
   const expiryBanner = React.useMemo(() => {
@@ -181,14 +181,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="p-2 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-color)] transition-colors shadow-sm"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-
             <button
               onClick={handleLanguageChange}
               className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-surface)] rounded-full shadow-sm border border-[var(--border-color)] hover:border-[var(--text-muted)] transition-colors group"
