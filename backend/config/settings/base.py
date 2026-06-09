@@ -107,5 +107,52 @@ PAYME_MERCHANT_KEY = os.getenv("PAYME_MERCHANT_KEY", "")
 PAYME_CHECKOUT_URL = os.getenv("PAYME_CHECKOUT_URL", "https://checkout.test.paycom.uz")
 PAYME_CALLBACK_URL = os.getenv("PAYME_CALLBACK_URL", "http://localhost:3000/#/settings")
 
+# --- Logging ---
+_LOGS_DIR = BASE_DIR / "logs"
+_LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name} {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(_LOGS_DIR / "marga.log"),
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "verbose",
+        },
+    },
+    "root": {"level": "WARNING", "handlers": ["console"]},
+    "loggers": {
+        "django": {"handlers": ["console", "file"], "level": "WARNING", "propagate": False},
+        "django.request": {"handlers": ["console", "file"], "level": "ERROR", "propagate": False},
+        "apps.payments": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "apps.accounts": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "apps.core": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "apps.operations": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "apps.organizations": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+
 # --- DRF ---
 from config.drf_settings import *  # noqa: E402, F401, F403
