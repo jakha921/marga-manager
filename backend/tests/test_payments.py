@@ -718,3 +718,64 @@ class TestAuditTrail:
             event_type=AuditLog.EventType.TXN_STATE_CHANGE,
             new_value__state=2,
         ).exists()
+
+
+# ─── TestSubscriptionLogic ───────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestSubscriptionLogic:
+    def test_mark_as_paid_creates_subscription(self, order):
+        from apps.payments.models import Subscription
+
+        order.mark_as_paid()
+        assert Subscription.objects.filter(order=order).exists()
+
+    def test_mark_as_paid_sets_plan_expires_at(self, order, org):
+        order.mark_as_paid()
+        org.refresh_from_db()
+        assert org.plan_expires_at is not None
+
+    def test_downgrade_task_downgrades_after_7_day_grace(self, org):
+        from django.utils import timezone
+
+        from apps.payments.models import PlanConfig
+        from apps.payments.tasks import downgrade_expired_subscriptions_task
+
+        PlanConfig.objects.get_or_create(
+            plan="BASIC",
+            defaults={"price": 0, "max_kitchens": 2, "max_users": 5},
+        )
+        org.plan = "PRO"
+        org.plan_expires_at = timezone.now() - timezone.timedelta(days=8)
+        org.save()
+
+        result = downgrade_expired_subscriptions_task()
+        org.refresh_from_db()
+        assert org.plan == "BASIC"
+        assert result["downgraded"] >= 1
+
+    def test_downgrade_task_respects_grace_period(self, org):
+        from django.utils import timezone
+
+        from apps.payments.tasks import downgrade_expired_subscriptions_task
+
+        org.plan = "PRO"
+        org.plan_expires_at = timezone.now() - timezone.timedelta(days=3)
+        org.save()
+
+        downgrade_expired_subscriptions_task()
+        org.refresh_from_db()
+        assert org.plan == "PRO"
+
+    def test_check_expiring_task_finds_orgs(self, org):
+        from django.utils import timezone
+
+        from apps.payments.tasks import check_expiring_subscriptions_task
+
+        org.plan = "PRO"
+        org.plan_expires_at = timezone.now() + timezone.timedelta(days=2)
+        org.save()
+
+        result = check_expiring_subscriptions_task()
+        assert result["expiring_soon"] >= 1

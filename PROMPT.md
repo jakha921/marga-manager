@@ -672,7 +672,7 @@ LOGGING = {
 
 ### 5.6 Тесты для Subscription
 
-- [ ] В `backend/tests/test_payments.py` добавить `TestSubscriptionLogic`:
+- [x] В `backend/tests/test_payments.py` добавить `TestSubscriptionLogic`:
   - `test_mark_as_paid_creates_subscription` — проверить что Subscription создана
   - `test_mark_as_paid_sets_plan_expires_at` — org.plan_expires_at не None
   - `test_downgrade_task_downgrades_after_7_day_grace` — org с plan_expires_at = now - 8 days → даунгрейд на BASIC
