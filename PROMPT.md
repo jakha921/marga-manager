@@ -437,7 +437,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 3.1 Enhanced health check
 
-- [ ] В `backend/apps/core/views.py` обновить `health_check`:
+- [x] В `backend/apps/core/views.py` обновить `health_check`:
   ```python
   def health_check(request):
       status_data = {"status": "ok", "services": {}}
