@@ -374,7 +374,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 2.4 Wire AuditLog в ProductViewSet
 
-- [ ] В `backend/apps/products/views.py` добавить audit в `CategoryViewSet` и `ProductViewSet`:
+- [x] В `backend/apps/products/views.py` добавить audit в `CategoryViewSet` и `ProductViewSet`:
   - `PRODUCT_CREATED`, `PRODUCT_UPDATED`, `PRODUCT_DELETED` в ProductViewSet
 
 **Проверка**: `cd backend && uv run pytest tests/test_products.py -v`
