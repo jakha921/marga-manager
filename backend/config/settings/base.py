@@ -185,5 +185,14 @@ def _make_beat_schedule():
 
 CELERY_BEAT_SCHEDULE = _make_beat_schedule()
 
+# --- Cache ---
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/1"),
+        "TIMEOUT": 300,  # 5 минут
+    }
+}
+
 # --- DRF ---
 from config.drf_settings import *  # noqa: E402, F401, F403

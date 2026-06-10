@@ -480,7 +480,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 3.2 Redis кэширование — CACHES setting
 
-- [ ] В `backend/config/settings/base.py` добавить (после CELERY настроек):
+- [x] В `backend/config/settings/base.py` добавить (после CELERY настроек):
   ```python
   # Cache
   CACHES = {
@@ -491,7 +491,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       }
   }
   ```
-- [ ] В `backend/config/settings/dev.py` переопределить на LocMemCache для тестов:
+- [x] В `backend/config/settings/dev.py` переопределить на LocMemCache для тестов:
   ```python
   CACHES = {
       "default": {
@@ -499,8 +499,8 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       }
   }
   ```
-- [ ] В `.env.example` добавить `REDIS_CACHE_URL=redis://redis:6379/1`
-- [ ] В `docker-compose.coolify.yml` добавить env var `REDIS_CACHE_URL` к backend сервису
+- [x] В `.env.example` добавить `REDIS_CACHE_URL=redis://redis:6379/1`
+- [x] В `docker-compose.coolify.yml` добавить env var `REDIS_CACHE_URL` к backend сервису
 
 **Проверка**: `cd backend && uv run python manage.py check`
 **Коммит**: `feat: настроить Redis кэширование в Django`

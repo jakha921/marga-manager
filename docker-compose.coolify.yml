@@ -33,6 +33,7 @@ services:
       PAYME_MERCHANT_KEY: ${PAYME_MERCHANT_KEY}
       PAYME_CHECKOUT_URL: ${PAYME_CHECKOUT_URL:-https://checkout.paycom.uz}
       PAYME_CALLBACK_URL: ${PAYME_CALLBACK_URL:-https://marga.fullfocus.dev/#/settings}
+      REDIS_CACHE_URL: redis://redis:6379/1
     depends_on:
       db:
         condition: service_healthy
