@@ -46,3 +46,15 @@ if not PAYME_CALLBACK_URL:
     import warnings
 
     warnings.warn("PAYME_CALLBACK_URL is empty — users won't be redirected after payment")
+
+# Sentry
+import sentry_sdk  # noqa: E402
+
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[sentry_sdk.integrations.django.DjangoIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )

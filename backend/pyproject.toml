@@ -19,6 +19,7 @@ dependencies = [
     "celery>=5.4",
     "redis>=5.0",
     "django-celery-beat>=2.7",
+    "sentry-sdk[django]>=2.0",
 ]
 
 [tool.ruff]

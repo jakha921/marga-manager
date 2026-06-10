@@ -541,9 +541,9 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 3.4 Sentry SDK
 
-- [ ] В `backend/pyproject.toml` добавить: `"sentry-sdk[django]>=2.0"`
-- [ ] Запустить: `cd backend && uv sync`
-- [ ] В `backend/config/settings/prod.py` добавить:
+- [x] В `backend/pyproject.toml` добавить: `"sentry-sdk[django]>=2.0"`
+- [x] Запустить: `cd backend && uv sync`
+- [x] В `backend/config/settings/prod.py` добавить:
   ```python
   import sentry_sdk
   SENTRY_DSN = os.getenv("SENTRY_DSN", "")
@@ -555,7 +555,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
           send_default_pii=False,
       )
   ```
-- [ ] В `.env.example` добавить `SENTRY_DSN=`
+- [x] В `.env.example` добавить `SENTRY_DSN=`
 
 **Проверка**: `cd backend && uv run python -c "import sentry_sdk; print('OK')"`
 **Коммит**: `feat: добавить Sentry SDK для мониторинга ошибок`
