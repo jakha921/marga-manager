@@ -274,7 +274,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 2.1 Утилита create_audit_log()
 
-- [ ] Создать `backend/apps/core/audit.py`:
+- [x] Создать `backend/apps/core/audit.py`:
   ```python
   from typing import Any
 
