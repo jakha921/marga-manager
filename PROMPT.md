@@ -611,7 +611,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 3.6 Organization detail API endpoint
 
-- [ ] В `backend/apps/organizations/serializers.py` добавить `OrganizationDetailSerializer`:
+- [x] В `backend/apps/organizations/serializers.py` добавить `OrganizationDetailSerializer`:
   ```python
   from apps.kitchens.serializers import KitchenSerializer
   from apps.accounts.serializers import UserSerializer
@@ -636,7 +636,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
           from apps.operations.models import OperationEntry
           return OperationEntry.objects.filter(organization=obj).count()
   ```
-- [ ] В `backend/apps/organizations/views.py` добавить action:
+- [x] В `backend/apps/organizations/views.py` добавить action:
   ```python
   from rest_framework.decorators import action
   from rest_framework.response import Response
@@ -649,7 +649,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       return Response(serializer.data)
   ```
   URL будет: `GET /api/organizations/{id}/detail_view/`
-- [ ] В `backend/tests/test_organizations.py` добавить:
+- [x] В `backend/tests/test_organizations.py` добавить:
   - `test_super_admin_can_get_org_detail` — → 200 с kitchens, users_count, products_count
   - `test_tenant_admin_cannot_get_org_detail` — → 403
 
@@ -660,11 +660,11 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 3.7 Тесты для Phase 3
 
-- [ ] В `backend/tests/test_commands.py` добавить:
+- [x] В `backend/tests/test_commands.py` добавить:
   - `test_pg_backup_command_exists` — `call_command("pg_backup", "--help")` не бросает ошибку
   - `test_pg_backup_skips_without_pg_dump` — mock shutil.which → None, команда gracefully выходит
-- [ ] В `backend/tests/test_organizations.py` — тесты из 3.6 уже добавлены выше
-- [ ] Проверить что health check endpoint работает: GET /api/health/ → 200
+- [x] В `backend/tests/test_organizations.py` — тесты из 3.6 уже добавлены выше
+- [x] Проверить что health check endpoint работает: GET /api/health/ → 200
 
 **Проверка**: `cd backend && uv run pytest tests/test_commands.py tests/test_organizations.py -v`
 **Коммит**: `test: тесты для pg_backup и org detail endpoint`

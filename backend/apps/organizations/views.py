@@ -1,12 +1,18 @@
 from django.db.models import Count
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from apps.core.audit import create_audit_log
 from apps.core.permissions import IsSuperAdmin, IsTenantAdmin
 from apps.payments.models import AuditLog
 
 from .models import Organization
-from .serializers import AdminOrganizationSerializer, OrganizationSerializer
+from .serializers import (
+    AdminOrganizationSerializer,
+    OrganizationDetailSerializer,
+    OrganizationSerializer,
+)
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):
@@ -57,3 +63,10 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                 old_value={"status": old_status},
                 new_value={"status": new_status},
             )
+
+    @action(detail=True, methods=["get"], permission_classes=[IsSuperAdmin])
+    def detail_view(self, request, pk=None):
+        """GET /api/organizations/{id}/detail_view/ — детальный вид для SUPER_ADMIN."""
+        org = self.get_object()
+        serializer = OrganizationDetailSerializer(org, context={"request": request})
+        return Response(serializer.data)

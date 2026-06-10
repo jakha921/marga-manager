@@ -53,3 +53,31 @@ class AdminOrganizationSerializer(OrganizationSerializer):
 
     class Meta(OrganizationSerializer.Meta):
         read_only_fields = ["created_at"]
+
+
+class OrganizationDetailSerializer(AdminOrganizationSerializer):
+    """Детальный сериализатор для SUPER_ADMIN — включает вложенные данные."""
+
+    kitchens = serializers.SerializerMethodField()
+    users_count = serializers.IntegerField(source="user_count", read_only=True)
+    kitchens_count = serializers.IntegerField(source="kitchen_count", read_only=True)
+    products_count = serializers.SerializerMethodField()
+    operations_count = serializers.SerializerMethodField()
+
+    class Meta(AdminOrganizationSerializer.Meta):
+        fields = "__all__"
+
+    def get_kitchens(self, obj):
+        from apps.kitchens.serializers import KitchenSerializer
+
+        return KitchenSerializer(obj.kitchens.all(), many=True).data
+
+    def get_products_count(self, obj):
+        from apps.products.models import Product
+
+        return Product.objects.filter(organization=obj).count()
+
+    def get_operations_count(self, obj):
+        from apps.operations.models import OperationEntry
+
+        return OperationEntry.objects.filter(organization=obj).count()

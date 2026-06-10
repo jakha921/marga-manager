@@ -272,3 +272,17 @@ class TestOrganizationSoftDelete:
         assert response.status_code == 200
         ids = [o["id"] for o in response.data["results"]]
         assert org_id not in ids
+
+
+@pytest.mark.django_db
+class TestOrganizationDetailEndpoint:
+    def test_super_admin_can_get_org_detail(self, super_admin_client, org, kitchen):
+        response = super_admin_client.get(f"/api/organizations/{org.id}/detail_view/")
+        assert response.status_code == 200
+        assert "kitchens" in response.data
+        assert "products_count" in response.data
+        assert "operations_count" in response.data
+
+    def test_tenant_admin_cannot_get_org_detail(self, tenant_admin_client, org):
+        response = tenant_admin_client.get(f"/api/organizations/{org.id}/detail_view/")
+        assert response.status_code == 403
