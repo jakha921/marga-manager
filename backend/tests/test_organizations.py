@@ -220,6 +220,7 @@ class TestSoftDeleteMixin:
 
     def _make_org(self, slug_suffix="sd"):
         from apps.organizations.models import Organization
+
         return Organization.objects.create(
             name=f"SoftDel Org {slug_suffix}",
             slug=f"softdel-org-{slug_suffix}",
@@ -227,6 +228,7 @@ class TestSoftDeleteMixin:
 
     def test_soft_delete_sets_deleted_at(self):
         from apps.organizations.models import Organization
+
         org = self._make_org("1")
         org_id = org.pk
         org.delete()
@@ -235,6 +237,7 @@ class TestSoftDeleteMixin:
 
     def test_soft_deleted_not_in_objects(self):
         from apps.organizations.models import Organization
+
         org = self._make_org("2")
         org_id = org.pk
         org.delete()
@@ -242,6 +245,7 @@ class TestSoftDeleteMixin:
 
     def test_soft_deleted_in_all_objects(self):
         from apps.organizations.models import Organization
+
         org = self._make_org("3")
         org_id = org.pk
         org.delete()
@@ -258,6 +262,7 @@ class TestSoftDeleteMixin:
 class TestOrganizationSoftDelete:
     def test_organization_soft_delete_via_api(self, super_admin_client, org2):
         from apps.organizations.models import Organization
+
         org_id = org2.pk
         response = super_admin_client.delete(f"/api/organizations/{org_id}/")
         assert response.status_code == 204

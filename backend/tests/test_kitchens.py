@@ -131,6 +131,7 @@ class TestKitchenLimitEnforcement:
 class TestKitchenSoftDelete:
     def test_kitchen_soft_delete_via_api(self, tenant_admin_client, kitchen):
         from apps.kitchens.models import Kitchen as KitchenModel
+
         kitchen_id = kitchen.pk
         response = tenant_admin_client.delete(f"/api/kitchens/{kitchen_id}/")
         assert response.status_code == 204

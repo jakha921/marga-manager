@@ -146,6 +146,7 @@ class TestProductTenantIsolation:
 class TestProductSoftDelete:
     def test_product_soft_delete_via_api(self, tenant_admin_client, product):
         from apps.products.models import Product as ProductModel
+
         product_id = product.pk
         response = tenant_admin_client.delete(f"/api/products/{product_id}/")
         assert response.status_code == 204
