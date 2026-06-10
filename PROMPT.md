@@ -248,7 +248,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 1.8 Расширить AuditLog EventTypes
 
-- [ ] В `backend/apps/payments/models.py` в `AuditLog.EventType` добавить:
+- [x] В `backend/apps/payments/models.py` в `AuditLog.EventType` добавить:
   ```python
   USER_CREATED = "USER_CREATED", "Создан пользователь"
   USER_UPDATED = "USER_UPDATED", "Обновлён пользователь"
@@ -263,7 +263,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
   ORG_UNSUSPENDED = "ORG_UNSUSPENDED", "Организация активирована"
   ORG_DELETED = "ORG_DELETED", "Организация удалена"
   ```
-- [ ] Запустить: `cd backend && uv run python manage.py makemigrations payments`
+- [x] Запустить: `cd backend && uv run python manage.py makemigrations payments`
 
 **Проверка**: `cd backend && uv run python manage.py check`
 **Коммит**: `feat: расширить AuditLog EventTypes для CRUD операций`

@@ -271,6 +271,18 @@ class AuditLog(TimeStampedModel):
         TXN_STATE_CHANGE = "TXN_STATE_CHANGE", "Изменение статуса транзакции"
         PLAN_CHANGE = "PLAN_CHANGE", "Смена плана"
         PLAN_REVERT = "PLAN_REVERT", "Откат плана"
+        USER_CREATED = "USER_CREATED", "Создан пользователь"
+        USER_UPDATED = "USER_UPDATED", "Обновлён пользователь"
+        USER_DELETED = "USER_DELETED", "Удалён пользователь"
+        KITCHEN_CREATED = "KITCHEN_CREATED", "Создана кухня"
+        KITCHEN_UPDATED = "KITCHEN_UPDATED", "Обновлена кухня"
+        KITCHEN_DELETED = "KITCHEN_DELETED", "Удалена кухня"
+        PRODUCT_CREATED = "PRODUCT_CREATED", "Создан продукт"
+        PRODUCT_UPDATED = "PRODUCT_UPDATED", "Обновлён продукт"
+        PRODUCT_DELETED = "PRODUCT_DELETED", "Удалён продукт"
+        ORG_SUSPENDED = "ORG_SUSPENDED", "Организация приостановлена"
+        ORG_UNSUSPENDED = "ORG_UNSUSPENDED", "Организация активирована"
+        ORG_DELETED = "ORG_DELETED", "Организация удалена"
 
     event_type = models.CharField(max_length=50, choices=EventType.choices)
     actor = models.ForeignKey(
