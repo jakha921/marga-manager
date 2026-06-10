@@ -163,22 +163,27 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 
-from celery.schedules import crontab  # noqa: E402
 
-CELERY_BEAT_SCHEDULE = {
-    "expire-stale-orders": {
-        "task": "apps.payments.tasks.expire_stale_orders_task",
-        "schedule": crontab(minute=0),
-    },
-    "check-expiring-subscriptions": {
-        "task": "apps.payments.tasks.check_expiring_subscriptions_task",
-        "schedule": crontab(minute=0, hour=9),
-    },
-    "downgrade-expired-subscriptions": {
-        "task": "apps.payments.tasks.downgrade_expired_subscriptions_task",
-        "schedule": crontab(minute=0, hour=0),
-    },
-}
+def _make_beat_schedule():
+    from celery.schedules import crontab
+
+    return {
+        "expire-stale-orders": {
+            "task": "apps.payments.tasks.expire_stale_orders_task",
+            "schedule": crontab(minute=0),
+        },
+        "check-expiring-subscriptions": {
+            "task": "apps.payments.tasks.check_expiring_subscriptions_task",
+            "schedule": crontab(minute=0, hour=9),
+        },
+        "downgrade-expired-subscriptions": {
+            "task": "apps.payments.tasks.downgrade_expired_subscriptions_task",
+            "schedule": crontab(minute=0, hour=0),
+        },
+    }
+
+
+CELERY_BEAT_SCHEDULE = _make_beat_schedule()
 
 # --- DRF ---
 from config.drf_settings import *  # noqa: E402, F401, F403
