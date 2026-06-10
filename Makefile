@@ -35,3 +35,6 @@ logs:
 
 prod:
 	docker-compose -f docker-compose.prod.yml up --build -d
+
+backup:
+	cd backend && uv run python manage.py pg_backup

@@ -564,7 +564,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 3.5 pg_backup management command
 
-- [ ] Создать `backend/apps/core/management/commands/pg_backup.py`:
+- [x] Создать `backend/apps/core/management/commands/pg_backup.py`:
   ```python
   import os, subprocess, shutil
   from datetime import datetime
@@ -602,7 +602,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
           else:
               self.stderr.write(f"Ошибка pg_dump: {result.stderr.decode()}")
   ```
-- [ ] В `Makefile` добавить: `backup: cd backend && uv run python manage.py pg_backup`
+- [x] В `Makefile` добавить: `backup: cd backend && uv run python manage.py pg_backup`
 
 **Проверка**: `cd backend && uv run python manage.py pg_backup --help`
 **Коммит**: `feat: management command pg_backup для PostgreSQL`
