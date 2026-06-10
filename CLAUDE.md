@@ -19,6 +19,7 @@ uv run pytest -v                           # Run all tests
 uv run pytest -k test_name                 # Run specific test
 uv run pytest tests/test_auth.py           # Run test file
 uv run ruff check --fix .                  # Lint and fix
+uv run python manage.py pg_backup         # PostgreSQL backup (pg_dump required)
 ```
 
 ### Frontend (from `frontend/` directory)
@@ -40,6 +41,7 @@ Broker: Redis via `CELERY_BROKER_URL`.
 make dev         # docker-compose up --build (dev)
 make prod        # docker-compose -f docker-compose.prod.yml up --build -d
 make test        # pytest via uv
+make backup      # pg_dump PostgreSQL backup
 ```
 
 ## Architecture
@@ -53,9 +55,11 @@ make test        # pytest via uv
 
 ### Multi-Tenancy
 Every data model inherits `TenantModel` (adds `organization` FK). Isolation enforced at three layers:
-1. **Middleware** (`apps/core/middleware.py` — `OrganizationMiddleware`) — sets `request.organization` from `user.organization`. Runs after `AuthenticationMiddleware`.
-2. **ViewSet mixins** (`apps/core/mixins.py`) — `TenantQuerySetMixin` filters queryset by org, `TenantCreateMixin` auto-sets org on create
+1. **Middleware** (`apps/core/middleware.py` — `OrganizationMiddleware`) — sets `request.organization` from `user.organization`. Also registers `IsOrgActive` permission class via `TenantQuerySetMixin` to block SUSPENDED orgs (SUPER_ADMIN bypasses). Runs after `AuthenticationMiddleware`.
+2. **ViewSet mixins** (`apps/core/mixins.py`) — `TenantQuerySetMixin` filters queryset by org (injects `IsOrgActive` permission), `TenantCreateMixin` auto-sets org on create
 3. **SUPER_ADMIN bypass** — sees all orgs, can override org on create via request body
+
+**SUSPENDED orgs**: `IsOrgActive` permission class blocks all API access for users in SUSPENDED orgs (except `/api/auth/login/`, `/api/auth/refresh/`, `/api/health/`). Frontend redirects to `#/suspended` on 403 with "приостановлена" in detail.
 
 **Cross-FK validation**: `OperationEntrySerializer.validate()` checks that `kitchen`, `to_kitchen`, and `product` belong to the user's org. SUPER_ADMIN bypasses this check.
 
@@ -66,14 +70,16 @@ Every data model inherits `TenantModel` (adds `organization` FK). Isolation enfo
 - `TENANT_ADMIN` — full CRUD within own organization
 - `KITCHEN_USER` — data entry only (QuickInput, Products read)
 
-Permission classes in `apps/core/permissions.py`: `IsSuperAdmin`, `IsTenantAdmin`, `IsTenantAdminOrReadOnly`, `IsKitchenUserOrAbove`.
+Permission classes in `apps/core/permissions.py`: `IsSuperAdmin`, `IsTenantAdmin`, `IsTenantAdminOrReadOnly`, `IsKitchenUserOrAbove`, `IsOrgActive`.
 
 ### API Conventions
 - All endpoints under `/api/` with trailing slashes
 - **CamelCase JSON ↔ snake_case Python** via `djangorestframework-camel-case` (global, applied to all responses)
 - JWT auth: 12h access / 7d refresh with rotation; custom token adds `role`, `org_id`, `full_name` claims
 - Pagination: 200 items/page, max 500 (`StandardResultsSetPagination` in `apps/core/pagination.py`)
-- Swagger docs at `/api/docs/`, health check at `/api/health/`
+- Swagger docs at `/api/docs/`, health check at `/api/health/` (checks DB + Redis + Celery)
+- **Error format**: `{"error": {"status": <code>, "detail": <data>}}` via custom exception handler (`apps/core/exceptions.py`)
+- **AuditLog**: `GET /api/payments/audit-logs/` — SUPER_ADMIN only, filterable by `event_type`, `organization`, `target_type`
 
 ### Django Apps
 | App | Purpose | Key models |
@@ -84,17 +90,21 @@ Permission classes in `apps/core/permissions.py`: `IsSuperAdmin`, `IsTenantAdmin
 | `products` | Inventory catalog | `Category`, `Product` (code unique per org) |
 | `operations` | Transaction ledger | `OperationEntry` (INCOMING/DAILY/TRANSFER/SALE) |
 | `payments` | Billing & subscriptions | `Order`, `PaymeTransaction`, `PlanConfig`, `AuditLog`, `Subscription` |
-| `core` | Shared utilities | Abstract models, mixins, permissions, middleware |
+| `core` | Shared utilities | Abstract models (`TenantModel`, `SoftDeleteModel`), mixins, permissions, middleware |
 
-Settings split: `config/settings/base.py` → `dev.py` (SQLite) / `prod.py` (PostgreSQL + security headers). DRF config isolated in `config/drf_settings.py`.
+**SoftDelete**: `Organization`, `Kitchen`, `Category`, `Product` use `SoftDeleteModel`. `.delete()` sets `deleted_at`, `.objects` filters them out, `.all_objects` includes deleted. Use `.hard_delete()` for permanent removal.
+
+**Redis cache**: `CACHES["default"]` uses Redis (prod) or LocMem (dev). `PlanConfig` list cached for 1h with signal-based invalidation. `REDIS_CACHE_URL` env var.
+
+Settings split: `config/settings/base.py` → `dev.py` (SQLite, LocMemCache) / `prod.py` (PostgreSQL + Sentry + security headers). DRF config isolated in `config/drf_settings.py`.
 
 ### Frontend Structure
 ```
 frontend/
   api/client.ts       — Axios instance with JWT Bearer interceptor + auto-refresh on 401
   api/services/       — One file per resource (auth, analytics, categories, kitchens,
-                        operations, organizations, products, users) — all CRUD pattern
-  components/         — Button, Input, Select, Modal, Layout, DateFilter, StatsCard
+                        operations, organizations, products, users, auditLogs) — all CRUD pattern
+  components/         — Button, Input, Select, Modal, Layout, DateFilter, StatsCard, AdminLayout
   context/            — AuthContext, DataContext (central data store), LanguageContext
   views/              — Page components; QuickInput.tsx (~1000 lines) is the main entry form
   types.ts            — All TypeScript interfaces
@@ -103,6 +113,12 @@ frontend/
 ```
 
 Frontend auth state is in localStorage under keys prefixed `km_` (`km_access_token`, `km_refresh_token`, `km_role`, `km_org_id`, `km_lang`).
+
+**Admin Routes** (SUPER_ADMIN only, `#/admin/*`):
+- `#/admin/` — AdminDashboard (org list, metrics, suspend/unsuspend)
+- `#/admin/organizations/:id` — OrganizationDetail (Info/Kitchens/Products/Users/Payments/Edit tabs)
+- `#/admin/audit-log` — AuditLogPage (filterable table with pagination)
+- `#/suspended` — OrgSuspended (holding page when org is SUSPENDED)
 
 ### Key Data Flows
 - **Analytics** — server-aggregated at `/api/analytics/kitchen-report/` (beginning/end balance, markup, transfers); never computed on frontend

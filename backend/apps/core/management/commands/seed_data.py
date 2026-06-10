@@ -32,6 +32,7 @@ class Command(BaseCommand):
         categories = self._create_categories(org1)
         products = self._create_products(org1, categories)
         self._create_operations(org1, kitchens, products)
+        self._create_demo_audit_logs(org1, org2)
 
         self.stdout.write(self.style.SUCCESS("Тестовые данные успешно созданы!"))
 
@@ -68,7 +69,7 @@ class Command(BaseCommand):
             defaults={
                 "name": "Oqtepa Lavash",
                 "plan": Organization.Plan.BASIC,
-                "status": Organization.Status.ACTIVE,
+                "status": Organization.Status.SUSPENDED,
                 "max_kitchens": 3,
                 "max_users": 10,
                 "mrr": Decimal("300000"),
@@ -287,3 +288,49 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Операции: {len(operations)} создано"))
         return operations
+
+    def _create_demo_audit_logs(self, org1, org2):
+        from apps.accounts.models import User
+        from apps.payments.models import AuditLog
+
+        actor = User.objects.filter(role="SUPER_ADMIN").first()
+        demo_events = [
+            (
+                AuditLog.EventType.ORG_SUSPENDED,
+                org2,
+                "Organization",
+                org2.id,
+                {"status": "ACTIVE"},
+                {"status": "SUSPENDED"},
+            ),
+            (
+                AuditLog.EventType.PLAN_CHANGE,
+                org1,
+                "Organization",
+                org1.id,
+                {"plan": "BASIC"},
+                {"plan": "PRO"},
+            ),
+            (AuditLog.EventType.KITCHEN_CREATED, org1, "Kitchen", 1, {}, {"name": "Main Kitchen"}),
+            (
+                AuditLog.EventType.USER_CREATED,
+                org1,
+                "User",
+                1,
+                {},
+                {"username": "admin", "role": "TENANT_ADMIN"},
+            ),
+        ]
+        created = 0
+        for event_type, org, target_type, target_id, old_v, new_v in demo_events:
+            AuditLog.objects.create(
+                event_type=event_type,
+                actor=actor,
+                organization=org,
+                target_type=target_type,
+                target_id=target_id,
+                old_value=old_v,
+                new_value=new_v,
+            )
+            created += 1
+        self.stdout.write(self.style.SUCCESS(f"AuditLog: {created} demo записей создано"))

@@ -922,7 +922,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 5.1 Frontend: обработка suspended org (403)
 
-- [ ] В `frontend/api/client.ts` в response interceptor добавить обработку suspended 403:
+- [x] В `frontend/api/client.ts` в response interceptor добавить обработку suspended 403:
   ```typescript
   // Если 403 и detail содержит "приостановлена" — показать suspended banner
   if (error.response?.status === 403 && error.response.data?.detail?.includes("приостановлена")) {
@@ -931,10 +931,10 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
     window.location.hash = "#/suspended";
   }
   ```
-- [ ] Создать простую `frontend/views/OrgSuspended.tsx`:
+- [x] Создать простую `frontend/views/OrgSuspended.tsx`:
   - Показывает сообщение что org приостановлена
   - Кнопка выхода
-- [ ] В `frontend/App.tsx` добавить маршрут `/suspended`
+- [x] В `frontend/App.tsx` добавить маршрут `/suspended`
 
 **Проверка**: `cd frontend && npm run build`
 **Коммит**: `feat: обработка suspended org 403 с redirect на holding page`
@@ -943,7 +943,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 5.2 AdminDashboard метрики из API
 
-- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+- [x] В `frontend/views/superadmin/AdminDashboard.tsx`:
   - Метрики уже используют данные от API (`organizations` array). Проверить что используются `kitchenCount`, `userCount` из аннотаций (бэкенд аннотирует эти поля)
   - Если нет — обновить calculation в Dashboard metrics card
 
@@ -954,8 +954,8 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 5.3 Полный тест suite + регрессии
 
-- [ ] Запустить: `cd backend && uv run pytest -v --tb=short 2>&1`
-- [ ] Исправить все регрессии от изменений в middleware, soft delete, exception handler
+- [x] Запустить: `cd backend && uv run pytest -v --tb=short 2>&1`
+- [x] Исправить все регрессии от изменений в middleware, soft delete, exception handler
 - [ ] Ключевые области для проверки:
   - Soft delete: все существующие тесты что ожидают hard delete — обновить
   - Exception handler: тесты что проверяют формат ошибок — обновить на новый формат `{"error": {...}}`
@@ -968,7 +968,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 5.4 Обновить CLAUDE.md
 
-- [ ] В `CLAUDE.md` обновить:
+- [x] В `CLAUDE.md` обновить:
   - В Django Apps: добавить `AuditLog` endpoint `/api/payments/audit-logs/`
   - В Multi-Tenancy: упомянуть SUSPENDED org блокировку в middleware
   - В Architecture: упомянуть SoftDeleteModel, custom exception handler, Redis caching
@@ -982,7 +982,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 5.5 seed_data обновление
 
-- [ ] В `backend/apps/core/management/commands/seed_data.py` добавить:
+- [x] В `backend/apps/core/management/commands/seed_data.py` добавить:
   - Создать одну org со статусом SUSPENDED для демо
   - Создать несколько AuditLog записей разных типов для демо
 
