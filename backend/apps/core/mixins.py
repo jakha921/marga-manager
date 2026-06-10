@@ -12,6 +12,15 @@ logger = logging.getLogger("apps.core")
 class TenantQuerySetMixin:
     """Авто-фильтрация queryset по организации текущего пользователя."""
 
+    def get_permissions(self):
+        from apps.core.permissions import IsOrgActive
+
+        perms = super().get_permissions()
+        # Inject IsOrgActive to block SUSPENDED org users on every tenant viewset
+        if not any(isinstance(p, IsOrgActive) for p in perms):
+            perms = [IsOrgActive()] + perms
+        return perms
+
     def get_queryset(self) -> QuerySet:
         qs = super().get_queryset()
         user = self.request.user

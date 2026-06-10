@@ -76,7 +76,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 1.3 SUSPENDED org блокировка в middleware
 
-- [ ] В `backend/apps/core/middleware.py` в `process_view` добавить статус-чек:
+- [x] В `backend/apps/core/middleware.py` в `process_view` добавить статус-чек:
   ```python
   def process_view(self, request, view_func, view_args, view_kwargs):
       if hasattr(request, "user") and request.user.is_authenticated:
@@ -98,7 +98,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       return None
   ```
   Исключить эндпоинты аутентификации (`/api/auth/login/`, `/api/auth/refresh/`, `/api/health/`) от блокировки.
-- [ ] В `backend/tests/test_organizations.py` добавить `TestSuspendedOrgBlocking`:
+- [x] В `backend/tests/test_organizations.py` добавить `TestSuspendedOrgBlocking`:
   - `test_suspended_org_api_blocked_for_tenant_admin` — TENANT_ADMIN из suspended org → 403
   - `test_suspended_org_api_blocked_for_kitchen_user` — KITCHEN_USER → 403
   - `test_super_admin_not_blocked_for_suspended_org` — SUPER_ADMIN → 200

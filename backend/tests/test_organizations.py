@@ -176,3 +176,39 @@ class TestOrganizationLimits:
                 organization=org,
             )
         assert org.can_add_user() is False
+
+
+@pytest.mark.django_db
+class TestSuspendedOrgBlocking:
+    def test_suspended_org_api_blocked_for_tenant_admin(self, tenant_admin_client, org):
+        org.status = "SUSPENDED"
+        org.save()
+        response = tenant_admin_client.get("/api/kitchens/")
+        assert response.status_code == 403
+
+    def test_suspended_org_api_blocked_for_kitchen_user(self, kitchen_user_client, org):
+        org.status = "SUSPENDED"
+        org.save()
+        response = kitchen_user_client.get("/api/kitchens/")
+        assert response.status_code == 403
+
+    def test_super_admin_not_blocked_for_suspended_org(self, super_admin_client, org):
+        org.status = "SUSPENDED"
+        org.save()
+        response = super_admin_client.get("/api/kitchens/")
+        assert response.status_code == 200
+
+    def test_active_org_not_blocked(self, tenant_admin_client, org):
+        org.status = "ACTIVE"
+        org.save()
+        response = tenant_admin_client.get("/api/kitchens/")
+        assert response.status_code == 200
+
+    def test_login_not_blocked_for_suspended_org(self, api_client, tenant_admin, org):
+        org.status = "SUSPENDED"
+        org.save()
+        response = api_client.post(
+            "/api/auth/login/",
+            {"username": tenant_admin.username, "password": "pass123"},
+        )
+        assert response.status_code == 200
