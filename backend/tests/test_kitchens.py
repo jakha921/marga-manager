@@ -96,3 +96,32 @@ class TestKitchenUnauthenticated:
     def test_list_unauthorized(self, api_client):
         response = api_client.get("/api/kitchens/")
         assert response.status_code == 401
+
+
+@pytest.mark.django_db
+class TestKitchenLimitEnforcement:
+    def test_cannot_create_kitchen_at_limit(self, tenant_admin_client, tenant_admin, org):
+        org.max_kitchens = 2
+        org.save()
+        Kitchen.objects.create(name="K1", organization=org)
+        Kitchen.objects.create(name="K2", organization=org)
+
+        response = tenant_admin_client.post("/api/kitchens/", {"name": "K3"})
+        assert response.status_code == 403
+
+    def test_can_create_kitchen_below_limit(self, tenant_admin_client, org):
+        org.max_kitchens = 5
+        org.save()
+
+        response = tenant_admin_client.post("/api/kitchens/", {"name": "Within Limit"})
+        assert response.status_code == 201
+
+    def test_super_admin_bypasses_kitchen_limit(self, super_admin_client, org):
+        org.max_kitchens = 0
+        org.save()
+
+        response = super_admin_client.post(
+            "/api/kitchens/",
+            {"name": "Super Kitchen", "organization": org.id},
+        )
+        assert response.status_code == 201

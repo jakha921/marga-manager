@@ -1,4 +1,4 @@
-# Marga Manager — Ralph Loop Task List (Audit V3)
+# Marga Manager — Ralph Loop Task List (Audit V4)
 
 ## Запуск
 ```bash
@@ -9,854 +9,989 @@ ralph-loop:ralph-loop "Прочитай PROMPT.md (/Users/jakha/Programming/Djan
 
 ## Контекст
 
-Предыдущий цикл Audit V2 завершён (Phases 1-10). Этот цикл (V3) добавляет:
-1. **Logging** — ноль логирования во всём проекте
-2. **Audit Trail** — AuditLog для платёжных операций
-3. **Tenant Security** — null-org дыра, cross-FK валидация, OrganizationMiddleware
-4. **Celery + Redis** — фоновые задачи
-5. **Subscription** — plan_expires_at, grace period 7 дней, in-app баннер
-6. **Тесты** — edge cases, management commands, tenant isolation
+V3 завершён (200 тестов, logging, AuditLog платежей, Celery, Subscription). V4 добавляет:
+1. **Backend security** — лимиты на API, SUSPENDED блокировка, soft delete
+2. **AuditLog** для всех CRUD операций + API endpoint
+3. **Production hardening** — Redis cache, Sentry, pg_backup, health check
+4. **Frontend admin** — OrganizationDetail page, AuditLog page, suspend/unsuspend
+
+**БЕЗ email**: рассылки не нужны.
 
 ---
 
 ## Порядок выполнения
 
-1. Phase 1 — Logging Infrastructure (фундамент)
-2. Phase 2 — Tenant Security Fixes (критические баги)
-3. Phase 3 — Payment Audit Trail (AuditLog)
-4. Phase 4 — Celery Setup (инфраструктура)
-5. Phase 5 — Subscription Model (бизнес-логика)
-6. Phase 6 — Tests: Payment Edge Cases
-7. Phase 7 — Tests: Tenant Isolation
-8. Phase 8 — Business Logic Documentation
-9. Phase 9 — Update CLAUDE.md
+1. Phase 1 — Backend Security (лимиты, SUSPENDED, soft delete, exception handler)
+2. Phase 2 — AuditLog Integration + API
+3. Phase 3 — Production Hardening (cache, Sentry, backup, org detail API)
+4. Phase 4 — Frontend Admin Panel
+5. Phase 5 — Integration & Polish
 
 ---
 
-## Phase 1: Logging Infrastructure
+## Phase 1: Backend Security Hardening
 
-**Почему первым**: ноль логирования в проде — критично. Все последующие фазы выиграют от логирования.
+### 1.1 Enforce max_kitchens на KitchenViewSet
 
-### 1.1 LOGGING dict в base.py
+- [x] В `backend/apps/kitchens/views.py` добавить `perform_create`:
+  ```python
+  def perform_create(self, serializer):
+      org = self.request.user.organization
+      if self.request.user.role != "SUPER_ADMIN" and org and not org.can_add_kitchen():
+          from rest_framework.exceptions import PermissionDenied
+          raise PermissionDenied(f"Достигнут лимит кухонь ({org.max_kitchens}).")
+      super().perform_create(serializer)
+  ```
+- [x] В `backend/tests/test_kitchens.py` добавить `TestKitchenLimitEnforcement`:
+  - `test_cannot_create_kitchen_at_limit` — создать max_kitchens кухонь, следующая → 403
+  - `test_can_create_kitchen_below_limit` — ниже лимита → 201
+  - `test_super_admin_bypasses_kitchen_limit` — SUPER_ADMIN всегда может создавать
 
-- [x] В `backend/config/settings/base.py` добавить в конец (после PAYME settings):
-
-```python
-# Logging
-_LOGS_DIR = BASE_DIR / "logs"
-_LOGS_DIR.mkdir(exist_ok=True)
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "[{asctime}] {levelname} {name} {message}",
-            "style": "{",
-            "datefmt": "%Y-%m-%d %H:%M:%S",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": str(_LOGS_DIR / "marga.log"),
-            "maxBytes": 10 * 1024 * 1024,
-            "backupCount": 5,
-            "formatter": "verbose",
-        },
-    },
-    "root": {"level": "WARNING", "handlers": ["console"]},
-    "loggers": {
-        "django": {"handlers": ["console", "file"], "level": "WARNING", "propagate": False},
-        "django.request": {"handlers": ["console", "file"], "level": "ERROR", "propagate": False},
-        "apps.payments": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
-        "apps.accounts": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
-        "apps.core": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
-        "apps.operations": {"handlers": ["console", "file"], "level": "WARNING", "propagate": False},
-        "apps.organizations": {"handlers": ["console", "file"], "level": "WARNING", "propagate": False},
-    },
-}
-```
-
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `chore: добавить LOGGING конфигурацию в settings`
+**Проверка**: `cd backend && uv run pytest tests/test_kitchens.py -v`
+**Коммит**: `fix: enforce max_kitchens limit in KitchenViewSet.perform_create`
 
 ---
 
-### 1.2 Logging в PaymeWebhookView
+### 1.2 Enforce max_users на UserViewSet
 
-- [x] В `backend/apps/payments/payme_views.py` добавить в начало (после импортов):
+- [ ] В `backend/apps/accounts/views.py` в `UserViewSet` добавить/изменить `perform_create`:
+  ```python
+  def perform_create(self, serializer):
+      user = self.request.user
+      org = user.organization
+      if user.role != "SUPER_ADMIN" and org and not org.can_add_user():
+          from rest_framework.exceptions import PermissionDenied
+          raise PermissionDenied(f"Достигнут лимит пользователей ({org.max_users}).")
+      super().perform_create(serializer)
+  ```
+- [ ] В `backend/tests/test_auth.py` добавить `TestUserLimitEnforcement`:
+  - `test_cannot_create_user_at_limit` — → 403
+  - `test_can_create_user_below_limit` — → 201
+  - `test_super_admin_bypasses_user_limit` — SUPER_ADMIN bypass
+
+**Проверка**: `cd backend && uv run pytest tests/test_auth.py -v`
+**Коммит**: `fix: enforce max_users limit in UserViewSet.perform_create`
+
+---
+
+### 1.3 SUSPENDED org блокировка в middleware
+
+- [ ] В `backend/apps/core/middleware.py` в `process_view` добавить статус-чек:
+  ```python
+  def process_view(self, request, view_func, view_args, view_kwargs):
+      if hasattr(request, "user") and request.user.is_authenticated:
+          request.organization = getattr(request.user, "organization", None)
+          # Блокировать suspended org (SUPER_ADMIN обходит)
+          if (
+              request.organization
+              and request.organization.status == "SUSPENDED"
+              and request.user.role != "SUPER_ADMIN"
+          ):
+              import json
+              from django.http import JsonResponse
+              return JsonResponse(
+                  {"detail": "Организация приостановлена. Обратитесь к администратору."},
+                  status=403
+              )
+      else:
+          request.organization = None
+      return None
+  ```
+  Исключить эндпоинты аутентификации (`/api/auth/login/`, `/api/auth/refresh/`, `/api/health/`) от блокировки.
+- [ ] В `backend/tests/test_organizations.py` добавить `TestSuspendedOrgBlocking`:
+  - `test_suspended_org_api_blocked_for_tenant_admin` — TENANT_ADMIN из suspended org → 403
+  - `test_suspended_org_api_blocked_for_kitchen_user` — KITCHEN_USER → 403
+  - `test_super_admin_not_blocked_for_suspended_org` — SUPER_ADMIN → 200
+  - `test_active_org_not_blocked` — активная org → без изменений
+  - `test_login_not_blocked_for_suspended_org` — `/api/auth/login/` → 200 даже для suspended
+
+**Проверка**: `cd backend && uv run pytest tests/test_organizations.py -v`
+**Коммит**: `feat: block API access for SUSPENDED organizations in OrganizationMiddleware`
+
+---
+
+### 1.4 Custom DRF exception handler
+
+- [ ] Создать `backend/apps/core/exceptions.py`:
   ```python
   import logging
-  logger = logging.getLogger("apps.payments")
+  from rest_framework.views import exception_handler
+  from rest_framework.response import Response
+  from rest_framework import status
+
+  logger = logging.getLogger("apps.core")
+
+  def custom_exception_handler(exc, context):
+      response = exception_handler(exc, context)
+      if response is not None:
+          response.data = {
+              "error": {
+                  "status": response.status_code,
+                  "detail": response.data,
+              }
+          }
+      else:
+          # Unhandled exception — log it
+          logger.error(
+              "Unhandled exception in %s: %s",
+              context.get("view", "unknown"),
+              str(exc),
+              exc_info=True,
+          )
+          response = Response(
+              {"error": {"status": 500, "detail": "Internal server error."}},
+              status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+          )
+      return response
   ```
-- [x] В методе `post()` при ошибке авторизации добавить: `logger.warning("Payme auth failed ip=%s", request.META.get("REMOTE_ADDR"))`
-- [x] В `_checkPerformTransaction()`: INFO в начале, WARNING при ошибках (not found, wrong amount)
-- [x] В `_createTransaction()`: INFO создание/идемпотентность, WARNING при таймауте
-- [x] В `_performTransaction()`: INFO успех
-- [x] В `_cancelTransaction()`: INFO отмена с state и reason
-- [x] В `_getStatement()`: DEBUG
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_payments.py -v`
-**Коммит**: `feat: добавить logging в PaymeWebhookView`
-
----
-
-### 1.3 Logging в payment models
-
-- [x] В `backend/apps/payments/models.py` добавить в начало: `import logging` и `logger = logging.getLogger("apps.payments")`
-- [x] В `Order.mark_as_paid()`: `logger.info("Order #%s paid: org=%s plan %s->%s", self.id, self.organization_id, self.previous_plan, self.target_plan)`
-- [x] В `Order.revert_plan()`: `logger.info("Order #%s reverted: org=%s plan %s->%s", self.id, self.organization_id, self.target_plan, self.previous_plan)`
-- [x] В `Order.cancel()`: `logger.info("Order #%s cancelled: org=%s", self.id, self.organization_id)`
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_payments.py -v`
-**Коммит**: `feat: добавить logging в payment models`
-
----
-
-### 1.4 Logging в accounts views
-
-- [x] В `backend/apps/accounts/views.py` добавить: `import logging` и `logger = logging.getLogger("apps.accounts")`
-- [x] В `CustomTokenObtainPairView` переопределить `post()`: логировать успешный логин (INFO) и неудачный (WARNING) с `username` и IP
-- [x] В `UserViewSet.perform_create()`: `logger.info("User created: %s by %s", instance.username, self.request.user.username)` — определить где вызывается save
-- [x] В `UserViewSet.perform_destroy()`: `logger.info("User deleted: id=%s by %s", instance.id, self.request.user.username)`
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_auth.py -v`
-**Коммит**: `feat: добавить logging в accounts views`
-
----
-
-### 1.5 Logging в TenantQuerySetMixin
-
-- [x] В `backend/apps/core/mixins.py` добавить: `import logging` и `logger = logging.getLogger("apps.core")`
-- [x] В `TenantQuerySetMixin.get_queryset()` — если non-SUPER_ADMIN и `user.organization is None`: `logger.warning("user %s has no org, returning qs.none()", user.id)`
-- [x] В `TenantCreateMixin.perform_create()` на последнем else — `logger.warning("user %s has no org, saving without organization", user.id)`
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
-**Коммит**: `feat: добавить logging в TenantQuerySetMixin/CreateMixin`
-
----
-
-## Phase 2: Tenant Security Fixes
-
-**Почему вторым**: активные дыры безопасности. Null-org пользователь видит все данные.
-
-### 2.1 Фикс _get_tenant_qs() — null-org баг
-
-- [x] В `backend/apps/operations/views.py` функция `_get_tenant_qs(user)` (строки 206-211):
-
-  **Заменить**:
+- [ ] В `backend/config/drf_settings.py` в REST_FRAMEWORK добавить:
   ```python
-  def _get_tenant_qs(user):
-      qs = OperationEntry.objects.all()
-      if user.role != "SUPER_ADMIN" and user.organization:
-          qs = qs.filter(organization=user.organization)
-      return qs
-  ```
-  **На**:
-  ```python
-  def _get_tenant_qs(user):
-      from rest_framework.exceptions import PermissionDenied
-      qs = OperationEntry.objects.all()
-      if user.role == "SUPER_ADMIN":
-          return qs
-      if not user.organization:
-          raise PermissionDenied("Пользователь не привязан к организации.")
-      return qs.filter(organization=user.organization)
-  ```
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_analytics.py -v`
-**Коммит**: `fix(security): null-org дыра в _get_tenant_qs — raise PermissionDenied`
-
----
-
-### 2.2 Фикс DashboardView и ProductHistoryView
-
-- [x] В `backend/apps/operations/views.py` в `DashboardView.get()` найти inline tenant filter (паттерн `if user.role != "SUPER_ADMIN" and user.organization:`). Заменить на:
-  ```python
-  if user.role != "SUPER_ADMIN":
-      if not user.organization:
-          from rest_framework.exceptions import PermissionDenied
-          raise PermissionDenied("Пользователь не привязан к организации.")
-      qs = qs.filter(organization=user.organization)
-  ```
-- [x] Применить ту же замену в `ProductHistoryView.get()` если там есть inline tenant filtering
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_analytics.py -v`
-**Коммит**: `fix(security): null-org дыра в DashboardView и ProductHistoryView`
-
----
-
-### 2.3 Guard в TenantQuerySetMixin
-
-- [x] В `backend/apps/core/mixins.py` строки 23-25:
-
-  **Заменить**:
-  ```python
-  if hasattr(qs.model, "organization"):
-      return qs.filter(organization=user.organization)
-  ```
-  **На**:
-  ```python
-  if hasattr(qs.model, "organization"):
-      if not user.organization:
-          return qs.none()
-      return qs.filter(organization=user.organization)
+  "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
   ```
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
-**Коммит**: `fix(security): TenantQuerySetMixin возвращает qs.none() для пользователей без организации`
+**Коммит**: `feat: custom DRF exception handler with standardized error format`
 
 ---
 
-### 2.4 Cross-FK валидация в OperationEntrySerializer
+### 1.5 SoftDeleteModel mixin
 
-- [x] В `backend/apps/operations/serializers.py` в методе `validate(self, data)` добавить в конец (перед `return data`):
+- [ ] В `backend/apps/core/models.py` добавить:
   ```python
-  user = self.context["request"].user
-  if user.role != "SUPER_ADMIN" and user.organization:
-      kitchen = data.get("kitchen")
-      if kitchen and kitchen.organization_id != user.organization_id:
-          raise serializers.ValidationError({"kitchen": "Кухня принадлежит другой организации."})
-      to_kitchen = data.get("to_kitchen")
-      if to_kitchen and to_kitchen.organization_id != user.organization_id:
-          raise serializers.ValidationError({"to_kitchen": "Кухня назначения принадлежит другой организации."})
-      product = data.get("product")
-      if product and product.organization_id != user.organization_id:
-          raise serializers.ValidationError({"product": "Продукт принадлежит другой организации."})
-  ```
+  import logging
+  from django.db import models
+  from django.utils import timezone
 
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_operations.py -v`
-**Коммит**: `fix(security): cross-FK валидация в OperationEntrySerializer`
+  logger = logging.getLogger("apps.core")
 
----
+  class SoftDeleteManager(models.Manager):
+      """Менеджер, фильтрующий мягко удалённые записи по умолчанию."""
+      def get_queryset(self):
+          return super().get_queryset().filter(deleted_at__isnull=True)
 
-### 2.5 Реализовать OrganizationMiddleware
+  class AllObjectsManager(models.Manager):
+      """Менеджер, возвращающий все записи включая удалённые."""
+      pass
 
-- [x] В `backend/apps/core/middleware.py` (текущий файл — заглушка) заменить содержимое на:
-  ```python
-  class OrganizationMiddleware:
-      """Устанавливает request.organization из user.organization."""
+  class SoftDeleteModel(models.Model):
+      """Abstract mixin для мягкого удаления."""
+      deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Удалено в")
 
-      def __init__(self, get_response):
-          self.get_response = get_response
-
-      def __call__(self, request):
-          request.organization = None
-          response = self.get_response(request)
-          return response
-
-      def process_view(self, request, view_func, view_args, view_kwargs):
-          if hasattr(request, "user") and request.user.is_authenticated:
-              request.organization = getattr(request.user, "organization", None)
-          return None
-  ```
-- [x] В `backend/config/settings/base.py` в MIDDLEWARE после `"django.contrib.auth.middleware.AuthenticationMiddleware"` добавить: `"apps.core.middleware.OrganizationMiddleware",`
-
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
-**Коммит**: `feat: реализовать OrganizationMiddleware`
-
----
-
-### 2.6 Тесты на tenant security фиксы
-
-- [x] В `backend/tests/test_analytics.py` добавить класс `TestNullOrgUserBlocked` с тестами:
-  - пользователь role=KITCHEN_USER, organization=None → GET /api/analytics/dashboard/ → 403
-  - пользователь role=TENANT_ADMIN, organization=None → GET /api/analytics/kitchen-report/ → 403
-  - пользователь role=TENANT_ADMIN, organization=None → GET /api/analytics/operations-summary/ → 403
-
-- [x] В `backend/tests/test_operations.py` добавить класс `TestCrossFKValidation` с тестами:
-  - POST /api/operations/ с kitchen из другой org → 400 с ошибкой "kitchen"
-  - POST /api/operations/ с product из другой org → 400 с ошибкой "product"
-
-**Проверка**: `cd backend && uv run pytest tests/test_analytics.py tests/test_operations.py -v`
-**Коммит**: `test: тесты на null-org блокировку и cross-FK валидацию`
-
----
-
-## Phase 3: Payment Audit Trail
-
-### 3.1 AuditLog модель
-
-- [x] В `backend/apps/payments/models.py` в конец файла добавить модель:
-  ```python
-  class AuditLog(TimeStampedModel):
-      class EventType(models.TextChoices):
-          ORDER_STATE_CHANGE = "ORDER_STATE_CHANGE", "Изменение статуса заказа"
-          TXN_STATE_CHANGE = "TXN_STATE_CHANGE", "Изменение статуса транзакции"
-          PLAN_CHANGE = "PLAN_CHANGE", "Смена плана"
-          PLAN_REVERT = "PLAN_REVERT", "Откат плана"
-
-      event_type = models.CharField(max_length=50, choices=EventType.choices)
-      actor = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs")
-      organization = models.ForeignKey("organizations.Organization", on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs")
-      target_type = models.CharField(max_length=50)
-      target_id = models.BigIntegerField()
-      old_value = models.JSONField(default=dict)
-      new_value = models.JSONField(default=dict)
-      metadata = models.JSONField(default=dict, blank=True)
+      objects = SoftDeleteManager()
+      all_objects = AllObjectsManager()
 
       class Meta:
-          verbose_name = "Аудит-лог"
-          verbose_name_plural = "Аудит-логи"
-          ordering = ["-created_at"]
-          indexes = [
-              models.Index(fields=["event_type", "created_at"]),
-              models.Index(fields=["organization", "created_at"]),
+          abstract = True
+
+      def delete(self, using=None, keep_parents=False):
+          self.deleted_at = timezone.now()
+          self.save(update_fields=["deleted_at"])
+          logger.info("SoftDelete: %s #%s deleted", self.__class__.__name__, self.pk)
+
+      def hard_delete(self):
+          super().delete()
+
+      def restore(self):
+          self.deleted_at = None
+          self.save(update_fields=["deleted_at"])
+
+      @property
+      def is_deleted(self) -> bool:
+          return self.deleted_at is not None
+  ```
+- [ ] Добавить тест в `backend/tests/test_organizations.py` — `TestSoftDeleteMixin` (можно через тестовую модель или Organization):
+  - `test_soft_delete_sets_deleted_at` — после delete(), `obj.deleted_at` не None
+  - `test_soft_deleted_not_in_objects` — `Model.objects.filter(pk=obj.pk)` возвращает пустой queryset
+  - `test_soft_deleted_in_all_objects` — `Model.all_objects.filter(pk=obj.pk)` возвращает объект
+  - `test_restore_clears_deleted_at` — после restore(), `deleted_at` is None
+
+**Проверка**: `cd backend && uv run pytest tests/test_organizations.py -v -k "SoftDelete"`
+**Коммит**: `feat: добавить SoftDeleteModel mixin в apps/core/models.py`
+
+---
+
+### 1.6 Применить SoftDelete к Organization
+
+- [ ] В `backend/apps/organizations/models.py`:
+  - Изменить наследование: `class Organization(SoftDeleteModel, TimeStampedModel):`
+  - Импортировать: `from apps.core.models import SoftDeleteModel`
+- [ ] Запустить: `cd backend && uv run python manage.py makemigrations organizations`
+- [ ] В `backend/apps/organizations/views.py` убедиться что `destroy` использует мягкое удаление (вызывает `instance.delete()` — теперь это soft delete)
+- [ ] В `backend/tests/test_organizations.py` добавить:
+  - `test_organization_soft_delete_via_api` — DELETE /api/organizations/{id}/ → org still in all_objects
+  - `test_deleted_org_not_in_list` — после удаления не виден в GET /api/organizations/
+
+**Проверка**: `cd backend && uv run pytest tests/test_organizations.py -v`
+**Коммит**: `feat: применить SoftDelete к Organization`
+
+---
+
+### 1.7 Применить SoftDelete к Kitchen и Product
+
+- [ ] В `backend/apps/kitchens/models.py`:
+  - `class Kitchen(SoftDeleteModel, TenantModel):`
+  - Импорт: `from apps.core.models import SoftDeleteModel`
+- [ ] В `backend/apps/products/models.py`:
+  - `class Product(SoftDeleteModel, TenantModel):`
+  - `class Category(SoftDeleteModel, TenantModel):`
+  - Импорт: `from apps.core.models import SoftDeleteModel`
+- [ ] Запустить: `cd backend && uv run python manage.py makemigrations kitchens products`
+- [ ] Убедиться что `TenantQuerySetMixin.get_queryset()` вызывает `super().get_queryset()` — это обеспечит что `SoftDeleteManager` применяется через цепочку
+- [ ] Добавить тесты:
+  - `backend/tests/test_kitchens.py`: `test_kitchen_soft_delete_via_api`
+  - `backend/tests/test_products.py`: `test_product_soft_delete_via_api`
+
+**Проверка**: `cd backend && uv run pytest tests/test_kitchens.py tests/test_products.py -v`
+**Коммит**: `feat: применить SoftDelete к Kitchen, Category, Product`
+
+---
+
+### 1.8 Расширить AuditLog EventTypes
+
+- [ ] В `backend/apps/payments/models.py` в `AuditLog.EventType` добавить:
+  ```python
+  USER_CREATED = "USER_CREATED", "Создан пользователь"
+  USER_UPDATED = "USER_UPDATED", "Обновлён пользователь"
+  USER_DELETED = "USER_DELETED", "Удалён пользователь"
+  KITCHEN_CREATED = "KITCHEN_CREATED", "Создана кухня"
+  KITCHEN_UPDATED = "KITCHEN_UPDATED", "Обновлена кухня"
+  KITCHEN_DELETED = "KITCHEN_DELETED", "Удалена кухня"
+  PRODUCT_CREATED = "PRODUCT_CREATED", "Создан продукт"
+  PRODUCT_UPDATED = "PRODUCT_UPDATED", "Обновлён продукт"
+  PRODUCT_DELETED = "PRODUCT_DELETED", "Удалён продукт"
+  ORG_SUSPENDED = "ORG_SUSPENDED", "Организация приостановлена"
+  ORG_UNSUSPENDED = "ORG_UNSUSPENDED", "Организация активирована"
+  ORG_DELETED = "ORG_DELETED", "Организация удалена"
+  ```
+- [ ] Запустить: `cd backend && uv run python manage.py makemigrations payments`
+
+**Проверка**: `cd backend && uv run python manage.py check`
+**Коммит**: `feat: расширить AuditLog EventTypes для CRUD операций`
+
+---
+
+## Phase 2: AuditLog Integration + API
+
+### 2.1 Утилита create_audit_log()
+
+- [ ] Создать `backend/apps/core/audit.py`:
+  ```python
+  from typing import Any
+
+  def create_audit_log(
+      event_type: str,
+      actor=None,
+      organization=None,
+      target_type: str = "",
+      target_id: int = 0,
+      old_value: dict | None = None,
+      new_value: dict | None = None,
+      metadata: dict | None = None,
+  ) -> None:
+      """Создать запись AuditLog. Безопасно при ошибках — не бросает исключений."""
+      try:
+          from apps.payments.models import AuditLog
+          AuditLog.objects.create(
+              event_type=event_type,
+              actor=actor,
+              organization=organization,
+              target_type=target_type,
+              target_id=target_id or 0,
+              old_value=old_value or {},
+              new_value=new_value or {},
+              metadata=metadata or {},
+          )
+      except Exception:
+          import logging
+          logging.getLogger("apps.core").error("Failed to create AuditLog", exc_info=True)
+  ```
+
+**Проверка**: `cd backend && uv run python manage.py check`
+**Коммит**: `feat: создать утилиту create_audit_log в apps/core/audit.py`
+
+---
+
+### 2.2 Wire AuditLog в KitchenViewSet
+
+- [ ] В `backend/apps/kitchens/views.py` добавить audit в `perform_create`, `perform_update`, `perform_destroy`:
+  ```python
+  from apps.core.audit import create_audit_log
+  from apps.payments.models import AuditLog
+
+  # в perform_create:
+  create_audit_log(
+      AuditLog.EventType.KITCHEN_CREATED,
+      actor=self.request.user,
+      organization=self.request.user.organization,
+      target_type="Kitchen", target_id=instance.id,
+      new_value={"name": instance.name},
+  )
+
+  # в perform_destroy:
+  create_audit_log(
+      AuditLog.EventType.KITCHEN_DELETED,
+      actor=self.request.user,
+      organization=self.request.user.organization,
+      target_type="Kitchen", target_id=instance.id,
+      old_value={"name": instance.name},
+  )
+  ```
+
+**Проверка**: `cd backend && uv run pytest tests/test_kitchens.py -v`
+**Коммит**: `feat: AuditLog в KitchenViewSet CRUD`
+
+---
+
+### 2.3 Wire AuditLog в UserViewSet и Organization status
+
+- [ ] В `backend/apps/accounts/views.py` добавить audit в UserViewSet `perform_create`, `perform_destroy`
+- [ ] В `backend/apps/organizations/views.py` добавить `perform_update` — если статус изменился:
+  ```python
+  def perform_update(self, serializer):
+      old_status = serializer.instance.status
+      instance = serializer.save()
+      new_status = instance.status
+      if old_status != new_status:
+          event = (
+              AuditLog.EventType.ORG_SUSPENDED
+              if new_status == "SUSPENDED"
+              else AuditLog.EventType.ORG_UNSUSPENDED
+          )
+          create_audit_log(
+              event,
+              actor=self.request.user,
+              organization=instance,
+              target_type="Organization", target_id=instance.id,
+              old_value={"status": old_status},
+              new_value={"status": new_status},
+          )
+  ```
+
+**Проверка**: `cd backend && uv run pytest tests/test_auth.py tests/test_organizations.py -v`
+**Коммит**: `feat: AuditLog в UserViewSet и Organization status changes`
+
+---
+
+### 2.4 Wire AuditLog в ProductViewSet
+
+- [ ] В `backend/apps/products/views.py` добавить audit в `CategoryViewSet` и `ProductViewSet`:
+  - `PRODUCT_CREATED`, `PRODUCT_UPDATED`, `PRODUCT_DELETED` в ProductViewSet
+
+**Проверка**: `cd backend && uv run pytest tests/test_products.py -v`
+**Коммит**: `feat: AuditLog в ProductViewSet CRUD`
+
+---
+
+### 2.5 AuditLog API endpoint (SUPER_ADMIN only)
+
+- [ ] В `backend/apps/payments/serializers.py` добавить:
+  ```python
+  class AuditLogSerializer(serializers.ModelSerializer):
+      actor_name = serializers.SerializerMethodField()
+      org_name = serializers.SerializerMethodField()
+
+      class Meta:
+          model = AuditLog
+          fields = ["id", "event_type", "actor", "actor_name", "organization", "org_name",
+                    "target_type", "target_id", "old_value", "new_value", "metadata", "created_at"]
+          read_only_fields = fields
+
+      def get_actor_name(self, obj):
+          return obj.actor.username if obj.actor else None
+
+      def get_org_name(self, obj):
+          return obj.organization.name if obj.organization else None
+  ```
+- [ ] В `backend/apps/payments/views.py` добавить `AuditLogViewSet`:
+  ```python
+  class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
+      queryset = AuditLog.objects.select_related("actor", "organization").order_by("-created_at")
+      serializer_class = AuditLogSerializer
+      permission_classes = [IsSuperAdmin]
+      filterset_fields = ["event_type", "organization", "target_type"]
+      filter_backends = [DjangoFilterBackend, OrderingFilter]
+  ```
+- [ ] В `backend/apps/payments/urls.py` зарегистрировать: `router.register("payments/audit-logs", AuditLogViewSet)`
+
+**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_payments.py -v`
+**Коммит**: `feat: AuditLog API endpoint — ReadOnly ViewSet для SUPER_ADMIN`
+
+---
+
+### 2.6 Тесты для AuditLog API и интеграции
+
+- [ ] В `backend/tests/test_payments.py` добавить `TestAuditLogAPI`:
+  - `test_super_admin_can_list_audit_logs` — GET /api/payments/audit-logs/ → 200
+  - `test_tenant_admin_cannot_access_audit_logs` — → 403
+  - `test_filter_by_event_type` — ?event_type=PLAN_CHANGE → правильные записи
+  - `test_filter_by_organization` — ?organization={id} → только эта org
+  - `test_kitchen_create_creates_audit_log` — создание кухни → AuditLog с KITCHEN_CREATED
+  - `test_org_suspend_creates_audit_log` — изменение status → AuditLog с ORG_SUSPENDED
+
+**Проверка**: `cd backend && uv run pytest tests/test_payments.py -k "AuditLog" -v`
+**Коммит**: `test: тесты для AuditLog API и интеграции`
+
+---
+
+## Phase 3: Production Hardening
+
+### 3.1 Enhanced health check
+
+- [ ] В `backend/apps/core/views.py` обновить `health_check`:
+  ```python
+  def health_check(request):
+      status_data = {"status": "ok", "services": {}}
+
+      # DB check
+      try:
+          from django.db import connection
+          connection.ensure_connection()
+          status_data["services"]["db"] = "ok"
+      except Exception as e:
+          status_data["services"]["db"] = str(e)
+          status_data["status"] = "degraded"
+
+      # Redis check
+      try:
+          from django.core.cache import cache
+          cache.set("health_check", "ok", 10)
+          val = cache.get("health_check")
+          status_data["services"]["redis"] = "ok" if val == "ok" else "error"
+      except Exception as e:
+          status_data["services"]["redis"] = str(e)
+          status_data["status"] = "degraded"
+
+      # Celery check (optional — проверяет конфигурацию, не живой воркер)
+      try:
+          from config.celery import app as celery_app
+          status_data["services"]["celery"] = "configured"
+      except Exception as e:
+          status_data["services"]["celery"] = str(e)
+
+      http_status = 200 if status_data["status"] == "ok" else 503
+      from django.http import JsonResponse
+      return JsonResponse(status_data, status=http_status)
+  ```
+
+**Проверка**: `cd backend && uv run python manage.py check`
+**Коммит**: `feat: health check — добавить Redis и Celery проверки`
+
+---
+
+### 3.2 Redis кэширование — CACHES setting
+
+- [ ] В `backend/config/settings/base.py` добавить (после CELERY настроек):
+  ```python
+  # Cache
+  CACHES = {
+      "default": {
+          "BACKEND": "django.core.cache.backends.redis.RedisCache",
+          "LOCATION": os.getenv("REDIS_CACHE_URL", "redis://localhost:6379/1"),
+          "TIMEOUT": 300,  # 5 минут
+      }
+  }
+  ```
+- [ ] В `backend/config/settings/dev.py` переопределить на LocMemCache для тестов:
+  ```python
+  CACHES = {
+      "default": {
+          "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+      }
+  }
+  ```
+- [ ] В `.env.example` добавить `REDIS_CACHE_URL=redis://redis:6379/1`
+- [ ] В `docker-compose.coolify.yml` добавить env var `REDIS_CACHE_URL` к backend сервису
+
+**Проверка**: `cd backend && uv run python manage.py check`
+**Коммит**: `feat: настроить Redis кэширование в Django`
+
+---
+
+### 3.3 Кэшировать PlanConfig
+
+- [ ] В `backend/apps/payments/views.py` в `PlanConfigListView.get` добавить:
+  ```python
+  from django.core.cache import cache
+  CACHE_KEY = "plan_config_list"
+
+  def get(self, request, *args, **kwargs):
+      cached = cache.get(CACHE_KEY)
+      if cached is not None:
+          return Response(cached)
+      response = super().get(request, *args, **kwargs)
+      cache.set(CACHE_KEY, response.data, timeout=3600)  # 1 час
+      return response
+  ```
+- [ ] Создать `backend/apps/payments/signals.py` для инвалидации при изменении PlanConfig:
+  ```python
+  from django.db.models.signals import post_save, post_delete
+  from django.dispatch import receiver
+  from django.core.cache import cache
+
+  @receiver([post_save, post_delete], sender="payments.PlanConfig")
+  def invalidate_plan_config_cache(sender, **kwargs):
+      cache.delete("plan_config_list")
+  ```
+- [ ] В `backend/apps/payments/apps.py` подключить сигнал: в `ready()` добавить `import apps.payments.signals`
+
+**Проверка**: `cd backend && uv run python manage.py check`
+**Коммит**: `feat: кэшировать PlanConfig на 1 час с инвалидацией`
+
+---
+
+### 3.4 Sentry SDK
+
+- [ ] В `backend/pyproject.toml` добавить: `"sentry-sdk[django]>=2.0"`
+- [ ] Запустить: `cd backend && uv sync`
+- [ ] В `backend/config/settings/prod.py` добавить:
+  ```python
+  import sentry_sdk
+  SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+  if SENTRY_DSN:
+      sentry_sdk.init(
+          dsn=SENTRY_DSN,
+          integrations=[sentry_sdk.integrations.django.DjangoIntegration()],
+          traces_sample_rate=0.1,
+          send_default_pii=False,
+      )
+  ```
+- [ ] В `.env.example` добавить `SENTRY_DSN=`
+
+**Проверка**: `cd backend && uv run python -c "import sentry_sdk; print('OK')"`
+**Коммит**: `feat: добавить Sentry SDK для мониторинга ошибок`
+
+---
+
+### 3.5 pg_backup management command
+
+- [ ] Создать `backend/apps/core/management/commands/pg_backup.py`:
+  ```python
+  import os, subprocess, shutil
+  from datetime import datetime
+  from django.core.management.base import BaseCommand
+  from django.conf import settings
+
+  class Command(BaseCommand):
+      help = "Создать pg_dump бэкап PostgreSQL базы данных"
+
+      def add_arguments(self, parser):
+          parser.add_argument("--output-dir", default="backups", help="Директория для бэкапа")
+
+      def handle(self, *args, **options):
+          if not shutil.which("pg_dump"):
+              self.stderr.write("pg_dump не найден")
+              return
+          output_dir = options["output_dir"]
+          os.makedirs(output_dir, exist_ok=True)
+          timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+          filename = f"{output_dir}/backup_{timestamp}.sql.gz"
+          db = settings.DATABASES["default"]
+          env = os.environ.copy()
+          env["PGPASSWORD"] = db.get("PASSWORD", "")
+          cmd = [
+              "pg_dump",
+              "-h", db.get("HOST", "localhost"),
+              "-p", str(db.get("PORT", 5432)),
+              "-U", db.get("USER", ""),
+              "-d", db.get("NAME", ""),
+              "-Fc", "-Z9", "-f", filename,
           ]
-
-      def __str__(self):
-          return f"AuditLog [{self.event_type}] {self.target_type}#{self.target_id}"
+          result = subprocess.run(cmd, env=env, capture_output=True)
+          if result.returncode == 0:
+              self.stdout.write(self.style.SUCCESS(f"Бэкап сохранён: {filename}"))
+          else:
+              self.stderr.write(f"Ошибка pg_dump: {result.stderr.decode()}")
   ```
-- [x] Запустить: `cd backend && uv run python manage.py makemigrations payments`
+- [ ] В `Makefile` добавить: `backup: cd backend && uv run python manage.py pg_backup`
 
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `feat: создать модель AuditLog`
+**Проверка**: `cd backend && uv run python manage.py pg_backup --help`
+**Коммит**: `feat: management command pg_backup для PostgreSQL`
 
 ---
 
-### 3.2 AuditLog в Order.mark_as_paid()
+### 3.6 Organization detail API endpoint
 
-- [x] В `backend/apps/payments/models.py` в методе `Order.mark_as_paid()` после `org.save(...)` добавить:
+- [ ] В `backend/apps/organizations/serializers.py` добавить `OrganizationDetailSerializer`:
   ```python
-  AuditLog.objects.create(
-      event_type=AuditLog.EventType.ORDER_STATE_CHANGE,
-      organization=self.organization,
-      target_type="Order", target_id=self.id,
-      old_value={"status": "PENDING_OR_PAYING"},
-      new_value={"status": self.Status.PAID},
-      metadata={"amount": self.amount},
-  )
-  AuditLog.objects.create(
-      event_type=AuditLog.EventType.PLAN_CHANGE,
-      organization=self.organization,
-      target_type="Organization", target_id=self.organization_id,
-      old_value={"plan": self.previous_plan},
-      new_value={"plan": self.target_plan},
-      metadata={"order_id": self.id},
-  )
-  ```
+  from apps.kitchens.serializers import KitchenSerializer
+  from apps.accounts.serializers import UserSerializer
 
-**Проверка**: `cd backend && uv run pytest tests/test_payments.py -v`
-**Коммит**: `feat: AuditLog в Order.mark_as_paid`
-
----
-
-### 3.3 AuditLog в Order.cancel() и revert_plan()
-
-- [x] В `Order.cancel()` после `self.save(...)`:
-  ```python
-  AuditLog.objects.create(...)
-  ```
-- [x] В `Order.revert_plan()` после `org.save(...)`:
-  ```python
-  AuditLog.objects.create(...)
-  ```
-
-**Проверка**: `cd backend && uv run pytest tests/test_payments.py -v`
-**Коммит**: `feat: AuditLog в Order.cancel и revert_plan`
-
----
-
-### 3.4 AuditLog в PaymeWebhookView
-
-- [x] В `backend/apps/payments/payme_views.py` в `_createTransaction()` после создания `PaymeTransaction`:
-  ```python
-  from apps.payments.models import AuditLog
-  AuditLog.objects.create(
-      event_type=AuditLog.EventType.TXN_STATE_CHANGE,
-      organization=order.organization,
-      target_type="PaymeTransaction", target_id=txn.id,
-      old_value={}, new_value={"state": 1, "payme_id": payme_id},
-      metadata={"order_id": order.id},
-  )
-  ```
-- [x] В `_performTransaction()` после `order.mark_as_paid()`:
-  ```python
-  AuditLog.objects.create(
-      event_type=AuditLog.EventType.TXN_STATE_CHANGE,
-      organization=order.organization,
-      target_type="PaymeTransaction", target_id=txn.id,
-      old_value={"state": 1}, new_value={"state": 2},
-      metadata={"payme_id": txn.payme_id},
-  )
-  ```
-- [x] В `_cancelTransaction()` после отмены — AuditLog с new_state (-1 или -2) и reason
-
-**Проверка**: `cd backend && uv run pytest tests/test_payments.py -v`
-**Коммит**: `feat: AuditLog в PaymeWebhookView`
-
----
-
-### 3.5 AuditLog в Django Admin
-
-- [x] В `backend/apps/payments/admin.py` добавить:
-  ```python
-  from apps.payments.models import AuditLog
-
-  @admin.register(AuditLog)
-  class AuditLogAdmin(ModelAdmin):
-      list_display = ["event_type", "target_type", "target_id", "organization", "created_at"]
-      list_filter = ["event_type", "created_at"]
-      search_fields = ["organization__name"]
-      readonly_fields = ["event_type", "actor", "organization", "target_type", "target_id",
-                         "old_value", "new_value", "metadata", "created_at"]
-      date_hierarchy = "created_at"
-
-      def has_add_permission(self, request): return False
-      def has_change_permission(self, request, obj=None): return False
-  ```
-
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `feat: AuditLog в Django Admin`
-
----
-
-### 3.6 Тесты для AuditLog
-
-- [x] В `backend/tests/test_payments.py` добавить `TestAuditTrail`:
-  - [x] `test_mark_as_paid_creates_order_and_plan_audit_logs`
-  - [x] `test_cancel_creates_audit_log`
-  - [x] `test_revert_plan_creates_plan_revert_audit_log`
-  - [x] `test_payme_perform_creates_txn_audit_log`
-
-**Проверка**: `cd backend && uv run pytest tests/test_payments.py -v -k "AuditTrail"`
-**Коммит**: `test: тесты для AuditLog audit trail`
-
----
-
-## Phase 4: Celery Setup
-
-### 4.1 Зависимости
-
-- [x] В `backend/pyproject.toml` в dependencies добавить: `"celery>=5.4"`, `"redis>=5.0"`, `"django-celery-beat>=2.7"`
-- [x] Запустить: `cd backend && uv sync`
-
-**Проверка**: `cd backend && uv run python -c "import celery; print(celery.__version__)"`
-**Коммит**: `chore: добавить celery, redis, django-celery-beat`
-
----
-
-### 4.2 Создать config/celery.py
-
-- [x] Создать `backend/config/celery.py`:
-  ```python
-  import os
-  from celery import Celery
-
-  os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
-  app = Celery("marga_manager")
-  app.config_from_object("django.conf:settings", namespace="CELERY")
-  app.autodiscover_tasks()
-  ```
-- [x] В `backend/config/__init__.py` добавить:
-  ```python
-  from .celery import app as celery_app
-  __all__ = ("celery_app",)
-  ```
-
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `feat: создать config/celery.py`
-
----
-
-### 4.3 Celery настройки в settings
-
-- [x] В `backend/config/settings/base.py`:
-  - [x] В `INSTALLED_APPS` добавить `"django_celery_beat"`
-  - [x] После LOGGING добавить:
-    ```python
-    # Celery
-    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-    CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
-    CELERY_ACCEPT_CONTENT = ["json"]
-    CELERY_TASK_SERIALIZER = "json"
-    CELERY_TIMEZONE = TIME_ZONE
-
-    from celery.schedules import crontab
-    CELERY_BEAT_SCHEDULE = {
-        "expire-stale-orders": {
-            "task": "apps.payments.tasks.expire_stale_orders_task",
-            "schedule": crontab(minute=0),
-        },
-        "check-expiring-subscriptions": {
-            "task": "apps.payments.tasks.check_expiring_subscriptions_task",
-            "schedule": crontab(minute=0, hour=9),
-        },
-        "downgrade-expired-subscriptions": {
-            "task": "apps.payments.tasks.downgrade_expired_subscriptions_task",
-            "schedule": crontab(minute=0, hour=0),
-        },
-    }
-    ```
-- [x] Запустить: `cd backend && uv run python manage.py migrate`
-
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `feat: Celery настройки и CELERY_BEAT_SCHEDULE в base.py`
-
----
-
-### 4.4 Создать apps/payments/tasks.py
-
-- [x] Создать `backend/apps/payments/tasks.py` со следующими задачами:
-
-  **expire_stale_orders_task** (hourly):
-  ```python
-  @shared_task(name="apps.payments.tasks.expire_stale_orders_task")
-  def expire_stale_orders_task():
-      from django.utils import timezone
-      from apps.payments.models import Order, PaymeTransaction
-      cutoff = timezone.now() - timezone.timedelta(milliseconds=PaymeTransaction.PAYME_TIMEOUT_MS)
-      updated = Order.objects.filter(
-          status__in=[Order.Status.PENDING, Order.Status.PAYING],
-          created_at__lt=cutoff,
-      ).update(status=Order.Status.EXPIRED)
-      if updated:
-          logger.info("Expired %d stale orders", updated)
-      return {"expired": updated}
-  ```
-
-  **check_expiring_subscriptions_task** (daily 09:00):
-  ```python
-  @shared_task(name="apps.payments.tasks.check_expiring_subscriptions_task")
-  def check_expiring_subscriptions_task():
-      from django.utils import timezone
-      from apps.organizations.models import Organization
-      threshold = timezone.now() + timezone.timedelta(days=3)
-      expiring = Organization.objects.filter(
-          plan_expires_at__isnull=False,
-          plan_expires_at__lte=threshold,
-          plan_expires_at__gt=timezone.now(),
-      ).exclude(plan="BASIC")
-      for org in expiring:
-          logger.warning("Subscription expiring: org=%s expires=%s", org.id, org.plan_expires_at)
-      return {"expiring_soon": expiring.count()}
-  ```
-
-  **downgrade_expired_subscriptions_task** (daily 00:00):
-  - Найти организации где `plan_expires_at < now - 7 days` и plan != BASIC
-  - Даунгрейдить на BASIC (plan, max_kitchens, max_users из PlanConfig, mrr=0, plan_expires_at=None)
-  - Создать AuditLog с PLAN_REVERT и reason="subscription_expired_grace_period"
-  - Логировать каждый даунгрейд
-
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `feat: создать apps/payments/tasks.py с Celery задачами`
-
----
-
-### 4.5 Redis и Celery в docker-compose.coolify.yml
-
-- [x] В `docker-compose.coolify.yml` добавить сервисы (redis, celery-worker, celery-beat):
-  - **redis**: `image: redis:7-alpine`, volume `redis_data:/data`
-  - **celery-worker**: тот же build что backend, `command: celery -A config worker -l info --concurrency=2`, зависит от db и redis
-  - **celery-beat**: `command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler`
-  - Оба Celery сервиса получают `CELERY_BROKER_URL=redis://redis:6379/0`
-- [x] В volumes добавить `redis_data:`
-- [x] В `.env.example` добавить `CELERY_BROKER_URL=redis://redis:6379/0`
-
-**Проверка**: `docker compose -f docker-compose.coolify.yml config`
-**Коммит**: `feat: добавить Redis и Celery в docker-compose.coolify.yml`
-
----
-
-## Phase 5: Subscription Model
-
-### 5.1 Поля plan_started_at и plan_expires_at на Organization
-
-- [x] В `backend/apps/organizations/models.py` добавить поля (после `mrr`):
-  ```python
-  plan_started_at = models.DateTimeField(null=True, blank=True, verbose_name="Подписка начата")
-  plan_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Подписка истекает")
-  ```
-- [x] В `backend/apps/organizations/serializers.py` добавить `"plan_started_at"` и `"plan_expires_at"` в fields (read_only)
-- [x] Запустить: `cd backend && uv run python manage.py makemigrations organizations`
-
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `feat: добавить plan_started_at и plan_expires_at на Organization`
-
----
-
-### 5.2 Модель Subscription
-
-- [x] В `backend/apps/payments/models.py` добавить модель (после AuditLog):
-  ```python
-  class Subscription(TimeStampedModel):
-      class Status(models.TextChoices):
-          ACTIVE = "ACTIVE", "Активна"
-          EXPIRED = "EXPIRED", "Истекла"
-          CANCELLED = "CANCELLED", "Отменена"
-
-      organization = models.ForeignKey("organizations.Organization", on_delete=models.CASCADE, related_name="subscriptions")
-      plan = models.CharField(max_length=20, choices=Order.Plan.choices)
-      amount = models.BigIntegerField(verbose_name="Сумма (тийин)")
-      started_at = models.DateTimeField()
-      expires_at = models.DateTimeField()
-      order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="subscriptions")
-      status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+  class OrganizationDetailSerializer(serializers.ModelSerializer):
+      """Детальный сериализатор для SUPER_ADMIN — включает вложенные данные."""
+      kitchens = KitchenSerializer(many=True, read_only=True)
+      users_count = serializers.IntegerField(source="user_count", read_only=True)
+      kitchens_count = serializers.IntegerField(source="kitchen_count", read_only=True)
+      products_count = serializers.SerializerMethodField()
+      operations_count = serializers.SerializerMethodField()
 
       class Meta:
-          verbose_name = "Подписка"
-          verbose_name_plural = "Подписки"
-          ordering = ["-started_at"]
+          model = Organization
+          fields = "__all__"
 
-      def __str__(self):
-          return f"Subscription [{self.organization}] {self.plan} {self.started_at:%Y-%m-%d}"
+      def get_products_count(self, obj):
+          from apps.products.models import Product
+          return Product.objects.filter(organization=obj).count()
+
+      def get_operations_count(self, obj):
+          from apps.operations.models import OperationEntry
+          return OperationEntry.objects.filter(organization=obj).count()
   ```
-- [x] Запустить: `cd backend && uv run python manage.py makemigrations payments`
-
-**Проверка**: `cd backend && uv run python manage.py check`
-**Коммит**: `feat: создать модель Subscription`
-
----
-
-### 5.3 Wire mark_as_paid → Subscription + plan_expires_at
-
-- [x] В `backend/apps/payments/models.py` в `Order.mark_as_paid()` после `org.save(...)` добавить:
+- [ ] В `backend/apps/organizations/views.py` добавить action:
   ```python
-  from django.utils import timezone as _tz
-  _now = _tz.now()
-  _expires = _now + _tz.timedelta(days=30)
-  org.plan_started_at = _now
-  org.plan_expires_at = _expires
-  org.save(update_fields=["plan_started_at", "plan_expires_at", "updated_at"])
+  from rest_framework.decorators import action
+  from rest_framework.response import Response
+  from apps.core.permissions import IsSuperAdmin
 
-  Subscription.objects.create(
-      organization=org,
-      plan=self.target_plan,
-      amount=self.amount,
-      started_at=_now,
-      expires_at=_expires,
-      order=self,
-      status=Subscription.Status.ACTIVE,
-  )
+  @action(detail=True, methods=["get"], permission_classes=[IsSuperAdmin])
+  def detail_view(self, request, pk=None):
+      org = self.get_object()
+      serializer = OrganizationDetailSerializer(org, context={"request": request})
+      return Response(serializer.data)
+  ```
+  URL будет: `GET /api/organizations/{id}/detail_view/`
+- [ ] В `backend/tests/test_organizations.py` добавить:
+  - `test_super_admin_can_get_org_detail` — → 200 с kitchens, users_count, products_count
+  - `test_tenant_admin_cannot_get_org_detail` — → 403
+
+**Проверка**: `cd backend && uv run pytest tests/test_organizations.py -v`
+**Коммит**: `feat: добавить Organization detail API endpoint для SUPER_ADMIN`
+
+---
+
+### 3.7 Тесты для Phase 3
+
+- [ ] В `backend/tests/test_commands.py` добавить:
+  - `test_pg_backup_command_exists` — `call_command("pg_backup", "--help")` не бросает ошибку
+  - `test_pg_backup_skips_without_pg_dump` — mock shutil.which → None, команда gracefully выходит
+- [ ] В `backend/tests/test_organizations.py` — тесты из 3.6 уже добавлены выше
+- [ ] Проверить что health check endpoint работает: GET /api/health/ → 200
+
+**Проверка**: `cd backend && uv run pytest tests/test_commands.py tests/test_organizations.py -v`
+**Коммит**: `test: тесты для pg_backup и org detail endpoint`
+
+---
+
+## Phase 4: Frontend Admin Panel
+
+### 4.1 Типы для AuditLog и OrgDetail
+
+- [ ] В `frontend/types.ts` добавить:
+  ```typescript
+  export interface AuditLogEntry {
+    id: number;
+    eventType: string;
+    actor: number | null;
+    actorName: string | null;
+    organization: number | null;
+    orgName: string | null;
+    targetType: string;
+    targetId: number;
+    oldValue: Record<string, unknown>;
+    newValue: Record<string, unknown>;
+    metadata: Record<string, unknown>;
+    createdAt: string;
+  }
+
+  export interface OrganizationDetail extends Organization {
+    kitchens: Kitchen[];
+    usersCount: number;
+    kitchensCount: number;
+    productsCount: number;
+    operationsCount: number;
+  }
   ```
 
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_payments.py -v`
-**Коммит**: `feat: mark_as_paid создаёт Subscription и устанавливает plan_expires_at`
+**Проверка**: `cd frontend && npx tsc --noEmit 2>&1 | head -20`
+**Коммит**: `feat(types): добавить AuditLogEntry и OrganizationDetail типы`
 
 ---
 
-### 5.4 Subscription в Admin и API
+### 4.2 API сервисы для AuditLog и OrgDetail
 
-- [x] В `backend/apps/payments/admin.py` зарегистрировать Subscription (list_display, list_filter, readonly_fields)
-- [x] В `backend/apps/payments/serializers.py` добавить `SubscriptionSerializer` (все поля read_only)
-- [x] В `backend/apps/payments/views.py` добавить `SubscriptionListView(TenantQuerySetMixin, ListAPIView)` с `permission_classes = [IsTenantAdmin]`
-- [x] В `backend/apps/payments/urls.py` добавить: `path("payments/subscriptions/", SubscriptionListView.as_view(), name="subscription-list")`
+- [ ] В `frontend/api/services/organizations.ts` добавить:
+  ```typescript
+  getDetail: (id: number) => api.get<OrganizationDetail>(`/organizations/${id}/detail_view/`),
+  ```
+- [ ] Создать `frontend/api/services/auditLogs.ts`:
+  ```typescript
+  import api from "../client";
+  import type { AuditLogEntry } from "../../types";
 
-**Проверка**: `cd backend && uv run python manage.py check && uv run pytest -v`
-**Коммит**: `feat: Subscription admin, serializer и API`
+  const auditLogsService = {
+    getAll: (params?: {
+      eventType?: string;
+      organization?: number;
+      ordering?: string;
+      page?: number;
+    }) => api.get<{ results: AuditLogEntry[]; count: number; next: string | null; previous: string | null }>(
+      "/payments/audit-logs/",
+      { params }
+    ),
+  };
+
+  export default auditLogsService;
+  ```
+
+**Проверка**: `cd frontend && npx tsc --noEmit 2>&1 | head -20`
+**Коммит**: `feat: API сервисы для AuditLog и OrganizationDetail`
 
 ---
 
-### 5.5 Frontend: expiry banner
+### 4.3 i18n ключи для admin panel
 
-- [x] В `frontend/types.ts` в интерфейс Organization добавить: `planStartedAt: string | null` и `planExpiresAt: string | null`
-- [x] В `frontend/context/LanguageContext.tsx` добавить переводы (en/ru/uz):
-  - `subscription_expiring_soon`: "Your plan expires on {date}. Renew now." / "Ваш план истекает {date}." / "Obunangiz {date} tugaydi."
-  - `subscription_expired`: "Your plan has expired. Renew now." / "Ваш план истёк." / "Obunangiz tugagan."
-  - `renew_now`: "Renew" / "Продлить" / "Yangilash"
-- [x] В `frontend/components/Layout.tsx` (основной layout, виден на всех страницах) добавить expiry баннер:
-  - Если `planExpiresAt` в течение 7 дней → жёлтый баннер
-  - Если `planExpiresAt` прошло → красный баннер
-  - Баннер со ссылкой `href="#/settings"` для оплаты
-  - Не показывать для BASIC плана (бесплатный, нет expiry)
+- [ ] В `frontend/context/LanguageContext.tsx` добавить ключи (en/ru/uz):
+  ```
+  admin.suspend: Suspend / Приостановить / To'xtatish
+  admin.unsuspend: Activate / Активировать / Faollashtirish
+  admin.suspend_confirm: Suspend this organization? / Приостановить организацию? / ...
+  admin.org_detail: Organization Detail / Детали организации / ...
+  admin.audit_log: Audit Log / Аудит-лог / ...
+  admin.event_type: Event Type / Тип события / ...
+  admin.actor: Actor / Инициатор / ...
+  admin.target: Target / Объект / ...
+  admin.old_value: Old / До / ...
+  admin.new_value: New / После / ...
+  admin.kitchens_tab: Kitchens / Кухни / ...
+  admin.products_tab: Products / Продукты / ...
+  admin.users_tab: Users / Пользователи / ...
+  admin.payments_tab: Payments / Платежи / ...
+  admin.edit_tab: Edit / Редактировать / ...
+  admin.org_suspended: Organization is suspended / Организация приостановлена / ...
+  ```
 
 **Проверка**: `cd frontend && npm run build`
-**Коммит**: `feat: in-app баннер об истечении подписки`
+**Коммит**: `feat(i18n): добавить ключи для admin panel`
 
 ---
 
-### 5.6 Тесты для Subscription
+### 4.4 AdminLayout компонент
 
-- [x] В `backend/tests/test_payments.py` добавить `TestSubscriptionLogic`:
-  - `test_mark_as_paid_creates_subscription` — проверить что Subscription создана
-  - `test_mark_as_paid_sets_plan_expires_at` — org.plan_expires_at не None
-  - `test_downgrade_task_downgrades_after_7_day_grace` — org с plan_expires_at = now - 8 days → даунгрейд на BASIC
-  - `test_downgrade_task_respects_grace_period` — org с plan_expires_at = now - 3 days → НЕ даунгрейд
-  - `test_check_expiring_task_finds_orgs` — org с plan_expires_at = now + 2 days → задача логирует
-
-**Проверка**: `cd backend && uv run pytest tests/test_payments.py -v -k "Subscription"`
-**Коммит**: `test: тесты для Subscription логики и Celery задач`
-
----
-
-## Phase 6: Tests — Payment Edge Cases
-
-### 6.1 Malformed JSON webhook
-
-- [x] В `backend/tests/test_payments.py` добавить `TestPaymeWebhookEdgeCases`:
-  - POST с невалидным JSON → response код Payme PARSE_ERROR (-32700)
-  - POST с отсутствующим полем method → ошибка
-  - POST с неизвестным method → ошибка METHOD_NOT_FOUND
-  - POST с пустым телом → ошибка
-  - Убедиться что `payme_auth_headers` fixture существует в conftest.py (если нет — добавить)
-
-**Проверка**: `cd backend && uv run pytest tests/test_payments.py -v -k "WebhookEdgeCases"`
-**Коммит**: `test: malformed JSON и неизвестные методы в Payme webhook`
-
----
-
-### 6.2 Тесты management commands
-
-- [x] Создать `backend/tests/test_commands.py`:
-  - `test_expire_stale_orders_marks_old_orders` — создать Order с created_at = 13 часов назад, запустить команду, проверить EXPIRED
-  - `test_expire_stale_orders_leaves_recent_orders` — недавний Order остаётся PENDING
-  - `test_seed_data_runs_without_error` — `call_command("seed_data", "--clear")`
-  - `test_create_test_orders_runs` — `call_command("create_test_orders", org.slug)`
-
-**Проверка**: `cd backend && uv run pytest tests/test_commands.py -v`
-**Коммит**: `test: тесты для management commands`
-
----
-
-### 6.3 Дополнительные model tests
-
-- [x] В `backend/tests/test_payments.py` добавить `TestPaymeTransactionEdgeCases`:
-  - `test_is_timed_out_exactly_at_boundary` — транзакция созданная ровно 12ч назад — timeout
-  - `test_is_timed_out_false_for_performed` — STATE_PERFORMED транзакция не timed_out даже если старая
-
-- [x] В `backend/tests/test_organizations.py` добавить `TestOrganizationLimits`:
-  - `test_can_add_kitchen_true_when_below_limit`
-  - `test_can_add_kitchen_false_when_at_limit` — создать max_kitchens кухонь, проверить can_add_kitchen() == False
-  - `test_can_add_user_true_when_below_limit`
-  - `test_can_add_user_false_when_at_limit`
-
-  Note: если методы `can_add_kitchen()` и `can_add_user()` не существуют на модели Organization — добавить их:
-  ```python
-  def can_add_kitchen(self) -> bool:
-      return self.kitchens.filter(is_active=True).count() < self.max_kitchens
-
-  def can_add_user(self) -> bool:
-      return self.users.count() < self.max_users
+- [ ] Создать `frontend/components/AdminLayout.tsx`:
+  ```tsx
+  // Sidebar с навигацией для SUPER_ADMIN
+  // Пункты: Organizations, Audit Log
+  // Показывает активный маршрут через useLocation (HashRouter)
+  // Использует CSS переменные для тёмного дизайна (bg-slate-950/800)
+  // Паттерн навигации: <a href="#/admin/"> и <a href="#/admin/audit-log">
   ```
+  Структура:
+  - Sidebar с логотипом и пунктами меню
+  - Content area (children)
+  - Header с именем SUPER_ADMIN
 
-**Проверка**: `cd backend && uv run pytest tests/test_payments.py tests/test_organizations.py -v`
-**Коммит**: `test: edge cases для PaymeTransaction и Organization limits`
-
----
-
-## Phase 7: Tests — Tenant Isolation
-
-### 7.1 Null-org user blocked в analytics
-
-- [x] В `backend/tests/test_analytics.py` добавить `TestNullOrgUserBlocked` (если не добавлен в Phase 2.6):
-  - Создать пользователя без org (organization=None), authenticated
-  - Проверить 403 на: /api/analytics/dashboard/, /api/analytics/kitchen-report/, /api/analytics/operations-summary/
-
-- [x] Добавить тест: пользователь без org → GET /api/operations/ → пустой queryset (200 + empty list)
-
-**Проверка**: `cd backend && uv run pytest tests/test_analytics.py -v`
-**Коммит**: `test: null-org пользователи заблокированы в analytics`
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: создать AdminLayout компонент с sidebar`
 
 ---
 
-### 7.2 Cross-FK isolation tests
+### 4.5 Suspend/Unsuspend кнопка в AdminDashboard
 
-- [x] В `backend/tests/test_operations.py` добавить `TestCrossFKIsolation` (если не добавлен в Phase 2.6):
-  - POST /api/operations/ с kitchen_id из другой org → 400
-  - POST /api/operations/ с product_id из другой org → 400
-  - SUPER_ADMIN может создавать операции с любым org (если это желаемое поведение — проверить и задокументировать)
+- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+  - Добавить `suspendOrg(id, status)` функцию вызывающую `organizationsService.update(id, {status})`
+  - В таблице org добавить кнопку: если `ACTIVE` → кнопка "Suspend" (красный), если `SUSPENDED` → "Activate" (зелёный)
+  - Перед действием показать `ConfirmModal`
+  - После действия обновить список организаций
+  - Показать статус `SUSPENDED` как badge (красный) в таблице
 
-**Проверка**: `cd backend && uv run pytest tests/test_operations.py -v`
-**Коммит**: `test: cross-FK изоляция в операциях`
-
----
-
-### 7.3 Analytics isolation
-
-- [x] В `backend/tests/test_analytics.py` добавить `TestAnalyticsIsolation`:
-  - tenant_admin из org1 видит только свои данные в dashboard (не видит операции org2)
-  - product-history для product из другой org → 404 или пустые данные
-  - kitchen-report с kitchen_id из другой org → пустые данные в отчёте
-
-**Проверка**: `cd backend && uv run pytest tests/test_analytics.py -v`
-**Коммит**: `test: изоляция данных в analytics views`
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: Suspend/Unsuspend кнопка в AdminDashboard`
 
 ---
 
-## Phase 8: Business Logic Documentation
+### 4.6 Создать OrganizationDetail страницу
 
-### 8.1 docs/payment-flow.md
+- [ ] Создать `frontend/views/superadmin/OrganizationDetail.tsx`:
+  - Fetches `organizationsService.getDetail(id)` при монтировании
+  - Показывает: org name, status badge, plan badge, contact info
+  - Tabs: Info, Kitchens, Products, Users, Payments, Edit
+  - Default tab: Info
+  - Использует `AdminLayout`
+  - Loading state с Skeleton
 
-- [x] Создать директорию `docs/` в корне проекта если не существует
-- [x] Создать `docs/payment-flow.md` с:
-  1. Mermaid stateDiagram для Order: PENDING → PAYING → PAID / EXPIRED / CANCELLED
-  2. Mermaid stateDiagram для PaymeTransaction: 1 (created) → 2 / -1 / -2
-  3. Описание 6 методов Payme webhook (CheckPerform, Create, Perform, Cancel, Check, GetStatement)
-  4. Timeout logic: 12h = 43_200_000ms
-  5. Idempotency rules (CreateTransaction с тем же payme_id)
-  6. Что происходит при CancelTransaction после Perform (revert_plan)
+```tsx
+// Структура компонента:
+// OrganizationDetail
+//   ├── AdminLayout
+//   │   ├── Header (org name + status badge)
+//   │   ├── Tab bar (Info | Kitchens | Products | Users | Payments | Edit)
+//   │   └── Tab content (renders selected tab)
+```
 
-**Проверка**: файл существует
-**Коммит**: `docs: payment-flow.md с диаграммами`
-
----
-
-### 8.2 docs/tenant-isolation.md
-
-- [x] Создать `docs/tenant-isolation.md` с:
-  1. Shared-database shared-schema подход
-  2. Три слоя: OrganizationMiddleware (request.organization), TenantQuerySetMixin (queryset), Permission classes
-  3. SUPER_ADMIN bypass — видит всё
-  4. Null-org пользователи — что происходит (теперь PermissionDenied в analytics, qs.none() в CRUD)
-  5. Cross-FK валидация в serializers
-  6. Как добавить новый tenant-aware ViewSet
-
-**Проверка**: файл существует
-**Коммит**: `docs: tenant-isolation.md`
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: создать OrganizationDetail страницу (базовая структура + Info tab)`
 
 ---
 
-### 8.3 docs/subscription-lifecycle.md
+### 4.7 OrganizationDetail — вкладки Kitchens и Products
 
-- [x] Создать `docs/subscription-lifecycle.md` с:
-  1. Flow: создание Order → Payme checkout → mark_as_paid → Subscription created + plan_expires_at
-  2. Expiry checking: check_expiring_subscriptions_task (daily 09:00, за 3 дня)
-  3. Grace period: 7 дней
-  4. Downgrade: downgrade_expired_subscriptions_task (daily 00:00)
-  5. Frontend: in-app banner за 7 дней и после истечения
-  6. Renewal: новый Order → оплата → новый Subscription, extends expires_at
+- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` добавить вкладки:
+  - **Kitchens tab**: таблица кухонь из `orgDetail.kitchens` (name, is_active)
+  - **Products tab**: показать `orgDetail.productsCount` и ссылку на список (или загрузить через `productsService.getAll({organization: id})`)
 
-**Проверка**: файл существует
-**Коммит**: `docs: subscription-lifecycle.md`
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: OrganizationDetail — вкладки Kitchens и Products`
 
 ---
 
-## Phase 9: Update CLAUDE.md
+### 4.8 OrganizationDetail — вкладка Users
 
-### 9.1 Обновить CLAUDE.md
+- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Users:
+  - Загрузить `usersService.getAll({organization: id})` — нужно добавить этот параметр в api
+  - Показать таблицу пользователей (username, role, full_name)
+  - Добавить/редактировать/удалить пользователей (переиспользовать паттерн из существующего AdminDashboard)
 
-- [x] В `CLAUDE.md` обновить:
-  1. Таблица Django Apps: в строке payments добавить `AuditLog, Subscription` к моделям
-  2. Добавить секцию **Celery** после Commands:
-     ```
-     ### Celery (Background Tasks)
-     - Worker: `cd backend && celery -A config worker -l info`
-     - Beat: `cd backend && celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler`
-     - Tasks: expire_stale_orders_task (hourly), check_expiring_subscriptions_task (09:00 daily), downgrade_expired_subscriptions_task (00:00 daily)
-     - Broker: Redis via CELERY_BROKER_URL
-     ```
-  3. В Architecture section: OrganizationMiddleware теперь реализован (не stub), устанавливает `request.organization`
-  4. Добавить под **Multi-Tenancy**:
-     - Cross-FK validation в OperationEntrySerializer (kitchen/product/to_kitchen из той же org)
-     - Null-org users blocked: PermissionDenied в analytics, qs.none() в CRUD
-  5. Добавить секцию **Subscription & Billing**:
-     - plan_expires_at на Organization (30 дней с момента оплаты)
-     - Grace period: 7 дней
-     - AuditLog: трекинг всех state changes в payments
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: OrganizationDetail — вкладка Users`
 
-**Проверка**: `cat CLAUDE.md | grep -i celery`
-**Коммит**: `docs: обновить CLAUDE.md — Celery, AuditLog, Subscription, tenant isolation`
+---
+
+### 4.9 OrganizationDetail — вкладка Payments
+
+- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Payments:
+  - Загрузить ордера: `paymentsService.getOrders({organization: id})` — если такого параметра нет, добавить в сервис
+  - Показать таблицу: дата, план, сумма, статус
+  - Показать текущую подписку: `plan_expires_at`, план
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: OrganizationDetail — вкладка Payments`
+
+---
+
+### 4.10 OrganizationDetail — вкладка Edit
+
+- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Edit:
+  - Форма с полями: name, contact_name, phone, email, address, plan (select), status (select), max_kitchens, max_users
+  - Submit вызывает `organizationsService.update(id, data)`
+  - После сохранения refresh данных
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: OrganizationDetail — вкладка Edit`
+
+---
+
+### 4.11 Добавить маршрут OrganizationDetail в App.tsx
+
+- [ ] В `frontend/App.tsx`:
+  - Импортировать `OrganizationDetail`
+  - Добавить маршрут: `<SuperAdminRoute path="/admin/organizations/:id" component={OrganizationDetail} />`
+  - (HashRouter: `<Route path="/admin/organizations/:id" element={<OrganizationDetail />} />` обёрнутый в `SuperAdminRoute`)
+- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+  - Сделать имя org кликабельным: `<a href={`#/admin/organizations/${org.id}`}>`
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: маршрут для OrganizationDetail + ссылки из AdminDashboard`
+
+---
+
+### 4.12 Обновить AdminDashboard с AdminLayout
+
+- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+  - Обернуть в `AdminLayout`
+  - Убрать дублирующийся хедер если он конфликтует
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `refactor: AdminDashboard обёрнут в AdminLayout`
+
+---
+
+### 4.13 Создать AuditLog страницу
+
+- [ ] Создать `frontend/views/superadmin/AuditLogPage.tsx`:
+  - Использует `AdminLayout`
+  - Таблица: timestamp, event_type badge, actor_name, org_name, target_type, target_id, diff (old→new)
+  - Фильтры: event_type select, organization select, date range (от/до)
+  - Pagination (next/prev + счётчик страниц)
+  - Loading state
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: создать AuditLog страницу с таблицей и фильтрами`
+
+---
+
+### 4.14 Добавить маршрут AuditLog в App.tsx
+
+- [ ] В `frontend/App.tsx` добавить: `<Route path="/admin/audit-log" element={<SuperAdminRoute component={AuditLogPage} />} />`
+- [ ] AdminLayout sidebar уже ссылается на `#/admin/audit-log`
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: маршрут для AuditLog страницы`
+
+---
+
+## Phase 5: Integration & Polish
+
+### 5.1 Frontend: обработка suspended org (403)
+
+- [ ] В `frontend/api/client.ts` в response interceptor добавить обработку suspended 403:
+  ```typescript
+  // Если 403 и detail содержит "приостановлена" — показать suspended banner
+  if (error.response?.status === 403 && error.response.data?.detail?.includes("приостановлена")) {
+    // Установить флаг в localStorage/state
+    localStorage.setItem("km_org_suspended", "true");
+    window.location.hash = "#/suspended";
+  }
+  ```
+- [ ] Создать простую `frontend/views/OrgSuspended.tsx`:
+  - Показывает сообщение что org приостановлена
+  - Кнопка выхода
+- [ ] В `frontend/App.tsx` добавить маршрут `/suspended`
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `feat: обработка suspended org 403 с redirect на holding page`
+
+---
+
+### 5.2 AdminDashboard метрики из API
+
+- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+  - Метрики уже используют данные от API (`organizations` array). Проверить что используются `kitchenCount`, `userCount` из аннотаций (бэкенд аннотирует эти поля)
+  - Если нет — обновить calculation в Dashboard metrics card
+
+**Проверка**: `cd frontend && npm run build`
+**Коммит**: `fix: AdminDashboard метрики из аннотированных полей API`
+
+---
+
+### 5.3 Полный тест suite + регрессии
+
+- [ ] Запустить: `cd backend && uv run pytest -v --tb=short 2>&1`
+- [ ] Исправить все регрессии от изменений в middleware, soft delete, exception handler
+- [ ] Ключевые области для проверки:
+  - Soft delete: все существующие тесты что ожидают hard delete — обновить
+  - Exception handler: тесты что проверяют формат ошибок — обновить на новый формат `{"error": {...}}`
+  - Suspended middleware: не должно ломать существующие тесты (autouse fixture disable_throttling)
+
+**Проверка**: `cd backend && uv run pytest -v` (все тесты GREEN)
+**Коммит**: `test: исправить регрессии после V4 изменений`
+
+---
+
+### 5.4 Обновить CLAUDE.md
+
+- [ ] В `CLAUDE.md` обновить:
+  - В Django Apps: добавить `AuditLog` endpoint `/api/payments/audit-logs/`
+  - В Multi-Tenancy: упомянуть SUSPENDED org блокировку в middleware
+  - В Architecture: упомянуть SoftDeleteModel, custom exception handler, Redis caching
+  - В Commands: добавить `uv run python manage.py pg_backup`
+  - Добавить Frontend Admin Routes: `/admin/`, `/admin/organizations/:id`, `/admin/audit-log`, `/suspended`
+
+**Проверка**: `cat CLAUDE.md | head -50`
+**Коммит**: `docs: обновить CLAUDE.md для V4 изменений`
+
+---
+
+### 5.5 seed_data обновление
+
+- [ ] В `backend/apps/core/management/commands/seed_data.py` добавить:
+  - Создать одну org со статусом SUSPENDED для демо
+  - Создать несколько AuditLog записей разных типов для демо
+
+**Проверка**: `cd backend && uv run python manage.py seed_data --clear`
+**Коммит**: `chore: обновить seed_data с SUSPENDED org и AuditLog примерами`
 
 ---
 
 ## ФИНАЛЬНАЯ ВЕРИФИКАЦИЯ
-
-После всех фаз запустить:
 
 ```bash
 cd backend && uv run python manage.py check
