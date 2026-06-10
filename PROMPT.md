@@ -956,7 +956,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 - [x] Запустить: `cd backend && uv run pytest -v --tb=short 2>&1`
 - [x] Исправить все регрессии от изменений в middleware, soft delete, exception handler
-- [ ] Ключевые области для проверки:
+- [x] Ключевые области для проверки:
   - Soft delete: все существующие тесты что ожидают hard delete — обновить
   - Exception handler: тесты что проверяют формат ошибок — обновить на новый формат `{"error": {...}}`
   - Suspended middleware: не должно ломать существующие тесты (autouse fixture disable_throttling)
