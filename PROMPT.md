@@ -420,7 +420,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 2.6 Тесты для AuditLog API и интеграции
 
-- [ ] В `backend/tests/test_payments.py` добавить `TestAuditLogAPI`:
+- [x] В `backend/tests/test_payments.py` добавить `TestAuditLogAPI`:
   - `test_super_admin_can_list_audit_logs` — GET /api/payments/audit-logs/ → 200
   - `test_tenant_admin_cannot_access_audit_logs` — → 403
   - `test_filter_by_event_type` — ?event_type=PLAN_CHANGE → правильные записи

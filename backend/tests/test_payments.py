@@ -846,3 +846,60 @@ class TestSubscriptionLogic:
 
         result = check_expiring_subscriptions_task()
         assert result["expiring_soon"] >= 1
+
+
+@pytest.mark.django_db
+class TestAuditLogAPI:
+    def test_super_admin_can_list_audit_logs(self, super_admin_client):
+        response = super_admin_client.get("/api/payments/audit-logs/")
+        assert response.status_code == 200
+
+    def test_tenant_admin_cannot_access_audit_logs(self, tenant_admin_client):
+        response = tenant_admin_client.get("/api/payments/audit-logs/")
+        assert response.status_code == 403
+
+    def test_filter_by_event_type(self, super_admin_client, tenant_admin, org):
+        from apps.payments.models import AuditLog
+
+        AuditLog.objects.create(
+            event_type=AuditLog.EventType.PLAN_CHANGE,
+            actor=tenant_admin,
+            organization=org,
+            target_type="Organization",
+            target_id=org.id,
+        )
+        response = super_admin_client.get("/api/payments/audit-logs/?event_type=PLAN_CHANGE")
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert all(r["event_type"] == "PLAN_CHANGE" for r in results)
+
+    def test_filter_by_organization(self, super_admin_client, tenant_admin, org, org2):
+        from apps.payments.models import AuditLog
+
+        AuditLog.objects.create(
+            event_type=AuditLog.EventType.KITCHEN_CREATED,
+            actor=tenant_admin,
+            organization=org,
+            target_type="Kitchen",
+            target_id=1,
+        )
+        response = super_admin_client.get(f"/api/payments/audit-logs/?organization={org.id}")
+        assert response.status_code == 200
+        ids = [r["organization"] for r in response.data["results"]]
+        assert all(i == org.id for i in ids)
+
+    def test_kitchen_create_creates_audit_log(self, tenant_admin_client, org):
+        from apps.payments.models import AuditLog
+
+        before = AuditLog.objects.filter(event_type=AuditLog.EventType.KITCHEN_CREATED).count()
+        tenant_admin_client.post("/api/kitchens/", {"name": "Audit Test Kitchen"})
+        after = AuditLog.objects.filter(event_type=AuditLog.EventType.KITCHEN_CREATED).count()
+        assert after == before + 1
+
+    def test_org_suspend_creates_audit_log(self, super_admin_client, org):
+        from apps.payments.models import AuditLog
+
+        before = AuditLog.objects.filter(event_type=AuditLog.EventType.ORG_SUSPENDED).count()
+        super_admin_client.patch(f"/api/organizations/{org.id}/", {"status": "SUSPENDED"})
+        after = AuditLog.objects.filter(event_type=AuditLog.EventType.ORG_SUSPENDED).count()
+        assert after == before + 1
