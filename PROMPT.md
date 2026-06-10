@@ -708,11 +708,11 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.2 API сервисы для AuditLog и OrgDetail
 
-- [ ] В `frontend/api/services/organizations.ts` добавить:
+- [x] В `frontend/api/services/organizations.ts` добавить:
   ```typescript
   getDetail: (id: number) => api.get<OrganizationDetail>(`/organizations/${id}/detail_view/`),
   ```
-- [ ] Создать `frontend/api/services/auditLogs.ts`:
+- [x] Создать `frontend/api/services/auditLogs.ts`:
   ```typescript
   import api from "../client";
   import type { AuditLogEntry } from "../../types";
