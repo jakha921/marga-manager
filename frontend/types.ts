@@ -140,3 +140,26 @@ export interface SubscriptionOrder {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AuditLogEntry {
+  id: number;
+  eventType: string;
+  actor: number | null;
+  actorName: string | null;
+  organization: number | null;
+  orgName: string | null;
+  targetType: string;
+  targetId: number;
+  oldValue: Record<string, unknown>;
+  newValue: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface OrganizationDetail extends Organization {
+  kitchens: Kitchen[];
+  usersCount: number;
+  kitchensCount: number;
+  productsCount: number;
+  operationsCount: number;
+}

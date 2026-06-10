@@ -675,7 +675,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.1 Типы для AuditLog и OrgDetail
 
-- [ ] В `frontend/types.ts` добавить:
+- [x] В `frontend/types.ts` добавить:
   ```typescript
   export interface AuditLogEntry {
     id: number;
