@@ -212,3 +212,63 @@ class TestSuspendedOrgBlocking:
             {"username": tenant_admin.username, "password": "pass123"},
         )
         assert response.status_code == 200
+
+
+@pytest.mark.django_db
+class TestSoftDeleteMixin:
+    """Тесты SoftDeleteModel через Organization после применения миксина."""
+
+    def _make_org(self, slug_suffix="sd"):
+        from apps.organizations.models import Organization
+        return Organization.objects.create(
+            name=f"SoftDel Org {slug_suffix}",
+            slug=f"softdel-org-{slug_suffix}",
+        )
+
+    def test_soft_delete_sets_deleted_at(self):
+        from apps.organizations.models import Organization
+        org = self._make_org("1")
+        org_id = org.pk
+        org.delete()
+        obj = Organization.all_objects.get(pk=org_id)
+        assert obj.deleted_at is not None
+
+    def test_soft_deleted_not_in_objects(self):
+        from apps.organizations.models import Organization
+        org = self._make_org("2")
+        org_id = org.pk
+        org.delete()
+        assert not Organization.objects.filter(pk=org_id).exists()
+
+    def test_soft_deleted_in_all_objects(self):
+        from apps.organizations.models import Organization
+        org = self._make_org("3")
+        org_id = org.pk
+        org.delete()
+        assert Organization.all_objects.filter(pk=org_id).exists()
+
+    def test_restore_clears_deleted_at(self):
+        from apps.organizations.models import Organization
+        org = self._make_org("4")
+        org.delete()
+        org.restore()
+        assert org.deleted_at is None
+
+
+@pytest.mark.django_db
+class TestOrganizationSoftDelete:
+    def test_organization_soft_delete_via_api(self, super_admin_client, org2):
+        from apps.organizations.models import Organization
+        org_id = org2.pk
+        response = super_admin_client.delete(f"/api/organizations/{org_id}/")
+        assert response.status_code == 204
+        assert Organization.all_objects.filter(pk=org_id).exists()
+
+    def test_deleted_org_not_in_list(self, super_admin_client, org2):
+        from apps.organizations.models import Organization
+        org_id = org2.pk
+        org2.delete()
+        response = super_admin_client.get("/api/organizations/")
+        assert response.status_code == 200
+        ids = [o["id"] for o in response.data["results"]]
+        assert org_id not in ids

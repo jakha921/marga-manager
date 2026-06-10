@@ -1,9 +1,9 @@
 from django.db import models
 
-from apps.core.models import TimeStampedModel
+from apps.core.models import SoftDeleteModel, TimeStampedModel
 
 
-class Organization(TimeStampedModel):
+class Organization(SoftDeleteModel, TimeStampedModel):
     """Организация (тенант) в SaaS-системе."""
 
     class Plan(models.TextChoices):

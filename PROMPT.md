@@ -156,7 +156,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 1.5 SoftDeleteModel mixin
 
-- [ ] В `backend/apps/core/models.py` добавить:
+- [x] В `backend/apps/core/models.py` добавить:
   ```python
   import logging
   from django.db import models
@@ -199,7 +199,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       def is_deleted(self) -> bool:
           return self.deleted_at is not None
   ```
-- [ ] Добавить тест в `backend/tests/test_organizations.py` — `TestSoftDeleteMixin` (можно через тестовую модель или Organization):
+- [x] Добавить тест в `backend/tests/test_organizations.py` — `TestSoftDeleteMixin` (можно через тестовую модель или Organization):
   - `test_soft_delete_sets_deleted_at` — после delete(), `obj.deleted_at` не None
   - `test_soft_deleted_not_in_objects` — `Model.objects.filter(pk=obj.pk)` возвращает пустой queryset
   - `test_soft_deleted_in_all_objects` — `Model.all_objects.filter(pk=obj.pk)` возвращает объект
@@ -212,12 +212,12 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 1.6 Применить SoftDelete к Organization
 
-- [ ] В `backend/apps/organizations/models.py`:
+- [x] В `backend/apps/organizations/models.py`:
   - Изменить наследование: `class Organization(SoftDeleteModel, TimeStampedModel):`
   - Импортировать: `from apps.core.models import SoftDeleteModel`
-- [ ] Запустить: `cd backend && uv run python manage.py makemigrations organizations`
-- [ ] В `backend/apps/organizations/views.py` убедиться что `destroy` использует мягкое удаление (вызывает `instance.delete()` — теперь это soft delete)
-- [ ] В `backend/tests/test_organizations.py` добавить:
+- [x] Запустить: `cd backend && uv run python manage.py makemigrations organizations`
+- [x] В `backend/apps/organizations/views.py` убедиться что `destroy` использует мягкое удаление (вызывает `instance.delete()` — теперь это soft delete)
+- [x] В `backend/tests/test_organizations.py` добавить:
   - `test_organization_soft_delete_via_api` — DELETE /api/organizations/{id}/ → org still in all_objects
   - `test_deleted_org_not_in_list` — после удаления не виден в GET /api/organizations/
 
