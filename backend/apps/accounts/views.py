@@ -3,8 +3,10 @@ import logging
 from rest_framework import generics, permissions, viewsets
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from apps.core.audit import create_audit_log
 from apps.core.mixins import TenantCreateMixin, TenantQuerySetMixin
 from apps.core.permissions import IsTenantAdmin
+from apps.payments.models import AuditLog
 
 from .models import User
 from .serializers import (
@@ -69,8 +71,24 @@ class UserViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet)
             raise PermissionDenied(f"Достигнут лимит пользователей ({org.max_users}).")
         super().perform_create(serializer)
         instance = serializer.instance
-        logger.info("User created: %s by %s", instance.username, self.request.user.username)
+        logger.info("User created: %s by %s", instance.username, user.username)
+        create_audit_log(
+            AuditLog.EventType.USER_CREATED,
+            actor=user,
+            organization=instance.organization,
+            target_type="User",
+            target_id=instance.id,
+            new_value={"username": instance.username, "role": instance.role},
+        )
 
     def perform_destroy(self, instance):
         logger.info("User deleted: id=%s by %s", instance.id, self.request.user.username)
+        create_audit_log(
+            AuditLog.EventType.USER_DELETED,
+            actor=self.request.user,
+            organization=instance.organization,
+            target_type="User",
+            target_id=instance.id,
+            old_value={"username": instance.username, "role": instance.role},
+        )
         instance.delete()

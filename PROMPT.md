@@ -344,8 +344,8 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 2.3 Wire AuditLog в UserViewSet и Organization status
 
-- [ ] В `backend/apps/accounts/views.py` добавить audit в UserViewSet `perform_create`, `perform_destroy`
-- [ ] В `backend/apps/organizations/views.py` добавить `perform_update` — если статус изменился:
+- [x] В `backend/apps/accounts/views.py` добавить audit в UserViewSet `perform_create`, `perform_destroy`
+- [x] В `backend/apps/organizations/views.py` добавить `perform_update` — если статус изменился:
   ```python
   def perform_update(self, serializer):
       old_status = serializer.instance.status
