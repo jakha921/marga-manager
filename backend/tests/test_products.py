@@ -140,3 +140,14 @@ class TestProductTenantIsolation:
     def test_cannot_retrieve_other_org_product(self, tenant_admin_client, product_other_org):
         response = tenant_admin_client.get(f"/api/products/{product_other_org.id}/")
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+class TestProductSoftDelete:
+    def test_product_soft_delete_via_api(self, tenant_admin_client, product):
+        from apps.products.models import Product as ProductModel
+        product_id = product.pk
+        response = tenant_admin_client.delete(f"/api/products/{product_id}/")
+        assert response.status_code == 204
+        assert ProductModel.all_objects.filter(pk=product_id).exists()
+        assert not ProductModel.objects.filter(pk=product_id).exists()

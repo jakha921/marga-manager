@@ -1,9 +1,9 @@
 from django.db import models
 
-from apps.core.models import TenantModel
+from apps.core.models import SoftDeleteModel, TenantModel
 
 
-class Kitchen(TenantModel):
+class Kitchen(SoftDeleteModel, TenantModel):
     """Кухня (локация/филиал) организации."""
 
     name = models.CharField(max_length=200, verbose_name="Название")

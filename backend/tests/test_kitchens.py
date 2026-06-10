@@ -125,3 +125,14 @@ class TestKitchenLimitEnforcement:
             {"name": "Super Kitchen", "organization": org.id},
         )
         assert response.status_code == 201
+
+
+@pytest.mark.django_db
+class TestKitchenSoftDelete:
+    def test_kitchen_soft_delete_via_api(self, tenant_admin_client, kitchen):
+        from apps.kitchens.models import Kitchen as KitchenModel
+        kitchen_id = kitchen.pk
+        response = tenant_admin_client.delete(f"/api/kitchens/{kitchen_id}/")
+        assert response.status_code == 204
+        assert KitchenModel.all_objects.filter(pk=kitchen_id).exists()
+        assert not KitchenModel.objects.filter(pk=kitchen_id).exists()

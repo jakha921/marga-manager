@@ -1,9 +1,9 @@
 from django.db import models
 
-from apps.core.models import TenantModel
+from apps.core.models import SoftDeleteModel, TenantModel
 
 
-class Category(TenantModel):
+class Category(SoftDeleteModel, TenantModel):
     """Категория продуктов."""
 
     name = models.CharField(max_length=200, verbose_name="Название")
@@ -17,7 +17,7 @@ class Category(TenantModel):
         return self.name
 
 
-class Product(TenantModel):
+class Product(SoftDeleteModel, TenantModel):
     """Продукт/ингредиент на складе."""
 
     code = models.CharField(max_length=50, verbose_name="Код")

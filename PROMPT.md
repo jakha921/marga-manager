@@ -228,16 +228,16 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 1.7 Применить SoftDelete к Kitchen и Product
 
-- [ ] В `backend/apps/kitchens/models.py`:
+- [x] В `backend/apps/kitchens/models.py`:
   - `class Kitchen(SoftDeleteModel, TenantModel):`
   - Импорт: `from apps.core.models import SoftDeleteModel`
-- [ ] В `backend/apps/products/models.py`:
+- [x] В `backend/apps/products/models.py`:
   - `class Product(SoftDeleteModel, TenantModel):`
   - `class Category(SoftDeleteModel, TenantModel):`
   - Импорт: `from apps.core.models import SoftDeleteModel`
-- [ ] Запустить: `cd backend && uv run python manage.py makemigrations kitchens products`
-- [ ] Убедиться что `TenantQuerySetMixin.get_queryset()` вызывает `super().get_queryset()` — это обеспечит что `SoftDeleteManager` применяется через цепочку
-- [ ] Добавить тесты:
+- [x] Запустить: `cd backend && uv run python manage.py makemigrations kitchens products`
+- [x] Убедиться что `TenantQuerySetMixin.get_queryset()` вызывает `super().get_queryset()` — это обеспечит что `SoftDeleteManager` применяется через цепочку
+- [x] Добавить тесты:
   - `backend/tests/test_kitchens.py`: `test_kitchen_soft_delete_via_api`
   - `backend/tests/test_products.py`: `test_product_soft_delete_via_api`
 
