@@ -766,7 +766,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.4 AdminLayout компонент
 
-- [ ] Создать `frontend/components/AdminLayout.tsx`:
+- [x] Создать `frontend/components/AdminLayout.tsx`:
   ```tsx
   // Sidebar с навигацией для SUPER_ADMIN
   // Пункты: Organizations, Audit Log
