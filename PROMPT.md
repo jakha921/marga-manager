@@ -313,7 +313,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 2.2 Wire AuditLog в KitchenViewSet
 
-- [ ] В `backend/apps/kitchens/views.py` добавить audit в `perform_create`, `perform_update`, `perform_destroy`:
+- [x] В `backend/apps/kitchens/views.py` добавить audit в `perform_create`, `perform_update`, `perform_destroy`:
   ```python
   from apps.core.audit import create_audit_log
   from apps.payments.models import AuditLog
