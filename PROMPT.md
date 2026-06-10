@@ -112,7 +112,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 1.4 Custom DRF exception handler
 
-- [ ] Создать `backend/apps/core/exceptions.py`:
+- [x] Создать `backend/apps/core/exceptions.py`:
   ```python
   import logging
   from rest_framework.views import exception_handler
@@ -144,7 +144,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
           )
       return response
   ```
-- [ ] В `backend/config/drf_settings.py` в REST_FRAMEWORK добавить:
+- [x] В `backend/config/drf_settings.py` в REST_FRAMEWORK добавить:
   ```python
   "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
   ```

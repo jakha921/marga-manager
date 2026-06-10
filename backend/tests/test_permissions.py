@@ -252,4 +252,4 @@ class TestTenantCreateMixinValidation:
             {"name": "Ghost Kitchen", "organization": 99999},
         )
         assert resp.status_code == 400
-        assert "organization" in resp.data
+        assert "organization" in resp.data["error"]["detail"]

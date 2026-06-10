@@ -377,13 +377,13 @@ class TestCrossFKValidation:
         payload = self._payload(kitchen_other_org, product)
         resp = tenant_admin_client.post("/api/operations/", payload, format="json")
         assert resp.status_code == 400
-        assert "kitchen" in resp.json()
+        assert "kitchen" in resp.json()["error"]["detail"]
 
     def test_product_from_other_org_rejected(self, tenant_admin_client, kitchen, product_other_org):
         payload = self._payload(kitchen, product_other_org)
         resp = tenant_admin_client.post("/api/operations/", payload, format="json")
         assert resp.status_code == 400
-        assert "product" in resp.json()
+        assert "product" in resp.json()["error"]["detail"]
 
 
 @pytest.mark.django_db
