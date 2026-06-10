@@ -45,3 +45,4 @@ prod-*.png
 .playwright-mcp/
 GSD-GUIDE.md
 .claude/
+backend/logs/
