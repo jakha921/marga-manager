@@ -248,7 +248,6 @@ class TestSoftDeleteMixin:
         assert Organization.all_objects.filter(pk=org_id).exists()
 
     def test_restore_clears_deleted_at(self):
-        from apps.organizations.models import Organization
         org = self._make_org("4")
         org.delete()
         org.restore()
@@ -265,7 +264,6 @@ class TestOrganizationSoftDelete:
         assert Organization.all_objects.filter(pk=org_id).exists()
 
     def test_deleted_org_not_in_list(self, super_admin_client, org2):
-        from apps.organizations.models import Organization
         org_id = org2.pk
         org2.delete()
         response = super_admin_client.get("/api/organizations/")
