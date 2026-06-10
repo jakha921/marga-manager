@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Order, PaymeTransaction, PlanConfig
+from .models import AuditLog, Order, PaymeTransaction, PlanConfig
 
 
 class PlanConfigSerializer(serializers.ModelSerializer):
@@ -140,3 +140,32 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             "status",
             "created_at",
         ]
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    actor_name = serializers.SerializerMethodField()
+    org_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuditLog
+        fields = [
+            "id",
+            "event_type",
+            "actor",
+            "actor_name",
+            "organization",
+            "org_name",
+            "target_type",
+            "target_id",
+            "old_value",
+            "new_value",
+            "metadata",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_actor_name(self, obj):
+        return obj.actor.username if obj.actor else None
+
+    def get_org_name(self, obj):
+        return obj.organization.name if obj.organization else None

@@ -2,10 +2,11 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .payme_views import PaymeWebhookView
-from .views import OrderViewSet, PlanConfigListView, SubscriptionListView
+from .views import AuditLogViewSet, OrderViewSet, PlanConfigListView, SubscriptionListView
 
 router = DefaultRouter()
 router.register("payments/orders", OrderViewSet, basename="payment-orders")
+router.register("payments/audit-logs", AuditLogViewSet, basename="audit-logs")
 
 # Public endpoint (no auth) — must come before router.urls to avoid pk capture
 urlpatterns = [

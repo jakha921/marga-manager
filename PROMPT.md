@@ -384,7 +384,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 2.5 AuditLog API endpoint (SUPER_ADMIN only)
 
-- [ ] В `backend/apps/payments/serializers.py` добавить:
+- [x] В `backend/apps/payments/serializers.py` добавить:
   ```python
   class AuditLogSerializer(serializers.ModelSerializer):
       actor_name = serializers.SerializerMethodField()
@@ -402,7 +402,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       def get_org_name(self, obj):
           return obj.organization.name if obj.organization else None
   ```
-- [ ] В `backend/apps/payments/views.py` добавить `AuditLogViewSet`:
+- [x] В `backend/apps/payments/views.py` добавить `AuditLogViewSet`:
   ```python
   class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
       queryset = AuditLog.objects.select_related("actor", "organization").order_by("-created_at")
@@ -411,7 +411,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       filterset_fields = ["event_type", "organization", "target_type"]
       filter_backends = [DjangoFilterBackend, OrderingFilter]
   ```
-- [ ] В `backend/apps/payments/urls.py` зарегистрировать: `router.register("payments/audit-logs", AuditLogViewSet)`
+- [x] В `backend/apps/payments/urls.py` зарегистрировать: `router.register("payments/audit-logs", AuditLogViewSet)`
 
 **Проверка**: `cd backend && uv run python manage.py check && uv run pytest tests/test_payments.py -v`
 **Коммит**: `feat: AuditLog API endpoint — ReadOnly ViewSet для SUPER_ADMIN`

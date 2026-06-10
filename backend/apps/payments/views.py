@@ -106,3 +106,22 @@ class SubscriptionListView(TenantQuerySetMixin, ListAPIView):
     queryset = Subscription.objects.select_related("organization", "order").all()
     serializer_class = SubscriptionSerializer
     permission_classes = [IsTenantAdmin]
+
+
+from django_filters.rest_framework import DjangoFilterBackend  # noqa: E402
+from rest_framework.filters import OrderingFilter  # noqa: E402
+
+from apps.core.permissions import IsSuperAdmin  # noqa: E402
+
+from .models import AuditLog  # noqa: E402
+from .serializers import AuditLogSerializer  # noqa: E402
+
+
+class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
+    """GET /api/payments/audit-logs/ — аудит-лог только для SUPER_ADMIN."""
+
+    queryset = AuditLog.objects.select_related("actor", "organization").order_by("-created_at")
+    serializer_class = AuditLogSerializer
+    permission_classes = [IsSuperAdmin]
+    filterset_fields = ["event_type", "organization", "target_type"]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
