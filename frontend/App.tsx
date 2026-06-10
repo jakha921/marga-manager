@@ -9,6 +9,9 @@ import Products from './views/Products';
 import Settings from './views/Settings';
 import Login from './views/Login';
 import AdminDashboard from './views/superadmin/AdminDashboard';
+import OrganizationDetail from './views/superadmin/OrganizationDetail';
+import AuditLogPage from './views/superadmin/AuditLogPage';
+import OrgSuspended from './views/OrgSuspended';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -52,9 +55,14 @@ const App: React.FC = () => {
                 <SuperAdminRoute>
                    <Routes>
                       <Route path="/" element={<AdminDashboard />} />
+                      <Route path="/organizations/:id" element={<OrganizationDetail />} />
+                      <Route path="/audit-log" element={<AuditLogPage />} />
                    </Routes>
                 </SuperAdminRoute>
               } />
+
+              {/* Suspended org holding page */}
+              <Route path="/suspended" element={<OrgSuspended />} />
 
               {/* Tenant Client Routes */}
               <Route path="/*" element={

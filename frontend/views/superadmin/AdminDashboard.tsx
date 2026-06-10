@@ -5,12 +5,15 @@ import { useAuth } from '../../context/AuthContext';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
-import { Building2, DollarSign, Users, Activity, Edit2, LogOut, Plus, Search, User, Trash2, Key } from 'lucide-react';
+import AdminLayout from '../../components/AdminLayout';
+import { organizationsService } from '../../api/services/organizations';
+import { Building2, DollarSign, Users, Activity, Edit2, LogOut, Plus, Search, User, Trash2, Key, PauseCircle, PlayCircle } from 'lucide-react';
 import { SubscriptionPlan, Organization, User as UserType, UserRole } from '../../types';
 
 const AdminDashboard: React.FC = () => {
   const { organizations, addOrganization, updateOrganization, users, addUser, updateUser, deleteUser } = useData();
   const { logout } = useAuth();
+  const [suspendConfirm, setSuspendConfirm] = useState<{ org: Organization; action: 'suspend' | 'unsuspend' } | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,24 +115,17 @@ const AdminDashboard: React.FC = () => {
   const orgUsers = users.filter(u => String(u.organizationId) === selectedOrgId);
   const selectedOrgName = organizations.find(o => String(o.id) === selectedOrgId)?.name;
 
-  return (
-    <div className="min-h-screen bg-[var(--color-primary)] text-slate-100 font-body">
-      {/* Super Admin Header */}
-      <header className="bg-slate-950 border-b border-slate-800 px-8 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">
-             DEV
-           </div>
-           <div>
-             <h1 className="font-display font-bold text-lg text-white">SaaS Control Center</h1>
-             <p className="text-xs text-[var(--text-muted)]">Super Admin Dashboard</p>
-           </div>
-        </div>
-        <button onClick={logout} className="text-sm font-bold text-[var(--text-muted)] hover:text-white flex items-center gap-2">
-           <LogOut size={16} /> Logout
-        </button>
-      </header>
+  const handleSuspendToggle = async () => {
+    if (!suspendConfirm) return;
+    const { org, action } = suspendConfirm;
+    setSuspendConfirm(null);
+    await organizationsService.update(org.id, { status: action === 'suspend' ? 'SUSPENDED' : 'ACTIVE' });
+    updateOrganization(org.id, { ...org, status: action === 'suspend' ? 'SUSPENDED' : 'ACTIVE' });
+  };
 
+  return (
+    <AdminLayout>
+    <div className="text-slate-100 font-body">
       <main className="p-8 max-w-7xl mx-auto space-y-8">
         
         {/* Metrics */}
@@ -198,7 +194,7 @@ const AdminDashboard: React.FC = () => {
                  {filteredOrgs.map(org => (
                     <tr key={org.id} className="hover:bg-slate-700/50 transition-colors">
                        <td className="p-5">
-                          <div className="font-bold text-white">{org.name}</div>
+                          <a href={`#/admin/organizations/${org.id}`} className="font-bold text-white hover:text-blue-300">{org.name}</a>
                           <div className="text-[var(--text-secondary)] text-xs">{org.contactName}</div>
                        </td>
                        <td className="p-5">
@@ -222,6 +218,15 @@ const AdminDashboard: React.FC = () => {
                             <button onClick={() => handleEditOrg(org)} className="p-2 hover:bg-slate-700 rounded-lg text-[var(--text-muted)] hover:text-white transition-colors" title="Edit Org">
                                 <Edit2 size={16} />
                             </button>
+                            {org.status === 'ACTIVE' ? (
+                              <button onClick={() => setSuspendConfirm({ org, action: 'suspend' })} className="p-2 hover:bg-slate-700 rounded-lg text-orange-400 hover:text-white transition-colors" title="Suspend">
+                                <PauseCircle size={16} />
+                              </button>
+                            ) : (
+                              <button onClick={() => setSuspendConfirm({ org, action: 'unsuspend' })} className="p-2 hover:bg-slate-700 rounded-lg text-green-400 hover:text-white transition-colors" title="Activate">
+                                <PlayCircle size={16} />
+                              </button>
+                            )}
                           </div>
                        </td>
                     </tr>
@@ -346,7 +351,25 @@ const AdminDashboard: React.FC = () => {
             </div>
          </div>
       </Modal>
+
+      {/* Suspend Confirm */}
+      {suspendConfirm && (
+        <Modal isOpen onClose={() => setSuspendConfirm(null)} title={suspendConfirm.action === 'suspend' ? 'Suspend Organization?' : 'Activate Organization?'}>
+          <p style={{ marginBottom: 20, color: '#94a3b8' }}>
+            {suspendConfirm.action === 'suspend'
+              ? `This will block all users in "${suspendConfirm.org.name}" from accessing the system.`
+              : `This will restore access for all users in "${suspendConfirm.org.name}".`}
+          </p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <Button onClick={() => setSuspendConfirm(null)}>Cancel</Button>
+            <Button onClick={handleSuspendToggle} variant={suspendConfirm.action === 'suspend' ? 'danger' : 'primary'}>
+              {suspendConfirm.action === 'suspend' ? 'Suspend' : 'Activate'}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
+    </AdminLayout>
   );
 };
 

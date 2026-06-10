@@ -786,7 +786,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.5 Suspend/Unsuspend кнопка в AdminDashboard
 
-- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+- [x] В `frontend/views/superadmin/AdminDashboard.tsx`:
   - Добавить `suspendOrg(id, status)` функцию вызывающую `organizationsService.update(id, {status})`
   - В таблице org добавить кнопку: если `ACTIVE` → кнопка "Suspend" (красный), если `SUSPENDED` → "Activate" (зелёный)
   - Перед действием показать `ConfirmModal`
@@ -800,7 +800,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.6 Создать OrganizationDetail страницу
 
-- [ ] Создать `frontend/views/superadmin/OrganizationDetail.tsx`:
+- [x] Создать `frontend/views/superadmin/OrganizationDetail.tsx`:
   - Fetches `organizationsService.getDetail(id)` при монтировании
   - Показывает: org name, status badge, plan badge, contact info
   - Tabs: Info, Kitchens, Products, Users, Payments, Edit
@@ -824,7 +824,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.7 OrganizationDetail — вкладки Kitchens и Products
 
-- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` добавить вкладки:
+- [x] В `frontend/views/superadmin/OrganizationDetail.tsx` добавить вкладки:
   - **Kitchens tab**: таблица кухонь из `orgDetail.kitchens` (name, is_active)
   - **Products tab**: показать `orgDetail.productsCount` и ссылку на список (или загрузить через `productsService.getAll({organization: id})`)
 
@@ -835,7 +835,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.8 OrganizationDetail — вкладка Users
 
-- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Users:
+- [x] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Users:
   - Загрузить `usersService.getAll({organization: id})` — нужно добавить этот параметр в api
   - Показать таблицу пользователей (username, role, full_name)
   - Добавить/редактировать/удалить пользователей (переиспользовать паттерн из существующего AdminDashboard)
@@ -847,7 +847,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.9 OrganizationDetail — вкладка Payments
 
-- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Payments:
+- [x] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Payments:
   - Загрузить ордера: `paymentsService.getOrders({organization: id})` — если такого параметра нет, добавить в сервис
   - Показать таблицу: дата, план, сумма, статус
   - Показать текущую подписку: `plan_expires_at`, план
@@ -859,7 +859,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.10 OrganizationDetail — вкладка Edit
 
-- [ ] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Edit:
+- [x] В `frontend/views/superadmin/OrganizationDetail.tsx` вкладка Edit:
   - Форма с полями: name, contact_name, phone, email, address, plan (select), status (select), max_kitchens, max_users
   - Submit вызывает `organizationsService.update(id, data)`
   - После сохранения refresh данных
@@ -871,11 +871,11 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.11 Добавить маршрут OrganizationDetail в App.tsx
 
-- [ ] В `frontend/App.tsx`:
+- [x] В `frontend/App.tsx`:
   - Импортировать `OrganizationDetail`
   - Добавить маршрут: `<SuperAdminRoute path="/admin/organizations/:id" component={OrganizationDetail} />`
   - (HashRouter: `<Route path="/admin/organizations/:id" element={<OrganizationDetail />} />` обёрнутый в `SuperAdminRoute`)
-- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+- [x] В `frontend/views/superadmin/AdminDashboard.tsx`:
   - Сделать имя org кликабельным: `<a href={`#/admin/organizations/${org.id}`}>`
 
 **Проверка**: `cd frontend && npm run build`
@@ -885,7 +885,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.12 Обновить AdminDashboard с AdminLayout
 
-- [ ] В `frontend/views/superadmin/AdminDashboard.tsx`:
+- [x] В `frontend/views/superadmin/AdminDashboard.tsx`:
   - Обернуть в `AdminLayout`
   - Убрать дублирующийся хедер если он конфликтует
 
@@ -896,7 +896,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.13 Создать AuditLog страницу
 
-- [ ] Создать `frontend/views/superadmin/AuditLogPage.tsx`:
+- [x] Создать `frontend/views/superadmin/AuditLogPage.tsx`:
   - Использует `AdminLayout`
   - Таблица: timestamp, event_type badge, actor_name, org_name, target_type, target_id, diff (old→new)
   - Фильтры: event_type select, organization select, date range (от/до)
@@ -910,8 +910,8 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.14 Добавить маршрут AuditLog в App.tsx
 
-- [ ] В `frontend/App.tsx` добавить: `<Route path="/admin/audit-log" element={<SuperAdminRoute component={AuditLogPage} />} />`
-- [ ] AdminLayout sidebar уже ссылается на `#/admin/audit-log`
+- [x] В `frontend/App.tsx` добавить: `<Route path="/admin/audit-log" element={<SuperAdminRoute component={AuditLogPage} />} />`
+- [x] AdminLayout sidebar уже ссылается на `#/admin/audit-log`
 
 **Проверка**: `cd frontend && npm run build`
 **Коммит**: `feat: маршрут для AuditLog страницы`

@@ -24,6 +24,15 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    // Suspended org — redirect to holding page
+    if (
+      error.response?.status === 403 &&
+      (error.response?.data?.detail as string)?.includes('приостановлена')
+    ) {
+      localStorage.setItem('km_org_suspended', 'true');
+      window.location.hash = '#/suspended';
+      return Promise.reject(error);
+    }
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       const refreshToken = localStorage.getItem('km_refresh_token');
