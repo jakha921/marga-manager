@@ -17,6 +17,8 @@ from .serializers import (
     PlanConfigSerializer,
 )
 
+_PLAN_CONFIG_CACHE_KEY = "plan_config_list"
+
 
 class PlanConfigListView(generics.ListAPIView):
     """Публичный список активных тарифных планов — не требует аутентификации."""
@@ -25,6 +27,16 @@ class PlanConfigListView(generics.ListAPIView):
     serializer_class = PlanConfigSerializer
     queryset = PlanConfig.objects.filter(is_active=True)
     pagination_class = None
+
+    def get(self, request, *args, **kwargs):
+        from django.core.cache import cache
+
+        cached = cache.get(_PLAN_CONFIG_CACHE_KEY)
+        if cached is not None:
+            return Response(cached)
+        response = super().get(request, *args, **kwargs)
+        cache.set(_PLAN_CONFIG_CACHE_KEY, response.data, timeout=3600)
+        return response
 
 
 class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):

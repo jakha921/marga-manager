@@ -509,7 +509,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 3.3 Кэшировать PlanConfig
 
-- [ ] В `backend/apps/payments/views.py` в `PlanConfigListView.get` добавить:
+- [x] В `backend/apps/payments/views.py` в `PlanConfigListView.get` добавить:
   ```python
   from django.core.cache import cache
   CACHE_KEY = "plan_config_list"
@@ -522,7 +522,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
       cache.set(CACHE_KEY, response.data, timeout=3600)  # 1 час
       return response
   ```
-- [ ] Создать `backend/apps/payments/signals.py` для инвалидации при изменении PlanConfig:
+- [x] Создать `backend/apps/payments/signals.py` для инвалидации при изменении PlanConfig:
   ```python
   from django.db.models.signals import post_save, post_delete
   from django.dispatch import receiver
@@ -532,7 +532,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
   def invalidate_plan_config_cache(sender, **kwargs):
       cache.delete("plan_config_list")
   ```
-- [ ] В `backend/apps/payments/apps.py` подключить сигнал: в `ready()` добавить `import apps.payments.signals`
+- [x] В `backend/apps/payments/apps.py` подключить сигнал: в `ready()` добавить `import apps.payments.signals`
 
 **Проверка**: `cd backend && uv run python manage.py check`
 **Коммит**: `feat: кэшировать PlanConfig на 1 час с инвалидацией`
