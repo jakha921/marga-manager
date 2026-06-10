@@ -739,7 +739,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 4.3 i18n ключи для admin panel
 
-- [ ] В `frontend/context/LanguageContext.tsx` добавить ключи (en/ru/uz):
+- [x] В `frontend/context/LanguageContext.tsx` добавить ключи (en/ru/uz):
   ```
   admin.suspend: Suspend / Приостановить / To'xtatish
   admin.unsuspend: Activate / Активировать / Faollashtirish
