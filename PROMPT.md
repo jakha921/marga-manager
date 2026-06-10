@@ -54,7 +54,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
 
 ### 1.2 Enforce max_users на UserViewSet
 
-- [ ] В `backend/apps/accounts/views.py` в `UserViewSet` добавить/изменить `perform_create`:
+- [x] В `backend/apps/accounts/views.py` в `UserViewSet` добавить/изменить `perform_create`:
   ```python
   def perform_create(self, serializer):
       user = self.request.user
@@ -64,7 +64,7 @@ V3 завершён (200 тестов, logging, AuditLog платежей, Celer
           raise PermissionDenied(f"Достигнут лимит пользователей ({org.max_users}).")
       super().perform_create(serializer)
   ```
-- [ ] В `backend/tests/test_auth.py` добавить `TestUserLimitEnforcement`:
+- [x] В `backend/tests/test_auth.py` добавить `TestUserLimitEnforcement`:
   - `test_cannot_create_user_at_limit` — → 403
   - `test_can_create_user_below_limit` — → 201
   - `test_super_admin_bypasses_user_limit` — SUPER_ADMIN bypass

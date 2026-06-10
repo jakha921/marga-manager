@@ -61,7 +61,12 @@ class UserViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet)
         return UserSerializer
 
     def perform_create(self, serializer):
-        # Call super() to preserve TenantCreateMixin org-scoping logic
+        user = self.request.user
+        org = user.organization
+        if user.role != "SUPER_ADMIN" and org and not org.can_add_user():
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied(f"Достигнут лимит пользователей ({org.max_users}).")
         super().perform_create(serializer)
         instance = serializer.instance
         logger.info("User created: %s by %s", instance.username, self.request.user.username)

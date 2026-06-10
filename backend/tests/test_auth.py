@@ -136,3 +136,53 @@ class TestUserCRUD:
     def test_tenant_admin_can_delete_user(self, tenant_admin_client, kitchen_user):
         resp = tenant_admin_client.delete(f"/api/users/{kitchen_user.id}/")
         assert resp.status_code == 204
+
+
+@pytest.mark.django_db
+class TestUserLimitEnforcement:
+    def test_cannot_create_user_at_limit(self, tenant_admin_client, tenant_admin, org):
+        org.max_users = 1
+        org.save()
+        # tenant_admin already exists and counts against the limit
+
+        response = tenant_admin_client.post(
+            "/api/users/",
+            {
+                "username": "extra_user",
+                "password": "securepass1",
+                "full_name": "Extra",
+                "role": "KITCHEN_USER",
+            },
+        )
+        assert response.status_code == 403
+
+    def test_can_create_user_below_limit(self, tenant_admin_client, org):
+        org.max_users = 50
+        org.save()
+
+        response = tenant_admin_client.post(
+            "/api/users/",
+            {
+                "username": "new_cook",
+                "password": "securepass1",
+                "full_name": "New Cook",
+                "role": "KITCHEN_USER",
+            },
+        )
+        assert response.status_code == 201
+
+    def test_super_admin_bypasses_user_limit(self, super_admin_client, org):
+        org.max_users = 0
+        org.save()
+
+        response = super_admin_client.post(
+            "/api/users/",
+            {
+                "username": "sa_user",
+                "password": "securepass1",
+                "full_name": "SA User",
+                "role": "KITCHEN_USER",
+                "organization": org.id,
+            },
+        )
+        assert response.status_code == 201
