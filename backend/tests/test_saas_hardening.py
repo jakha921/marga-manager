@@ -26,9 +26,7 @@ def test_paginated_lists_have_deterministic_order(request, client_fixture, url):
         response = client.get(url)
 
     assert response.status_code == 200
-    assert not [
-        item for item in caught if issubclass(item.category, UnorderedObjectListWarning)
-    ]
+    assert not [item for item in caught if issubclass(item.category, UnorderedObjectListWarning)]
 
 
 @pytest.mark.django_db

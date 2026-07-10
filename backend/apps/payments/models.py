@@ -97,9 +97,7 @@ class Order(TimeStampedModel):
             org.mrr = self.amount / 100  # конвертация тийин → UZS
             _now = timezone.now()
             starts_from = (
-                org.plan_expires_at
-                if org.plan_expires_at and org.plan_expires_at > _now
-                else _now
+                org.plan_expires_at if org.plan_expires_at and org.plan_expires_at > _now else _now
             )
             _expires = starts_from + timezone.timedelta(days=30)
             org.plan_started_at = _now

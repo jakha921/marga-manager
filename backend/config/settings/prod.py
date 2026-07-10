@@ -6,6 +6,7 @@ from .base import *  # noqa: F401, F403
 
 DEBUG = False
 
+
 def _required_env(name: str) -> str:
     value = os.getenv(name, "").strip()
     if not value:
