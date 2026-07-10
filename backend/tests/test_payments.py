@@ -127,7 +127,7 @@ class TestCheckPerformTransaction:
         assert data["error"]["code"] == -31001
 
     def test_order_not_found(self, settings):
-        resp = self._post({"amount": 4_900_000, "account": {"order_id": 99999}}, settings)
+        resp = self._post({"amount": 58_900_000, "account": {"order_id": 99999}}, settings)
         data = resp.json()
         assert data["error"]["code"] == -31050
 
@@ -198,7 +198,7 @@ class TestCreateTransaction:
             {
                 "id": self.payme_id,
                 "time": int(time.time() * 1000),
-                "amount": 4_900_000,
+                "amount": 58_900_000,
                 "account": {"order_id": 99999},
             },
             settings,
@@ -438,7 +438,7 @@ class TestOrderAPI:
     def test_kitchen_user_cannot_create_order(self, kitchen_user_client):
         resp = kitchen_user_client.post(
             "/api/payments/orders/",
-            {"target_plan": "PRO", "amount": 4_900_000},
+            {"target_plan": "PRO", "amount": 58_900_000},
             format="json",
         )
         assert resp.status_code == 403
@@ -481,8 +481,12 @@ class TestOrderAPI:
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
-        plans = {p["plan"] for p in data}
-        assert {"BASIC", "PRO", "ENTERPRISE"} == plans
+        plans = {p["plan"]: p for p in data}
+        assert {"BASIC", "PRO", "ENTERPRISE"} == set(plans)
+        assert plans["BASIC"]["price"] == 29_900_000
+        assert plans["BASIC"]["priceUzs"] == 299_000
+        assert plans["PRO"]["price"] == 58_900_000
+        assert plans["PRO"]["priceUzs"] == 589_000
 
     def test_tenant_isolation(self, tenant_admin2_client, order):
         # Order belongs to org, tenant_admin2 belongs to org2
@@ -604,7 +608,7 @@ class TestPaymeTimeout:
 
 @pytest.mark.django_db
 class TestOrderValidations:
-    """9.5 — Phase 1 validations: duplicate PENDING order → 400, same plan → 400."""
+    """Order validation and renewal rules."""
 
     def test_cannot_create_second_pending_order(self, tenant_admin_client, org, tenant_admin):
         from apps.payments.models import PlanConfig
@@ -631,18 +635,19 @@ class TestOrderValidations:
         assert resp2.status_code == 200
         assert resp2.json()["id"] == resp1.json()["id"]
 
-    def test_cannot_order_current_plan(self, tenant_admin_client, org):
+    def test_can_order_current_plan_for_renewal(self, tenant_admin_client, org):
         from apps.payments.models import PlanConfig
 
-        # org.plan == "PRO" (from conftest), try to order PRO again → 400
-        PlanConfig.objects.get_or_create(
-            plan="PRO", defaults={"price": 4_900_000, "max_kitchens": 10, "max_users": 50}
+        PlanConfig.objects.update_or_create(
+            plan="PRO",
+            defaults={"price": 58_900_000, "max_kitchens": 10, "max_users": 50},
         )
         resp = tenant_admin_client.post(
             "/api/payments/orders/",
-            {"target_plan": "PRO", "amount": 4_900_000},
+            {"target_plan": "PRO", "amount": 58_900_000},
         )
-        assert resp.status_code == 400
+        assert resp.status_code == 201
+        assert resp.json()["targetPlan"] == "PRO"
 
 
 # ─── TestAuditTrail ──────────────────────────────────────────────────────────
@@ -803,37 +808,84 @@ class TestSubscriptionLogic:
         org.refresh_from_db()
         assert org.plan_expires_at is not None
 
-    def test_downgrade_task_downgrades_after_7_day_grace(self, org):
+    def test_renewal_extends_from_current_future_expiry(self, org, tenant_admin):
         from django.utils import timezone
 
-        from apps.payments.models import PlanConfig
+        from apps.payments.models import Order, PlanConfig
+
+        PlanConfig.objects.update_or_create(
+            plan="PRO",
+            defaults={"price": 58_900_000, "max_kitchens": 10, "max_users": 50},
+        )
+        current_expiry = timezone.now() + timezone.timedelta(days=10)
+        org.plan = "PRO"
+        org.plan_expires_at = current_expiry
+        org.save(update_fields=["plan", "plan_expires_at"])
+
+        order = Order.objects.create(
+            organization=org,
+            target_plan="PRO",
+            amount=58_900_000,
+            created_by=tenant_admin,
+        )
+        order.mark_as_paid()
+        org.refresh_from_db()
+
+        assert org.plan_expires_at >= current_expiry + timezone.timedelta(days=30)
+
+    def test_expired_task_suspends_unpaid_org(self, org):
+        from django.utils import timezone
+
         from apps.payments.tasks import downgrade_expired_subscriptions_task
 
-        PlanConfig.objects.get_or_create(
-            plan="BASIC",
-            defaults={"price": 0, "max_kitchens": 2, "max_users": 5},
-        )
         org.plan = "PRO"
-        org.plan_expires_at = timezone.now() - timezone.timedelta(days=8)
+        org.status = "ACTIVE"
+        org.plan_expires_at = timezone.now() - timezone.timedelta(minutes=1)
         org.save()
 
         result = downgrade_expired_subscriptions_task()
         org.refresh_from_db()
-        assert org.plan == "BASIC"
-        assert result["downgraded"] >= 1
+        assert org.plan == "PRO"
+        assert org.status == "SUSPENDED"
+        assert result["suspended"] >= 1
 
-    def test_downgrade_task_respects_grace_period(self, org):
+    def test_expired_task_keeps_unexpired_org_active(self, org):
         from django.utils import timezone
 
         from apps.payments.tasks import downgrade_expired_subscriptions_task
 
         org.plan = "PRO"
-        org.plan_expires_at = timezone.now() - timezone.timedelta(days=3)
+        org.status = "ACTIVE"
+        org.plan_expires_at = timezone.now() + timezone.timedelta(days=1)
         org.save()
 
         downgrade_expired_subscriptions_task()
         org.refresh_from_db()
         assert org.plan == "PRO"
+        assert org.status == "ACTIVE"
+
+    def test_payment_reactivates_suspended_org(self, org, tenant_admin):
+        from apps.payments.models import Order, PlanConfig
+
+        PlanConfig.objects.update_or_create(
+            plan="BASIC",
+            defaults={"price": 29_900_000, "max_kitchens": 3, "max_users": 10},
+        )
+        org.plan = "BASIC"
+        org.status = "SUSPENDED"
+        org.save(update_fields=["plan", "status"])
+        order = Order.objects.create(
+            organization=org,
+            target_plan="BASIC",
+            amount=29_900_000,
+            created_by=tenant_admin,
+        )
+
+        order.mark_as_paid()
+        org.refresh_from_db()
+
+        assert org.status == "ACTIVE"
+        assert org.plan_expires_at is not None
 
     def test_check_expiring_task_finds_orgs(self, org):
         from django.utils import timezone

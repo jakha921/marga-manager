@@ -27,7 +27,7 @@ class Command(BaseCommand):
             self._clear_data()
 
         org1, org2 = self._create_organizations()
-        self._create_users(org1)
+        self._create_users(org1, org2)
         kitchens = self._create_kitchens(org1)
         categories = self._create_categories(org1)
         products = self._create_products(org1, categories)
@@ -85,7 +85,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Организации: {org1}, {org2}"))
         return org1, org2
 
-    def _create_users(self, org: Organization) -> list[User]:
+    def _create_users(self, org: Organization, suspended_org: Organization) -> list[User]:
         users = []
 
         # Super Admin (no org)
@@ -117,6 +117,21 @@ class Command(BaseCommand):
             admin_user.set_password("admin123")
             admin_user.save()
         users.append(admin_user)
+
+        # Suspended tenant demo user
+        oqtepa_user, created = User.objects.get_or_create(
+            username="oqtepa",
+            defaults={
+                "full_name": "Oqtepa Admin",
+                "role": User.Role.TENANT_ADMIN,
+                "organization": suspended_org,
+                "is_staff": True,
+            },
+        )
+        if created:
+            oqtepa_user.set_password("admin123")
+            oqtepa_user.save()
+        users.append(oqtepa_user)
 
         # Kitchen User
         cook, created = User.objects.get_or_create(

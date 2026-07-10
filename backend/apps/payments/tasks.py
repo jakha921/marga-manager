@@ -32,7 +32,7 @@ def check_expiring_subscriptions_task():
         plan_expires_at__isnull=False,
         plan_expires_at__lte=threshold,
         plan_expires_at__gt=timezone.now(),
-    ).exclude(plan="BASIC")
+    )
     for org in expiring:
         logger.warning("Subscription expiring: org=%s expires=%s", org.id, org.plan_expires_at)
     return {"expiring_soon": expiring.count()}
@@ -43,47 +43,28 @@ def downgrade_expired_subscriptions_task():
     from django.utils import timezone
 
     from apps.organizations.models import Organization
-    from apps.payments.models import AuditLog, PlanConfig
+    from apps.payments.models import AuditLog
 
-    grace_cutoff = timezone.now() - timezone.timedelta(days=7)
     expired_orgs = Organization.objects.filter(
-        plan_expires_at__lt=grace_cutoff,
-    ).exclude(plan="BASIC")
+        plan_expires_at__lt=timezone.now(),
+        status=Organization.Status.ACTIVE,
+    )
 
-    try:
-        basic_config = PlanConfig.objects.get(plan="BASIC")
-    except PlanConfig.DoesNotExist:
-        logger.error("downgrade_expired_subscriptions_task: BASIC PlanConfig missing")
-        return {"downgraded": 0}
-
-    downgraded = 0
+    suspended = 0
     for org in expired_orgs:
-        old_plan = org.plan
-        org.plan = "BASIC"
-        org.max_kitchens = basic_config.max_kitchens
-        org.max_users = basic_config.max_users
-        org.mrr = 0
-        org.plan_expires_at = None
-        org.save(
-            update_fields=[
-                "plan",
-                "max_kitchens",
-                "max_users",
-                "mrr",
-                "plan_expires_at",
-                "updated_at",
-            ]
-        )
+        old_status = org.status
+        org.status = Organization.Status.SUSPENDED
+        org.save(update_fields=["status", "updated_at"])
         AuditLog.objects.create(
-            event_type=AuditLog.EventType.PLAN_REVERT,
+            event_type=AuditLog.EventType.ORG_SUSPENDED,
             organization=org,
             target_type="Organization",
             target_id=org.id,
-            old_value={"plan": old_plan},
-            new_value={"plan": "BASIC"},
-            metadata={"reason": "subscription_expired_grace_period"},
+            old_value={"status": old_status},
+            new_value={"status": org.status},
+            metadata={"reason": "subscription_expired"},
         )
-        logger.info("Downgraded org=%s from %s to BASIC (grace period expired)", org.id, old_plan)
-        downgraded += 1
+        logger.info("Suspended expired org=%s", org.id)
+        suspended += 1
 
-    return {"downgraded": downgraded}
+    return {"suspended": suspended}

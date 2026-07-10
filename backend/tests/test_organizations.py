@@ -25,6 +25,8 @@ class TestOrganizationSuperAdmin:
         assert response.status_code == 201
         assert response.data["name"] == "New Org"
         assert response.data["slug"] == "new-org"
+        assert response.data["plan_started_at"] is not None
+        assert response.data["plan_expires_at"] is not None
 
     def test_retrieve_organization(self, super_admin_client, org):
         response = super_admin_client.get(f"/api/organizations/{org.id}/")

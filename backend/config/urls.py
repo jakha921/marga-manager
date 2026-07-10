@@ -7,7 +7,7 @@ from apps.core.views import health_check
 
 urlpatterns = [
     path("api/health/", health_check, name="health-check"),
-    path("admin/", admin.site.urls),
+    path("django-admin/", admin.site.urls),
     # API Auth
     path("api/auth/", include("apps.accounts.urls")),
     # API Resources

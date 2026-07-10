@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserRole } from '../types';
-import { authService } from '../api/services/auth';
+import { authService, RegisterData } from '../api/services/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -10,6 +10,7 @@ interface AuthContextType {
   username: string | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
+  register: (data: RegisterData) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -80,7 +81,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.organizationId) {
           localStorage.setItem('km_org_id', String(data.organizationId));
         }
-      } catch {
+      } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } }).response?.status;
+        if (status === 403) {
+          localStorage.setItem('km_org_suspended', 'true');
+          setIsAuthenticated(true);
+          return;
+        }
         // Token invalid, clear auth state
         setIsAuthenticated(false);
         setUserRole(null);
@@ -100,37 +107,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     validateToken();
   }, []);
 
+  const applyAuth = (access: string, refresh: string | undefined, fallbackUsername: string) => {
+    localStorage.setItem('km_access_token', access);
+    localStorage.removeItem('km_org_suspended');
+    if (refresh) {
+      localStorage.setItem('km_refresh_token', refresh);
+    }
+
+    const payload = parseJwtPayload(access);
+    const role = (payload?.role as UserRole) || 'KITCHEN_USER';
+    const orgId = payload?.org_id ? String(payload.org_id) : null;
+    const name = (payload?.username as string) || fallbackUsername;
+
+    setIsAuthenticated(true);
+    setUserRole(role);
+    setOrganizationId(orgId);
+    setUsername(name);
+
+    localStorage.setItem('km_auth', 'true');
+    localStorage.setItem('km_role', role);
+    localStorage.setItem('km_username', name);
+    if (orgId) {
+      localStorage.setItem('km_org_id', orgId);
+    } else {
+      localStorage.removeItem('km_org_id');
+    }
+  };
+
   const login = async (inputUser: string, inputPass: string): Promise<boolean> => {
     try {
       const { data } = await authService.login(inputUser, inputPass);
+      applyAuth(data.access, data.refresh, inputUser);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
-      // Store tokens
-      localStorage.setItem('km_access_token', data.access);
-      if (data.refresh) {
-        localStorage.setItem('km_refresh_token', data.refresh);
-      }
-
-      // Parse JWT to extract role and org_id
-      const payload = parseJwtPayload(data.access);
-      const role = (payload?.role as UserRole) || 'KITCHEN_USER';
-      const orgId = payload?.org_id ? String(payload.org_id) : null;
-      const name = (payload?.username as string) || inputUser;
-
-      setIsAuthenticated(true);
-      setUserRole(role);
-      setOrganizationId(orgId);
-      setUsername(name);
-
-      // Backward compatibility localStorage keys
-      localStorage.setItem('km_auth', 'true');
-      localStorage.setItem('km_role', role);
-      localStorage.setItem('km_username', name);
-      if (orgId) {
-        localStorage.setItem('km_org_id', orgId);
-      } else {
-        localStorage.removeItem('km_org_id');
-      }
-
+  const register = async (data: RegisterData): Promise<boolean> => {
+    try {
+      const res = await authService.register(data);
+      applyAuth(res.data.access, res.data.refresh, res.data.user?.username || data.phone);
       return true;
     } catch {
       return false;
@@ -148,10 +165,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('km_username');
     localStorage.removeItem('km_access_token');
     localStorage.removeItem('km_refresh_token');
+    localStorage.removeItem('km_org_suspended');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, organizationId, username, loading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, organizationId, username, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlusSquare, ChefHat, Package, Menu, Settings, LogOut, Globe } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -152,13 +152,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {expiryBanner === 'expired' && (
           <div className="bg-red-500 text-white text-sm px-4 py-2 flex items-center justify-between flex-shrink-0">
             <span>{t('subscription.expired')}</span>
-            <a href="#/settings" className="underline font-semibold ml-4">{t('subscription.renew_now')}</a>
+            <Link to="/settings" className="underline font-semibold ml-4">{t('subscription.renew_now')}</Link>
           </div>
         )}
         {expiryBanner === 'expiring' && (
           <div className="bg-yellow-400 text-yellow-900 text-sm px-4 py-2 flex items-center justify-between flex-shrink-0">
             <span>{t('subscription.expiring_soon').replace('{date}', currentOrganization?.planExpiresAt ? formatDate(currentOrganization.planExpiresAt) : '')}</span>
-            <a href="#/settings" className="underline font-semibold ml-4">{t('subscription.renew_now')}</a>
+            <Link to="/settings" className="underline font-semibold ml-4">{t('subscription.renew_now')}</Link>
           </div>
         )}
         {/* Header */}

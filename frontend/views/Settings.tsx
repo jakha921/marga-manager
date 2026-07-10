@@ -83,7 +83,7 @@ const Settings: React.FC = () => {
       features: [
         `${t('bill.feature.kitchens')}: ${PLAN_LIMITS.BASIC.kitchens}`,
         `${t('bill.feature.users')}: ${PLAN_LIMITS.BASIC.users}`,
-        'Basic Reporting',
+        t('bill.feature.dailyReports'),
       ],
     },
     {
@@ -95,11 +95,6 @@ const Settings: React.FC = () => {
         t('bill.feature.analytics'),
         t('bill.feature.support'),
       ],
-    },
-    {
-      id: 'ENTERPRISE',
-      name: 'Enterprise',
-      features: ['Unlimited Everything', 'Dedicated API', 'SLA', 'Custom Onboarding'],
     },
   ];
 
@@ -164,7 +159,6 @@ const Settings: React.FC = () => {
   };
 
   const handleUpgrade = async (plan: SubscriptionPlan) => {
-    if (plan === 'BASIC') return;
     setIsCreatingOrder(true);
     setBillingError(null);
     try {
@@ -365,6 +359,7 @@ const Settings: React.FC = () => {
             <div>
               <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{t('set.tab.billing')}</h2>
               <p className="text-sm text-[var(--text-secondary)] mt-1">{t('set.billing.desc')}</p>
+              <p className="text-sm text-emerald-700 font-bold mt-2">{t('set.billing.trial')}</p>
             </div>
 
             {billingError && (
@@ -373,16 +368,16 @@ const Settings: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {PLANS.map(plan => {
                 const isCurrent = currentOrganization?.plan === plan.id;
                 const isPro = plan.id === 'PRO';
-                const currentPlanIndex = ['BASIC', 'PRO', 'ENTERPRISE'].indexOf(currentOrganization?.plan || 'BASIC');
-                const thisPlanIndex = ['BASIC', 'PRO', 'ENTERPRISE'].indexOf(plan.id);
+                const currentPlanIndex = ['BASIC', 'PRO'].indexOf(currentOrganization?.plan || 'BASIC');
+                const thisPlanIndex = ['BASIC', 'PRO'].indexOf(plan.id);
                 const isUpgrade = thisPlanIndex > currentPlanIndex;
                 const planConfig = planConfigs.find(c => c.plan === plan.id);
                 const priceDisplay = planConfig
-                  ? planConfig.price === 0 ? t('bill.free') : `${(planConfig.priceUzs).toLocaleString()} UZS`
+                  ? `${String(planConfig.priceUzs).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} UZS`
                   : '...';
 
                 return (
@@ -428,14 +423,14 @@ const Settings: React.FC = () => {
                     <Button
                       fullWidth
                       variant={isCurrent ? 'secondary' : 'primary'}
-                      disabled={isCurrent || isCreatingOrder || plan.id === 'BASIC'}
+                      disabled={isCreatingOrder || !planConfig}
                       onClick={() => handleUpgrade(plan.id)}
                       className={isCurrent ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ''}
                     >
-                      {isCurrent
-                        ? t('bill.btn.current')
-                        : isCreatingOrder
-                          ? '...'
+                      {isCreatingOrder
+                        ? '...'
+                        : isCurrent
+                          ? t('bill.btn.renew')
                           : isUpgrade
                             ? t('bill.btn.upgrade')
                             : t('bill.btn.downgrade')}

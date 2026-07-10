@@ -85,10 +85,6 @@ class OrderSerializer(serializers.ModelSerializer):
                         "non_field_errors": "У организации уже есть незавершённый заказ на другой тариф."
                     }
                 )
-            # Org не уже на целевом плане
-            if org.plan == target_plan:
-                raise serializers.ValidationError({"target_plan": "Организация уже на этом плане."})
-
         try:
             config = PlanConfig.objects.get(plan=target_plan, is_active=True)
             expected = config.price

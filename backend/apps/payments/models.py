@@ -87,19 +87,27 @@ class Order(TimeStampedModel):
             org = Organization.objects.select_for_update().get(pk=self.organization_id)
             self.previous_plan = org.plan
             self.save(update_fields=["previous_plan", "updated_at"])
+            old_status = org.status
             org.plan = self.target_plan
+            org.status = Organization.Status.ACTIVE
             if max_kitchens is not None:
                 org.max_kitchens = max_kitchens
             if max_users is not None:
                 org.max_users = max_users
             org.mrr = self.amount / 100  # конвертация тийин → UZS
             _now = timezone.now()
-            _expires = _now + timezone.timedelta(days=30)
+            starts_from = (
+                org.plan_expires_at
+                if org.plan_expires_at and org.plan_expires_at > _now
+                else _now
+            )
+            _expires = starts_from + timezone.timedelta(days=30)
             org.plan_started_at = _now
             org.plan_expires_at = _expires
             org.save(
                 update_fields=[
                     "plan",
+                    "status",
                     "max_kitchens",
                     "max_users",
                     "mrr",
@@ -142,6 +150,16 @@ class Order(TimeStampedModel):
                 new_value={"plan": self.target_plan},
                 metadata={"order_id": self.id},
             )
+            if old_status != org.status:
+                AuditLog.objects.create(
+                    event_type=AuditLog.EventType.ORG_UNSUSPENDED,
+                    organization=self.organization,
+                    target_type="Organization",
+                    target_id=self.organization_id,
+                    old_value={"status": old_status},
+                    new_value={"status": org.status},
+                    metadata={"order_id": self.id, "reason": "payment"},
+                )
 
     def revert_plan(self) -> None:
         """Откатить план организации к предыдущему (вызывается при отмене выполненной транзакции)."""
@@ -248,7 +266,7 @@ class PlanConfig(TimeStampedModel):
     plan = models.CharField(max_length=20, choices=Plan.choices, unique=True, verbose_name="План")
     price = models.BigIntegerField(
         verbose_name="Цена (тийин)",
-        help_text="Цена в тийинах (1 UZS = 100 тийин). BASIC = 0 (бесплатно).",
+        help_text="Цена в тийинах (1 UZS = 100 тийин).",
     )
     max_kitchens = models.PositiveIntegerField(verbose_name="Макс. кухонь")
     max_users = models.PositiveIntegerField(verbose_name="Макс. пользователей")

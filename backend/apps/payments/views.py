@@ -47,6 +47,10 @@ class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
     filterset_fields = ["status", "target_plan"]
 
+    def get_permissions(self):
+        # Billing must stay reachable for suspended owners so they can pay.
+        return [permission() for permission in self.permission_classes]
+
     def get_serializer_class(self):
         if self.action == "retrieve":
             return OrderDetailSerializer

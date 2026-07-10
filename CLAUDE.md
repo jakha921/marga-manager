@@ -59,7 +59,7 @@ Every data model inherits `TenantModel` (adds `organization` FK). Isolation enfo
 2. **ViewSet mixins** (`apps/core/mixins.py`) — `TenantQuerySetMixin` filters queryset by org (injects `IsOrgActive` permission), `TenantCreateMixin` auto-sets org on create
 3. **SUPER_ADMIN bypass** — sees all orgs, can override org on create via request body
 
-**SUSPENDED orgs**: `IsOrgActive` permission class blocks all API access for users in SUSPENDED orgs (except `/api/auth/login/`, `/api/auth/refresh/`, `/api/health/`). Frontend redirects to `#/suspended` on 403 with "приостановлена" in detail.
+**SUSPENDED orgs**: `IsOrgActive` permission class blocks all API access for users in SUSPENDED orgs (except `/api/auth/login/`, `/api/auth/refresh/`, `/api/health/`). Frontend redirects to `/suspended` on 403 with "приостановлена" in detail.
 
 **Cross-FK validation**: `OperationEntrySerializer.validate()` checks that `kitchen`, `to_kitchen`, and `product` belong to the user's org. SUPER_ADMIN bypasses this check.
 
@@ -109,16 +109,18 @@ frontend/
   views/              — Page components; QuickInput.tsx (~1000 lines) is the main entry form
   types.ts            — All TypeScript interfaces
   utils.ts            — formatDate, formatNumber, parseNumber, formatCompactNumber
-  App.tsx             — HashRouter with role-based route guards (ProtectedRoute, SuperAdminRoute)
+  App.tsx             — BrowserRouter with role-based route guards (ProtectedRoute, SuperAdminRoute)
 ```
 
 Frontend auth state is in localStorage under keys prefixed `km_` (`km_access_token`, `km_refresh_token`, `km_role`, `km_org_id`, `km_lang`).
 
-**Admin Routes** (SUPER_ADMIN only, `#/admin/*`):
-- `#/admin/` — AdminDashboard (org list, metrics, suspend/unsuspend)
-- `#/admin/organizations/:id` — OrganizationDetail (Info/Kitchens/Products/Users/Payments/Edit tabs)
-- `#/admin/audit-log` — AuditLogPage (filterable table with pagination)
-- `#/suspended` — OrgSuspended (holding page when org is SUSPENDED)
+**Admin Routes** (SUPER_ADMIN only, `/admin/*`):
+- `/admin` — AdminDashboard (org list, metrics, suspend/unsuspend)
+- `/admin/organizations/:id` — OrganizationDetail (Info/Kitchens/Products/Users/Payments/Edit tabs)
+- `/admin/audit-log` — AuditLogPage (filterable table with pagination)
+- `/suspended` — OrgSuspended (holding page when org is SUSPENDED)
+
+**Django admin**: `/django-admin/` (kept separate from React `/admin`).
 
 ### Key Data Flows
 - **Analytics** — server-aggregated at `/api/analytics/kitchen-report/` (beginning/end balance, markup, transfers); never computed on frontend

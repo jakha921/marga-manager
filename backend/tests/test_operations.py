@@ -125,6 +125,48 @@ class TestOperationFilters:
         assert response.status_code == 200
         assert response.data["count"] == 1
 
+    def test_list_orders_same_date_time_by_newest_input_first(
+        self, tenant_admin_client, org, kitchen, product
+    ):
+        first = OperationEntry.objects.create(
+            type="DAILY",
+            date=date.today(),
+            time=time(10, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=10,
+            unit="kg",
+            organization=org,
+        )
+        second = OperationEntry.objects.create(
+            type="DAILY",
+            date=date.today(),
+            time=time(10, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=20,
+            unit="kg",
+            organization=org,
+        )
+        third = OperationEntry.objects.create(
+            type="DAILY",
+            date=date.today(),
+            time=time(10, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=30,
+            unit="kg",
+            organization=org,
+        )
+
+        response = tenant_admin_client.get(
+            f"/api/operations/?type=DAILY&date_from={date.today()}&date_to={date.today()}"
+        )
+
+        assert response.status_code == 200
+        ids = [row["id"] for row in response.data["results"]]
+        assert ids[:3] == [third.id, second.id, first.id]
+
     def test_filter_by_date_range(self, tenant_admin_client, org, kitchen, product):
         yesterday = date.today() - timedelta(days=1)
         tomorrow = date.today() + timedelta(days=1)
@@ -194,6 +236,40 @@ class TestLastIncomingPrice:
         assert response.status_code == 200
         assert response.data["price"] == "95000.00"
         assert response.data["unit"] == "kg"
+
+    def test_returns_newest_created_price_when_date_time_tie(
+        self, tenant_admin_client, org, kitchen, product
+    ):
+        OperationEntry.objects.create(
+            type="INCOMING",
+            date=date.today(),
+            time=time(10, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=10,
+            unit="kg",
+            price=80000,
+            organization=org,
+        )
+        latest = OperationEntry.objects.create(
+            type="INCOMING",
+            date=date.today(),
+            time=time(10, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=10,
+            unit="kg",
+            price=120000,
+            organization=org,
+        )
+
+        response = tenant_admin_client.get(f"/api/operations/last-incoming/{product.id}/")
+
+        assert response.status_code == 200
+        assert response.data["price"] == "120000.00"
+        assert response.data["unit_price"] == "12000.00"
+        assert response.data["quantity"] == "10.000"
+        assert latest.id > 0
 
     def test_returns_null_when_no_incoming(self, tenant_admin_client, org, kitchen, product):
         response = tenant_admin_client.get(f"/api/operations/last-incoming/{product.id}/")

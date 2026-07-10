@@ -1,0 +1,149 @@
+{
+  "files": [
+    "billing-desktop.png",
+    "billing-mobile.png",
+    "admin-desktop.png",
+    "admin-detail-desktop.png",
+    "admin-audit-desktop.png",
+    "admin-mobile.png"
+  ],
+  "states": [
+    {
+      "label": "billing-desktop",
+      "url": "http://localhost:3000/settings",
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "overflowX": false,
+      "textSample": "MM\nMARGA\nMANAGER\nГЛАВНОЕ МЕНЮ\nГлавная\nВвод данных\nКухни\nПродукты\nРАЗНОЕ\nНастройки\nВыйти\nНастройки\n\n06.07.26\n\nRU\nДобрый день, Шеф\nШеф-повар\nJP\nОбщие\nСотрудники\nТарифы и Оплата\nCURRENT PLAN\nPRO\nUSERS\n2 / 20\nТарифы и Оплата\n\nУправление подпиской и оплатой.\n\nБазовый тариф\nБесплатно\nКухни: 3\nПользователи: 10\nBasic Reporting\nПонизить\nТЕКУЩИЙ ТАРИФ\nПро тариф\n49,000 UZS/ мес\nКухни: 10\nПользователи: 50\nРасширенная аналитика\nПриоритетная поддержка\nВаш тариф\nEnterprise\n199,000 UZS/ мес\nUnlimited Everything\nDedicated API\nSLA\nCustom Onboarding\nУлучшить",
+      "hasNaN": false,
+      "hasUndefined": false,
+      "tables": []
+    },
+    {
+      "label": "billing-mobile",
+      "url": "http://localhost:3000/settings",
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "overflowX": false,
+      "textSample": "MM\nMARGA\nMANAGER\nГЛАВНОЕ МЕНЮ\nГлавная\nВвод данных\nКухни\nПродукты\nРАЗНОЕ\nНастройки\nВыйти\nMM\nНастройки\n\n06.07.26\n\nRU\nJP\nОбщие\nСотрудники\nТарифы и Оплата\nCURRENT PLAN\nPRO\nUSERS\n2 / 20\nТарифы и Оплата\n\nУправление подпиской и оплатой.\n\nБазовый тариф\nБесплатно\nКухни: 3\nПользователи: 10\nBasic Reporting\nПонизить\nТЕКУЩИЙ ТАРИФ\nПро тариф\n49,000 UZS/ мес\nКухни: 10\nПользователи: 50\nРасширенная аналитика\nПриоритетная поддержка\nВаш тариф\nEnterprise\n199,000 UZS/ мес\nUnlimited Everything\nDedicated API\nSLA\nCustom Onboarding\nУлучшить",
+      "hasNaN": false,
+      "hasUndefined": false,
+      "tables": []
+    },
+    {
+      "label": "admin-detail-desktop",
+      "url": "http://localhost:3000/admin/organizations/8",
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "overflowX": false,
+      "textSample": "Marga Admin\ndev\nOrganizations\nАудит-лог\nLogout\n← Organizations\nMarga Kitchen\nACTIVE\nPRO\nInfo\nКухни\nПродукты\nПользователи\nПлатежи\nРедактировать\nContact\nAziz Karimov\nPhone\n+998901234567\nEmail\ninfo@marga.uz\nAddress\nТашкент, ул. Навои, 10\nKitchens\n3\nUsers\n2\nProducts\n20\nOperations\n100\nPlan expires\n—",
+      "hasNaN": false,
+      "hasUndefined": false,
+      "tables": []
+    },
+    {
+      "label": "admin-audit-desktop-filtered",
+      "url": "http://localhost:3000/admin/audit-log",
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "overflowX": false,
+      "textSample": "Marga Admin\ndev\nOrganizations\nАудит-лог\nLogout\nАудит-лог\nAll Event Types\nPLAN_CHANGE\nPLAN_REVERT\nORDER_STATE_CHANGE\nTXN_STATE_CHANGE\nKITCHEN_CREATED\nKITCHEN_UPDATED\nKITCHEN_DELETED\nPRODUCT_CREATED\nPRODUCT_UPDATED\nPRODUCT_DELETED\nUSER_CREATED\nUSER_UPDATED\nUSER_DELETED\nORG_SUSPENDED\nORG_UNSUSPENDED\nORG_DELETED\nTime\tТип события\tИнициатор\tOrg\tОбъект\tДо\tПосле\n7/4/2026, 6:18:02 AM\tPRODUCT_CREATED\tadmin\tMarga Kitchen\tProduct #62\t—\t{\"name\":\"Codex QA 1783127882651\",\"code\":\"QA1783127882651\"}\n7/4/2026, 5:41:15 AM\tUSER_CREATED\tdev\tMarga Kitchen\tUser #1\t—\t{\"username\":\"admin\",\"role\":\"TENANT_ADMIN\"}\n7/4/2026, 5:41:15 AM\tKITCHEN_CREATED\tdev\tMarga Kitchen\tKitchen #1\t—\t{\"name\":\"Main Kitchen\"}\n7/4/2026, 5:41:15 AM\tPLAN_CHANGE\tdev\tMarga Kitchen\tOrganization #8\t{\"plan\":\"BASIC\"}\t{\"plan\":\"PRO\"}\n7/4/2026, 5:41:15 AM\tORG_SUSPENDED\tdev\tOqtepa Lavash\tOrganization #9\t{\"status\":\"ACTIVE\"}\t{\"status\":\"SUSPENDED\"}\n6/10/2026, 10:43:41 AM\tUSER_CREATED\tdev\tMarga Kitchen\tUser #1\t—\t{\"username\":\"admin\",\"role\":\"TENANT_ADMIN\"}\n6/10/2026, 10:43:41 AM\tKITCHEN_CREATED\tdev\tMarga Kitchen\tKitchen #1\t—\t{\"name\":\"Main Kitchen\"}\n6/10/2026, 10:43:41 AM\tPLAN_CHANGE\tdev\tMarga Kitchen\tOrganization #8\t{\"plan\":\"BASIC\"}\t{\"plan\":\"PRO\"}\n6/10/2026, 10:43:41 AM\tORG_SUSPENDED\tdev\tOqtepa Lavash\tOrganization #9\t{\"status\":\"ACTIVE\"}\t{\"status\":\"SUSPENDED\"}",
+      "hasNaN": false,
+      "hasUndefined": false,
+      "tables": [
+        {
+          "rows": 9,
+          "scrollWidth": 1140,
+          "clientWidth": 1140,
+          "overflow": false
+        }
+      ]
+    },
+    {
+      "label": "admin-mobile",
+      "url": "http://localhost:3000/admin",
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "overflowX": false,
+      "textSample": "Marga Admin\ndev\nOrganizations\nАудит-лог\nLogout\nTOTAL TENANTS\n2\nMONTHLY REVENUE\n$800,000\nACTIVE RATE\n50%\nLICENSED USERS\n30\nOrganizations\nNew Tenant\nORGANIZATION\tPLAN\tSTATUS\tREVENUE\tACTIONS\nMarga Kitchen\nAziz Karimov\n\tPRO\tACTIVE\t$500,000\t\n\nOqtepa Lavash\nSardor Alimov\n\tBASIC\tSUSPENDED\t$300,000\t",
+      "hasNaN": false,
+      "hasUndefined": false,
+      "tables": [
+        {
+          "rows": 2,
+          "scrollWidth": 622,
+          "clientWidth": 622,
+          "overflow": false
+        }
+      ]
+    },
+    {
+      "label": "admin-desktop",
+      "url": "http://localhost:3000/admin",
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "overflowX": false,
+      "textSample": "Marga Admin\ndev\nOrganizations\nАудит-лог\nLogout\nTOTAL TENANTS\n2\nMONTHLY REVENUE\n$800,000\nACTIVE RATE\n50%\nLICENSED USERS\n30\nOrganizations\nNew Tenant\nORGANIZATION\tPLAN\tSTATUS\tREVENUE\tACTIONS\nMarga Kitchen\nAziz Karimov\n\tPRO\tACTIVE\t$500,000\t\n\nOqtepa Lavash\nSardor Alimov\n\tBASIC\tSUSPENDED\t$300,000\t",
+      "hasNaN": false,
+      "hasUndefined": false,
+      "tables": [
+        {
+          "rows": 2,
+          "scrollWidth": 1154,
+          "clientWidth": 1154,
+          "overflow": false
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "billingDesktop": {
+      "noHashUrl": true,
+      "hasPlans": true,
+      "hasPrices": true,
+      "currentPlanPro": true,
+      "emptyHistoryHidden": true
+    },
+    "adminDesktop": {
+      "noHashUrl": true,
+      "hasMarga": true,
+      "hasOqtepa": true,
+      "hasMetrics": true
+    },
+    "adminDetail": {
+      "noHashUrl": true,
+      "hasKitchensCount": true,
+      "hasProductsCount": true,
+      "hasOperationsCount": true,
+      "hasTabs": true
+    },
+    "auditLog": {
+      "noHashUrl": true,
+      "visibleRowsBefore": true,
+      "filterUserCreated": true,
+      "hasOldNewColumns": true
+    }
+  },
+  "console": {
+    "billingDesktop": [
+      "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation"
+    ],
+    "billingMobile": [
+      "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation"
+    ],
+    "adminDesktop": [
+      "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation"
+    ],
+    "adminMobile": [
+      "warning: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation"
+    ]
+  }
+}

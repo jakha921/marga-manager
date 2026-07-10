@@ -1,5 +1,9 @@
 import pytest
+from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken
+
+from apps.accounts.models import User
+from apps.organizations.models import Organization
 
 
 @pytest.mark.django_db
@@ -19,6 +23,91 @@ class TestLogin:
             {"username": "tenantadmin", "password": "wrongpass"},
         )
         assert response.status_code == 401
+
+
+@pytest.mark.django_db
+class TestRegister:
+    def test_register_creates_org_and_owner(self, api_client):
+        response = api_client.post(
+            "/api/auth/register/",
+            {
+                "organizationName": "New Cafe",
+                "ownerName": "Ali Valiyev",
+                "phone": "+998 90 123 45 67",
+                "password": "securepass123",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+        assert "access" in response.data
+        assert "refresh" in response.data
+        user = User.objects.get(username="998901234567")
+        org = user.organization
+        assert user.role == User.Role.TENANT_ADMIN
+        assert user.full_name == "Ali Valiyev"
+        assert org.name == "New Cafe"
+        assert org.phone == "998901234567"
+        assert org.plan == Organization.Plan.BASIC
+        assert org.status == Organization.Status.ACTIVE
+        assert org.mrr == 0
+        assert org.plan_expires_at is not None
+        days = org.plan_expires_at - timezone.now()
+        assert timezone.timedelta(days=13, hours=23) <= days <= timezone.timedelta(days=14)
+
+    def test_register_rejects_duplicate_phone(self, api_client, tenant_admin):
+        tenant_admin.username = "998901234567"
+        tenant_admin.save(update_fields=["username"])
+
+        response = api_client.post(
+            "/api/auth/register/",
+            {
+                "organizationName": "Duplicate Cafe",
+                "ownerName": "Ali Valiyev",
+                "phone": "+998 90 123 45 67",
+                "password": "securepass123",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+
+    def test_register_rejects_weak_password(self, api_client):
+        response = api_client.post(
+            "/api/auth/register/",
+            {
+                "organizationName": "Weak Cafe",
+                "ownerName": "Ali Valiyev",
+                "phone": "+998 90 765 43 21",
+                "password": "123",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert not User.objects.filter(username="998907654321").exists()
+
+    def test_register_ignores_public_role_and_plan_fields(self, api_client):
+        response = api_client.post(
+            "/api/auth/register/",
+            {
+                "organizationName": "Safe Cafe",
+                "ownerName": "Ali Valiyev",
+                "phone": "+998 90 555 44 33",
+                "password": "securepass123",
+                "role": "SUPER_ADMIN",
+                "plan": "PRO",
+                "status": "SUSPENDED",
+                "maxUsers": 999,
+            },
+            format="json",
+        )
+
+        assert response.status_code == 201
+        user = User.objects.get(username="998905554433")
+        assert user.role == User.Role.TENANT_ADMIN
+        assert user.organization.plan == Organization.Plan.BASIC
+        assert user.organization.status == Organization.Status.ACTIVE
 
     def test_login_nonexistent_user(self, api_client):
         response = api_client.post(

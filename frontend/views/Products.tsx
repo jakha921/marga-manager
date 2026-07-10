@@ -28,6 +28,7 @@ const Products: React.FC = () => {
   const [formData, setFormData] = useState<{ code: string; name: string; category: number | ''; unit: string }>({ code: '', name: '', category: '', unit: 'kg' });
   const [newCatName, setNewCatName] = useState('');
   const [editingCatId, setEditingCatId] = useState<string | number | null>(null);
+  const canManageProducts = userRole !== 'KITCHEN_USER';
 
   useEffect(() => {
     if (categories.length > 0 && !formData.category) {
@@ -154,14 +155,16 @@ const Products: React.FC = () => {
              <Filter size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
            </div>
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto px-2">
-           <Button variant="secondary" onClick={() => setIsCatModalOpen(true)}>
-             <ListTree size={16} /> Categories
-           </Button>
-           <Button onClick={handleOpenCreate} className="shadow-lg shadow-[var(--color-primary)]/10">
-             <Plus size={16} strokeWidth={3} /> {t('prod.add')}
-           </Button>
-        </div>
+        {canManageProducts && (
+          <div className="flex items-center gap-2 w-full sm:w-auto px-2">
+             <Button variant="secondary" onClick={() => setIsCatModalOpen(true)}>
+               <ListTree size={16} /> Categories
+             </Button>
+             <Button onClick={handleOpenCreate} className="shadow-lg shadow-[var(--color-primary)]/10">
+               <Plus size={16} strokeWidth={3} /> {t('prod.add')}
+             </Button>
+          </div>
+        )}
       </div>
 
       <div className="bg-[var(--bg-surface)] rounded-3xl shadow-card overflow-hidden border border-[var(--border-light)]">
@@ -196,16 +199,16 @@ const Products: React.FC = () => {
                      {product.unit}
                   </td>
                   <td className="py-5 px-8 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => handleOpenEdit(product)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)] rounded-lg transition-colors">
-                        <Edit2 size={16} />
-                      </button>
-                      {userRole !== 'KITCHEN_USER' && (
+                    {canManageProducts && (
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => handleOpenEdit(product)} className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)] rounded-lg transition-colors">
+                          <Edit2 size={16} />
+                        </button>
                         <button onClick={() => handleDeleteClick(product.id)} className="p-2 text-[var(--text-muted)] hover:text-red-600 hover:bg-[var(--bg-surface)] rounded-lg transition-colors">
                           <Trash2 size={16} />
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

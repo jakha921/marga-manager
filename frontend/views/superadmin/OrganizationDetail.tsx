@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { organizationsService } from '../../api/services/organizations';
 import AdminLayout from '../../components/AdminLayout';
 import type { OrganizationDetail as OrgDetailType } from '../../types';
@@ -85,7 +85,7 @@ const OrganizationDetail: React.FC = () => {
       <div style={{ padding: '32px 40px' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-          <a href="#/admin/" style={{ color: '#64748b', textDecoration: 'none', fontSize: 14 }}>← Organizations</a>
+          <Link to="/admin" style={{ color: '#64748b', textDecoration: 'none', fontSize: 14 }}>← Organizations</Link>
           <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{org.name}</h1>
           <StatusBadge status={org.status} />
           <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>

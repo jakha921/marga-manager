@@ -15,7 +15,12 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def disable_throttling(settings, monkeypatch):
-    high_rates = {"anon": "10000/minute", "user": "10000/minute", "login": "10000/minute"}
+    high_rates = {
+        "anon": "10000/minute",
+        "user": "10000/minute",
+        "login": "10000/minute",
+        "signup": "10000/minute",
+    }
     settings.REST_FRAMEWORK = {
         **settings.REST_FRAMEWORK,
         "DEFAULT_THROTTLE_CLASSES": [],
@@ -192,6 +197,6 @@ def order(db, org, tenant_admin):
     return Order.objects.create(
         organization=org,
         target_plan="PRO",
-        amount=4_900_000,
+        amount=58_900_000,
         created_by=tenant_admin,
     )

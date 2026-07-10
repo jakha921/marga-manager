@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import Modal from '../../components/Modal';
@@ -65,29 +66,30 @@ const AdminDashboard: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  const handleManageUsers = (orgId: string) => {
-    setSelectedOrgId(orgId);
+  const handleManageUsers = (orgId: string | number) => {
+    const organizationId = String(orgId);
+    setSelectedOrgId(organizationId);
     setEditingUserId(null);
     setUserForm({
       username: '',
       password: '',
       fullName: '',
       role: 'TENANT_ADMIN',
-      organizationId: orgId
+      organizationId
     });
     setIsUserModalOpen(true);
   };
 
   const handleSaveUser = () => {
-    if (!userForm.username || !userForm.password || !selectedOrgId) return;
+    if (!userForm.username || !selectedOrgId) return;
+    if (!editingUserId && !userForm.password) return;
 
     if (editingUserId) {
-        updateUser(editingUserId, userForm);
+        const { password: _password, organizationId: _organizationId, ...updates } = userForm;
+        updateUser(editingUserId, updates);
     } else {
-        addUser({
-            ...userForm as UserType,
-            organizationId: selectedOrgId
-        });
+        const { organizationId: _organizationId, ...createData } = userForm;
+        addUser({ ...createData, organization: selectedOrgId } as unknown as UserType);
     }
     
     // Reset form but keep modal open to add more
@@ -194,7 +196,7 @@ const AdminDashboard: React.FC = () => {
                  {filteredOrgs.map(org => (
                     <tr key={org.id} className="hover:bg-slate-700/50 transition-colors">
                        <td className="p-5">
-                          <a href={`#/admin/organizations/${org.id}`} className="font-bold text-white hover:text-blue-300">{org.name}</a>
+                          <Link to={`/admin/organizations/${org.id}`} className="font-bold text-white hover:text-blue-300">{org.name}</Link>
                           <div className="text-[var(--text-secondary)] text-xs">{org.contactName}</div>
                        </td>
                        <td className="p-5">

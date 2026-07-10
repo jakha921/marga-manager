@@ -13,9 +13,14 @@ const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabi
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const trapFocus = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') { onClose(); return; }
+    if (e.key === 'Escape') { onCloseRef.current(); return; }
     if (e.key !== 'Tab') return;
     const el = dialogRef.current;
     if (!el) return;
@@ -28,7 +33,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
     } else {
       if (document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
-  }, [onClose]);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;

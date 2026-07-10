@@ -1,3 +1,5 @@
+from django.utils import timezone
+from django.utils.text import slugify
 from rest_framework import serializers
 
 from .models import Organization
@@ -53,6 +55,21 @@ class AdminOrganizationSerializer(OrganizationSerializer):
 
     class Meta(OrganizationSerializer.Meta):
         read_only_fields = ["created_at"]
+        extra_kwargs = {"slug": {"required": False}}
+
+    def create(self, validated_data):
+        if not validated_data.get("slug"):
+            base_slug = slugify(validated_data.get("name", "")) or "organization"
+            slug = base_slug
+            counter = 2
+            while Organization.all_objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            validated_data["slug"] = slug
+        now = timezone.now()
+        validated_data.setdefault("plan_started_at", now)
+        validated_data.setdefault("plan_expires_at", now + timezone.timedelta(days=14))
+        return super().create(validated_data)
 
 
 class OrganizationDetailSerializer(AdminOrganizationSerializer):

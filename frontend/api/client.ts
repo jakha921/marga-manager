@@ -7,6 +7,14 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+const getErrorDetail = (data: unknown): string => {
+  if (typeof data === 'string') return data;
+  if (!data || typeof data !== 'object') return '';
+
+  const payload = data as { detail?: unknown; error?: unknown };
+  return getErrorDetail(payload.detail) || getErrorDetail(payload.error);
+};
+
 // Request interceptor: attach JWT token
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('km_access_token');
@@ -25,12 +33,11 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     // Suspended org — redirect to holding page
-    if (
-      error.response?.status === 403 &&
-      (error.response?.data?.detail as string)?.includes('приостановлена')
-    ) {
+    if (error.response?.status === 403 && getErrorDetail(error.response.data).includes('приостановлена')) {
       localStorage.setItem('km_org_suspended', 'true');
-      window.location.hash = '#/suspended';
+      if (window.location.pathname !== '/suspended') {
+        window.location.href = '/suspended';
+      }
       return Promise.reject(error);
     }
     if (error.response?.status === 401 && !originalRequest._retry) {

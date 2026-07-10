@@ -1,6 +1,19 @@
 from django.http import JsonResponse
 
-SUSPENDED_EXEMPT_PATHS = {"/api/auth/login/", "/api/auth/refresh/", "/api/health/"}
+SUSPENDED_EXEMPT_PATHS = {
+    "/api/auth/login/",
+    "/api/auth/refresh/",
+    "/api/auth/me/",
+    "/api/health/",
+    "/api/payments/plans/",
+}
+SUSPENDED_EXEMPT_PREFIXES = ("/api/payments/orders/",)
+
+
+def is_suspended_exempt_path(path: str) -> bool:
+    return path in SUSPENDED_EXEMPT_PATHS or any(
+        path.startswith(prefix) for prefix in SUSPENDED_EXEMPT_PREFIXES
+    )
 
 
 class OrganizationMiddleware:
@@ -32,7 +45,7 @@ class OrganizationMiddleware:
                 request.organization
                 and request.organization.status == "SUSPENDED"
                 and request.user.role != "SUPER_ADMIN"
-                and request.path not in SUSPENDED_EXEMPT_PATHS
+                and not is_suspended_exempt_path(request.path)
             ):
                 return JsonResponse(
                     {"detail": "Организация приостановлена. Обратитесь к администратору."},

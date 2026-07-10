@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import Input from '../components/Input';
@@ -8,6 +8,7 @@ import Button from '../components/Button';
 import { ChefHat, Lock, User, Globe } from 'lucide-react';
 
 const Login: React.FC = () => {
+  const showDemoCredentials = import.meta.env.DEV;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -90,22 +91,34 @@ const Login: React.FC = () => {
           </Button>
         </form>
 
-        <div className="mt-8 text-center border-t border-[var(--border-light)] pt-6">
-          <p className="text-xs text-[var(--text-muted)] mb-2 font-bold uppercase tracking-wider">{t('login.demo_creds')}</p>
-          <div className="text-xs text-left bg-[var(--bg-surface-2)] p-3 rounded-lg border border-[var(--border-light)]">
-              <div className="flex justify-between items-center mb-1">
-                 <span className="font-bold text-[var(--text-primary)]">{t('login.client_admin')}</span>
-                 <span className="text-[10px] text-[var(--text-muted)] uppercase">Tenant 1</span>
-              </div>
-              <div className="font-mono text-[var(--text-secondary)]">admin / admin123</div>
-
-              <div className="flex justify-between items-center mt-2 mb-1">
-                 <span className="font-bold text-[var(--text-primary)]">{t('login.client_admin')}</span>
-                 <span className="text-[10px] text-[var(--text-muted)] uppercase">Tenant 2</span>
-              </div>
-              <div className="font-mono text-[var(--text-secondary)]">oqtepa / admin123</div>
-          </div>
+        <div className="mt-6 text-center text-sm text-[var(--text-secondary)]">
+          {t('register.no_account')}{' '}
+          <Link to="/register" className="font-bold text-[var(--text-primary)] underline">
+            {t('register.title')}
+          </Link>
         </div>
+
+        {showDemoCredentials && (
+          <div className="mt-8 text-center border-t border-[var(--border-light)] pt-6">
+            <p className="text-xs text-[var(--text-muted)] mb-2 font-bold uppercase tracking-wider">{t('login.demo_creds')}</p>
+            <div className="text-xs text-left bg-[var(--bg-surface-2)] p-3 rounded-lg border border-[var(--border-light)]">
+                <div className="flex justify-between items-center mb-1">
+                   <span className="font-bold text-[var(--text-primary)]">{t('login.client_admin')}</span>
+                   <span className="text-[10px] text-[var(--text-muted)] uppercase">Tenant 1</span>
+                </div>
+                <div className="font-mono text-[var(--text-secondary)]">admin / admin123</div>
+
+                <div className="flex justify-between items-center mt-2 mb-1">
+                   <span className="font-bold text-[var(--text-primary)]">{t('login.client_admin')}</span>
+                   <span className="flex items-center gap-2">
+                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700">{t('login.access_limited')}</span>
+                     <span className="text-[10px] text-[var(--text-muted)] uppercase">Tenant 2</span>
+                   </span>
+                </div>
+                <div className="font-mono text-[var(--text-secondary)]">oqtepa / admin123</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

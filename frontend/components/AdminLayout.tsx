@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Building2, ClipboardList, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -8,14 +9,13 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { logout, user } = useAuth();
+  const { logout, username } = useAuth();
   const { t } = useLanguage();
-
-  const currentHash = window.location.hash;
+  const location = useLocation();
 
   const navItems = [
-    { href: '#/admin/', label: 'Organizations', icon: Building2 },
-    { href: '#/admin/audit-log', label: t('admin.audit_log'), icon: ClipboardList },
+    { to: '/admin', label: 'Organizations', icon: Building2 },
+    { to: '/admin/audit-log', label: t('admin.audit_log'), icon: ClipboardList },
   ];
 
   return (
@@ -32,16 +32,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       }}>
         <div style={{ padding: '0 20px 24px', borderBottom: '1px solid #334155' }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9' }}>Marga Admin</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{user?.username}</div>
+          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{username}</div>
         </div>
         <nav style={{ flex: 1, padding: '16px 8px' }}>
           {navItems.map(item => {
             const Icon = item.icon;
-            const isActive = currentHash === item.href || currentHash.startsWith(item.href.replace('/', ''));
+            const isActive = item.to === '/admin'
+              ? location.pathname === '/admin' || location.pathname.startsWith('/admin/organizations/')
+              : location.pathname === item.to;
             return (
-              <a
-                key={item.href}
-                href={item.href}
+              <Link
+                key={item.to}
+                to={item.to}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -58,7 +60,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               >
                 <Icon size={16} />
                 {item.label}
-              </a>
+              </Link>
             );
           })}
         </nav>

@@ -4,8 +4,8 @@ from django.db import migrations
 def seed_plan_configs(apps, schema_editor):
     PlanConfig = apps.get_model("payments", "PlanConfig")
     configs = [
-        {"plan": "BASIC", "price": 0, "max_kitchens": 3, "max_users": 10, "is_active": True},
-        {"plan": "PRO", "price": 4_900_000, "max_kitchens": 10, "max_users": 50, "is_active": True},
+        {"plan": "BASIC", "price": 29_900_000, "max_kitchens": 3, "max_users": 10, "is_active": True},
+        {"plan": "PRO", "price": 58_900_000, "max_kitchens": 10, "max_users": 50, "is_active": True},
         {
             "plan": "ENTERPRISE",
             "price": 19_900_000,

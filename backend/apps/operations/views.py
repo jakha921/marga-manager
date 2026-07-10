@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Count, Sum
 from django.db.models.functions import Coalesce
@@ -24,7 +24,9 @@ ZERO = Decimal("0")
 class OperationViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet):
     """CRUD операций."""
 
-    queryset = OperationEntry.objects.select_related("kitchen", "to_kitchen", "product").all()
+    queryset = OperationEntry.objects.select_related("kitchen", "to_kitchen", "product").order_by(
+        "-date", "-time", "-created_at", "-id"
+    )
     serializer_class = OperationEntrySerializer
     permission_classes = [IsKitchenUserOrAbove]
     filterset_class = OperationEntryFilter
@@ -40,12 +42,16 @@ class OperationViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelVie
                 product_id=product_id,
                 price__isnull=False,
             )
-            .order_by("-date", "-time")
+            .order_by("-date", "-time", "-created_at", "-id")
             .first()
         )
 
         if entry:
-            unit_price = entry.price / entry.quantity if entry.quantity else None
+            unit_price = (
+                (entry.price / entry.quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                if entry.quantity
+                else None
+            )
             return Response(
                 {
                     "price": str(entry.price),

@@ -6,9 +6,14 @@ from .base import *  # noqa: F401, F403
 
 DEBUG = False
 
-if not os.getenv("SECRET_KEY"):
-    raise ImproperlyConfigured("SECRET_KEY environment variable is required in production")
-SECRET_KEY = os.getenv("SECRET_KEY")  # no default in prod
+def _required_env(name: str) -> str:
+    value = os.getenv(name, "").strip()
+    if not value:
+        raise ImproperlyConfigured(f"{name} environment variable is required in production")
+    return value
+
+
+SECRET_KEY = _required_env("SECRET_KEY")
 
 DATABASES = {
     "default": {
@@ -38,14 +43,10 @@ SECURE_SSL_REDIRECT = False  # SSL handled by reverse proxy
 # Payme — значения управляются через Coolify env vars
 # prod: PAYME_CHECKOUT_URL=https://checkout.paycom.uz
 # stage: PAYME_CHECKOUT_URL=https://test.paycom.uz
-PAYME_MERCHANT_ID = os.getenv("PAYME_MERCHANT_ID", "")
-PAYME_MERCHANT_KEY = os.getenv("PAYME_MERCHANT_KEY", "")
+PAYME_MERCHANT_ID = _required_env("PAYME_MERCHANT_ID")
+PAYME_MERCHANT_KEY = _required_env("PAYME_MERCHANT_KEY")
 PAYME_CHECKOUT_URL = os.getenv("PAYME_CHECKOUT_URL", "https://checkout.paycom.uz")
-PAYME_CALLBACK_URL = os.getenv("PAYME_CALLBACK_URL", "")
-if not PAYME_CALLBACK_URL:
-    import warnings
-
-    warnings.warn("PAYME_CALLBACK_URL is empty — users won't be redirected after payment")
+PAYME_CALLBACK_URL = _required_env("PAYME_CALLBACK_URL")
 
 # Sentry
 import sentry_sdk  # noqa: E402

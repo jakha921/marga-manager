@@ -17,6 +17,7 @@ REST_FRAMEWORK = {
         "anon": "60/minute",
         "user": "300/minute",
         "login": "5/minute",
+        "signup": "5/minute",
     },
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.StandardResultsSetPagination",
     "DEFAULT_FILTER_BACKENDS": [

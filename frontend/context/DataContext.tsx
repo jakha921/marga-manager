@@ -96,6 +96,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    if (localStorage.getItem('km_org_suspended') === 'true') {
+      setAllOrgs([]);
+      setAllUsers([]);
+      setAllKitchens([]);
+      setAllCategories([]);
+      setAllProducts([]);
+      setAllOperations([]);
+      setLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
 
     const fetchData = async () => {
@@ -205,7 +216,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const upgradeSubscription = useCallback((_plan: SubscriptionPlan) => {
-    window.location.hash = '#/settings';
+    window.location.href = '/settings';
   }, []);
 
   const addKitchen = useCallback(async (data: Omit<Kitchen, 'id' | 'createdAt' | 'organizationId'>): Promise<{ success: boolean; error?: string }> => {

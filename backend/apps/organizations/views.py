@@ -21,7 +21,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     queryset = Organization.objects.annotate(
         kitchen_count=Count("kitchens", distinct=True),
         user_count=Count("users", distinct=True),
-    )
+    ).order_by("id")
     serializer_class = OrganizationSerializer
     search_fields = ["name", "slug"]
     filterset_fields = ["plan", "status"]

@@ -19,7 +19,7 @@ class Command(BaseCommand):
             return
 
         plans = [
-            ("PRO", 4_900_000),
+            ("PRO", 58_900_000),
             ("ENTERPRISE", 19_900_000),
         ]
 

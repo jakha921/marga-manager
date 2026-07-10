@@ -1,6 +1,7 @@
 import logging
 
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, permissions, status, viewsets
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.core.audit import create_audit_log
@@ -12,10 +13,11 @@ from .models import User
 from .serializers import (
     CustomTokenObtainPairSerializer,
     MeSerializer,
+    RegisterSerializer,
     UserCreateSerializer,
     UserSerializer,
 )
-from .throttles import LoginRateThrottle
+from .throttles import LoginRateThrottle, SignupRateThrottle
 
 logger = logging.getLogger("apps.accounts")
 
@@ -49,10 +51,23 @@ class MeView(generics.RetrieveAPIView):
         return self.request.user
 
 
+class RegisterView(generics.GenericAPIView):
+    """POST /api/auth/register/ — creates organization and owner account."""
+
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [SignupRateThrottle]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.save(), status=status.HTTP_201_CREATED)
+
+
 class UserViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet):
     """CRUD пользователей. Только TENANT_ADMIN+ может управлять."""
 
-    queryset = User.objects.select_related("organization").all()
+    queryset = User.objects.select_related("organization").order_by("id")
     permission_classes = [IsTenantAdmin]
     filterset_fields = ["role", "is_active"]
     search_fields = ["username", "full_name"]
