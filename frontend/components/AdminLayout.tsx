@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, ClipboardList, LogOut } from 'lucide-react';
+import { Building2, ClipboardList, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -12,85 +12,86 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { logout, username } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const navItems = [
     { to: '/admin', label: 'Organizations', icon: Building2 },
     { to: '/admin/audit-log', label: t('admin.audit_log'), icon: ClipboardList },
   ];
 
+  const sidebarContent = (
+    <>
+      <div className="border-b border-slate-700 px-5 pb-6">
+        <div className="text-lg font-bold text-slate-100">Marga Admin</div>
+        <div className="mt-1 text-xs text-slate-500">{username}</div>
+      </div>
+      <nav className="flex-1 px-2 py-4">
+        {navItems.map(item => {
+          const Icon = item.icon;
+          const isActive = item.to === '/admin'
+            ? location.pathname === '/admin' || location.pathname.startsWith('/admin/organizations/')
+            : location.pathname === item.to;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setMenuOpen(false)}
+              className={`mb-1 flex min-h-[44px] items-center gap-2.5 rounded-lg px-3 text-sm no-underline ${
+                isActive ? 'bg-sky-400/10 font-semibold text-sky-400' : 'font-normal text-slate-400'
+              }`}
+            >
+              <Icon size={16} />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="border-t border-slate-700 px-2 pt-4">
+        <button
+          onClick={logout}
+          className="flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 rounded-lg border-none bg-transparent px-3 text-sm text-slate-400"
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a' }}>
-      {/* Sidebar */}
-      <aside style={{
-        width: 220,
-        background: '#1e293b',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '24px 0',
-        borderRight: '1px solid #334155',
-        flexShrink: 0,
-      }}>
-        <div style={{ padding: '0 20px 24px', borderBottom: '1px solid #334155' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#f1f5f9' }}>Marga Admin</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{username}</div>
-        </div>
-        <nav style={{ flex: 1, padding: '16px 8px' }}>
-          {navItems.map(item => {
-            const Icon = item.icon;
-            const isActive = item.to === '/admin'
-              ? location.pathname === '/admin' || location.pathname.startsWith('/admin/organizations/')
-              : location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  color: isActive ? '#38bdf8' : '#94a3b8',
-                  background: isActive ? 'rgba(56,189,248,0.1)' : 'transparent',
-                  textDecoration: 'none',
-                  fontSize: 14,
-                  fontWeight: isActive ? 600 : 400,
-                  marginBottom: 4,
-                }}
-              >
-                <Icon size={16} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div style={{ padding: '16px 8px', borderTop: '1px solid #334155' }}>
-          <button
-            onClick={logout}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '10px 12px',
-              borderRadius: 8,
-              color: '#94a3b8',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 14,
-              width: '100%',
-            }}
-          >
-            <LogOut size={16} />
-            Logout
-          </button>
-        </div>
+    <div className="flex min-h-screen bg-slate-900">
+      {/* Десктопный сайдбар */}
+      <aside className="hidden w-[220px] shrink-0 flex-col border-r border-slate-700 bg-slate-800 py-6 md:flex">
+        {sidebarContent}
       </aside>
 
-      {/* Content */}
-      <main style={{ flex: 1, overflow: 'auto', color: '#f1f5f9' }}>
-        {children}
-      </main>
+      {/* Мобильный drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMenuOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-[240px] flex-col border-r border-slate-700 bg-slate-800 py-6">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Мобильная шапка */}
+        <header className="flex items-center gap-3 border-b border-slate-700 bg-slate-800 px-4 py-3 md:hidden">
+          <button
+            onClick={() => setMenuOpen(open => !open)}
+            aria-label="Menu"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-slate-300"
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+          <div className="text-base font-bold text-slate-100">Marga Admin</div>
+        </header>
+
+        <main className="min-w-0 flex-1 overflow-auto text-slate-100">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

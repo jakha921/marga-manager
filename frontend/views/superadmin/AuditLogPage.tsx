@@ -61,7 +61,7 @@ const AuditLogPage: React.FC = () => {
             onChange={e => { setFilterEvent(e.target.value); setPage(1); }}
             style={{ padding: '8px 12px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14 }}
           >
-            <option value="">All Event Types</option>
+            <option value="">{t('admin.audit.all_events')}</option>
             {Object.keys(EVENT_COLORS).map(k => (
               <option key={k} value={k}>{k}</option>
             ))}
@@ -84,7 +84,7 @@ const AuditLogPage: React.FC = () => {
                 {logs.map(log => (
                   <tr key={log.id} style={{ borderBottom: '1px solid #1e293b' }}>
                     <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                      {new Date(log.createdAt).toLocaleString()}
+                      {new Date(log.createdAt).toLocaleString('ru-RU')}
                     </td>
                     <td style={{ padding: '8px 10px' }}>
                       <span style={{

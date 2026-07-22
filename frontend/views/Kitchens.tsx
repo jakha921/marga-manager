@@ -164,7 +164,7 @@ const Kitchens: React.FC = () => {
                       </div>
                       <div>
                          <span className="block font-bold text-sm text-[var(--text-primary)]">{kitchen.name}</span>
-                         <span className="text-[11px] text-[var(--text-muted)] font-medium">ID: {String(kitchen.id).substring(0,6)}</span>
+                         
                       </div>
                     </div>
                   </td>

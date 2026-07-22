@@ -10,6 +10,7 @@ import AdminLayout from '../../components/AdminLayout';
 import { organizationsService } from '../../api/services/organizations';
 import { Building2, DollarSign, Users, Activity, Edit2, LogOut, Plus, Search, User, Trash2, Key, PauseCircle, PlayCircle } from 'lucide-react';
 import { SubscriptionPlan, Organization, User as UserType, UserRole } from '../../types';
+import { formatNumber } from '../../utils';
 
 const AdminDashboard: React.FC = () => {
   const { organizations, addOrganization, updateOrganization, users, addUser, updateUser, deleteUser } = useData();
@@ -128,49 +129,49 @@ const AdminDashboard: React.FC = () => {
   return (
     <AdminLayout>
     <div className="text-slate-100 font-body">
-      <main className="p-8 max-w-7xl mx-auto space-y-8">
+      <main className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8">
         
         {/* Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
+           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg"><Building2 size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Total Tenants</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Tenants</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{totalTenants}</div>
            </div>
-           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
+           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg"><DollarSign size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Monthly Revenue</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">MRR (UZS)</span>
               </div>
-              <div className="text-3xl font-display font-bold text-white">${mrr.toLocaleString()}</div>
+              <div className="text-3xl font-display font-bold text-white whitespace-nowrap">{formatNumber(mrr)}</div>
            </div>
-           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
+           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Activity size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Rate</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Rate</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{Math.round((activeTenants/totalTenants)*100)}%</div>
            </div>
-           <div className="bg-[var(--border-color)] p-6 rounded-2xl border border-slate-700">
+           <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-purple-500/20 text-purple-400 rounded-lg"><Users size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Licensed Users</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Licensed Users</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{totalUsers}</div>
            </div>
         </div>
 
         {/* Tenants Table */}
-        <div className="bg-[var(--border-color)] rounded-3xl border border-slate-700 overflow-hidden">
-           <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+        <div className="bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden">
+           <div className="p-6 border-b border-slate-700 flex flex-wrap justify-between items-center gap-3">
               <h2 className="text-xl font-bold font-display text-white">Organizations</h2>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                  <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
-                      className="bg-[var(--color-primary)] border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm text-[var(--bg-surface)] focus:outline-none focus:border-indigo-500"
+                      className="bg-slate-900 border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
                       placeholder="Search tenants..."
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
@@ -182,9 +183,10 @@ const AdminDashboard: React.FC = () => {
               </div>
            </div>
            
+           <div className="overflow-x-auto">
            <table className="w-full text-left">
               <thead>
-                <tr className="bg-[var(--color-primary)]/50 text-[var(--text-muted)] text-xs uppercase tracking-wider font-bold">
+                <tr className="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider font-bold">
                    <th className="p-5">Organization</th>
                    <th className="p-5">Plan</th>
                    <th className="p-5">Status</th>
@@ -197,10 +199,10 @@ const AdminDashboard: React.FC = () => {
                     <tr key={org.id} className="hover:bg-slate-700/50 transition-colors">
                        <td className="p-5">
                           <Link to={`/admin/organizations/${org.id}`} className="font-bold text-white hover:text-blue-300">{org.name}</Link>
-                          <div className="text-[var(--text-secondary)] text-xs">{org.contactName}</div>
+                          <div className="text-slate-400 text-xs">{org.contactName}</div>
                        </td>
                        <td className="p-5">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${org.plan === 'PRO' ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-600/20 text-[var(--text-muted)]'}`}>
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${org.plan === 'PRO' ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-600/40 text-slate-300'}`}>
                              {org.plan}
                           </span>
                        </td>
@@ -209,15 +211,15 @@ const AdminDashboard: React.FC = () => {
                              {org.status}
                           </span>
                        </td>
-                       <td className="p-5 text-right font-mono text-[var(--text-muted)]">
-                          ${Number(org.mrr).toLocaleString()}
+                       <td className="p-5 text-right font-mono text-slate-300 whitespace-nowrap">
+                          {formatNumber(Number(org.mrr))} UZS
                        </td>
                        <td className="p-5 text-right">
                           <div className="flex justify-end gap-2">
                             <button onClick={() => handleManageUsers(org.id)} className="p-2 hover:bg-slate-700 rounded-lg text-blue-400 hover:text-white transition-colors" title="Manage Users">
                                 <Users size={16} />
                             </button>
-                            <button onClick={() => handleEditOrg(org)} className="p-2 hover:bg-slate-700 rounded-lg text-[var(--text-muted)] hover:text-white transition-colors" title="Edit Org">
+                            <button onClick={() => handleEditOrg(org)} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors" title="Edit Org">
                                 <Edit2 size={16} />
                             </button>
                             {org.status === 'ACTIVE' ? (
@@ -235,6 +237,7 @@ const AdminDashboard: React.FC = () => {
                  ))}
               </tbody>
            </table>
+           </div>
         </div>
       </main>
 
@@ -243,11 +246,11 @@ const AdminDashboard: React.FC = () => {
          <div className="space-y-4">
             <Input label="Organization Name" value={editingOrg.name || ''} onChange={e => setEditingOrg({...editingOrg, name: e.target.value})} />
             <Input label="Contact Name" value={editingOrg.contactName || ''} onChange={e => setEditingOrg({...editingOrg, contactName: e.target.value})} />
-            <Input label="Monthly Revenue ($)" type="number" value={editingOrg.mrr || 0} onChange={e => setEditingOrg({...editingOrg, mrr: Number(e.target.value)})} />
+            <Input label="MRR (UZS)" type="number" value={editingOrg.mrr || 0} onChange={e => setEditingOrg({...editingOrg, mrr: Number(e.target.value)})} />
             
             <div className="grid grid-cols-2 gap-4">
                <div>
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase">Plan</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">Plan</label>
                   <select 
                     className="w-full p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-sm"
                     value={editingOrg.plan}
@@ -259,7 +262,7 @@ const AdminDashboard: React.FC = () => {
                   </select>
                </div>
                <div>
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase">Status</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">Status</label>
                   <select 
                     className="w-full p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl text-sm"
                     value={editingOrg.status}
@@ -288,7 +291,7 @@ const AdminDashboard: React.FC = () => {
             
             {/* Add/Edit User Form */}
             <div className="bg-[var(--bg-surface-2)] p-4 rounded-xl border border-[var(--border-color)] space-y-3">
-               <h4 className="text-xs font-bold uppercase text-[var(--text-secondary)] mb-2">{editingUserId ? 'Edit User' : 'Add New User'}</h4>
+               <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">{editingUserId ? 'Edit User' : 'Add New User'}</h4>
                <div className="grid grid-cols-2 gap-3">
                    <Input 
                       placeholder="Full Name" 
@@ -335,12 +338,12 @@ const AdminDashboard: React.FC = () => {
                   orgUsers.map(u => (
                      <div key={u.id} className="flex items-center justify-between p-3 border border-[var(--border-light)] rounded-xl hover:bg-[var(--bg-surface-2)] transition-colors">
                         <div className="flex items-center gap-3">
-                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${u.role === 'TENANT_ADMIN' ? 'bg-purple-100 text-purple-600' : 'bg-[var(--bg-surface-2)] text-[var(--text-secondary)]'}`}>
+                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${u.role === 'TENANT_ADMIN' ? 'bg-purple-100 text-purple-600' : 'bg-[var(--bg-surface-2)] text-slate-400'}`}>
                               {u.fullName.charAt(0)}
                            </div>
                            <div>
                               <div className="text-sm font-bold text-[var(--text-primary)]">{u.fullName}</div>
-                              <div className="text-xs text-[var(--text-secondary)] font-mono">@{u.username} • {u.role === 'TENANT_ADMIN' ? 'Admin' : 'User'}</div>
+                              <div className="text-xs text-slate-400 font-mono">@{u.username} • {u.role === 'TENANT_ADMIN' ? 'Admin' : 'User'}</div>
                            </div>
                         </div>
                         <div className="flex gap-1">

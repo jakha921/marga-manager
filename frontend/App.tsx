@@ -47,7 +47,7 @@ const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
 const RootRoute: React.FC = () => {
   const { isAuthenticated, userRole, loading } = useAuth();
-  const { kitchens, loading: dataLoading } = useData();
+  const { kitchens, loading: dataLoading, initialized } = useData();
 
   if (loading) {
     return <div className="min-h-screen bg-[var(--bg-primary)]" />;
@@ -65,7 +65,12 @@ const RootRoute: React.FC = () => {
     return <Navigate to="/quick-input" replace />;
   }
 
-  if (userRole === 'TENANT_ADMIN' && !dataLoading && kitchens.length === 0) {
+  // Приостановленная организация: kitchens пуст из-за 403, это не «новый пользователь»
+  if (userRole === 'TENANT_ADMIN' && localStorage.getItem('km_org_suspended') === 'true') {
+    return <Navigate to="/suspended" replace />;
+  }
+
+  if (userRole === 'TENANT_ADMIN' && initialized && !dataLoading && kitchens.length === 0) {
     return <Navigate to="/onboarding" replace />;
   }
 

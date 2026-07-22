@@ -158,7 +158,7 @@ const Products: React.FC = () => {
         {canManageProducts && (
           <div className="flex items-center gap-2 w-full sm:w-auto px-2">
              <Button variant="secondary" onClick={() => setIsCatModalOpen(true)}>
-               <ListTree size={16} /> Categories
+               <ListTree size={16} /> {t('prod.btn.categories')}
              </Button>
              <Button onClick={handleOpenCreate} className="shadow-lg shadow-[var(--color-primary)]/10">
                <Plus size={16} strokeWidth={3} /> {t('prod.add')}

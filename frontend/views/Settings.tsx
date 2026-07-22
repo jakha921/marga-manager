@@ -422,10 +422,10 @@ const Settings: React.FC = () => {
 
                     <Button
                       fullWidth
-                      variant={isCurrent ? 'secondary' : 'primary'}
+                      variant={isCurrent || isUpgrade ? 'primary' : 'secondary'}
                       disabled={isCreatingOrder || !planConfig}
                       onClick={() => handleUpgrade(plan.id)}
-                      className={isCurrent ? 'border-emerald-200 text-emerald-700 bg-emerald-50' : ''}
+                      className={isCurrent ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600' : ''}
                     >
                       {isCreatingOrder
                         ? '...'

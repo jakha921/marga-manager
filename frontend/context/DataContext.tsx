@@ -30,6 +30,7 @@ interface DataContextType {
   stats: DashboardStats;
   subscription: SubscriptionPlan;
   loading: boolean;
+  initialized: boolean;
 
   // Actions
   upgradeSubscription: (plan: SubscriptionPlan) => void;
@@ -82,6 +83,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [allOperations, setAllOperations] = useState<OperationEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  // true после первой завершённой загрузки данных — до этого нельзя решать,
+  // что у пользователя «нет кухонь» (иначе гонка уводит на /onboarding)
+  const [initialized, setInitialized] = useState<boolean>(false);
 
   // Fetch data from API on auth change
   useEffect(() => {
@@ -141,7 +145,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (err) {
         if (!controller.signal.aborted) console.error('Failed to fetch data:', err);
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
     };
 
@@ -367,6 +374,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     stats,
     subscription,
     loading,
+    initialized,
 
     upgradeSubscription,
     addKitchen,
@@ -386,7 +394,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     allOrgs, addOrganization, updateOrganization,
     allUsers, addUser, updateUser, deleteUser,
     currentOrganization, allKitchens, allProducts, allCategories, allOperations,
-    stats, subscription, loading,
+    stats, subscription, loading, initialized,
     upgradeSubscription,
     addKitchen, updateKitchen, deleteKitchen,
     addProduct, updateProduct, deleteProduct,

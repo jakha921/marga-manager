@@ -301,7 +301,7 @@ const Dashboard: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-[var(--bg-surface-2)] border-b border-[var(--border-light)]">
-                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display cursor-help" title={t('anl.col.dept.full')}>{t('anl.col.dept')}</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display cursor-help sticky left-0 z-10 bg-[var(--bg-surface-2)]" title={t('anl.col.dept.full')}>{t('anl.col.dept')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.start.full')}>{t('anl.col.start')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.in.full')}>{t('anl.col.in')}</th>
                 <th className="py-3 px-4 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider font-display text-right cursor-help" title={t('anl.col.exp.full')}>{t('anl.col.exp')}</th>
@@ -320,35 +320,35 @@ const Dashboard: React.FC = () => {
             <tbody className="divide-y divide-slate-50">
               {displayedTableStats.map(stat => (
                 <tr key={stat.kitchenId} className="hover:bg-[var(--bg-surface-2)] transition-colors">
-                  <td className="py-3 px-4 font-bold text-xs text-[var(--text-primary)]">{stat.kitchenName}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.beginningBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.incoming)}</td>
-                  <td className="py-3 px-4 text-xs text-blue-600 text-right font-mono">{formatNumber(stat.actualExpense)}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] font-bold text-right font-mono">{formatNumber(stat.endBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-emerald-600 font-medium text-right font-mono">{formatNumber(stat.salesRevenue)}</td>
-                  <td className="py-3 px-4 text-xs text-emerald-600 font-medium text-right font-mono">{formatNumber(stat.markupVal)}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{stat.markupPercent}%</td>
+                  <td className="py-3 px-4 font-bold text-xs text-[var(--text-primary)] sticky left-0 z-10 bg-[var(--bg-surface)]">{stat.kitchenName}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono whitespace-nowrap">{formatNumber(stat.beginningBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono whitespace-nowrap">{formatNumber(stat.incoming)}</td>
+                  <td className="py-3 px-4 text-xs text-blue-600 text-right font-mono whitespace-nowrap">{formatNumber(stat.actualExpense)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] font-bold text-right font-mono whitespace-nowrap">{formatNumber(stat.endBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-emerald-600 font-medium text-right font-mono whitespace-nowrap">{formatNumber(stat.salesRevenue)}</td>
+                  <td className="py-3 px-4 text-xs text-emerald-600 font-medium text-right font-mono whitespace-nowrap">{formatNumber(stat.markupVal)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono whitespace-nowrap">{stat.markupPercent}%</td>
                   {showTransfers && (
                       <>
-                        <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.transfersIn)}</td>
-                        <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono">{formatNumber(stat.transfersOut)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono whitespace-nowrap">{formatNumber(stat.transfersIn)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-secondary)] text-right font-mono whitespace-nowrap">{formatNumber(stat.transfersOut)}</td>
                       </>
                   )}
                 </tr>
               ))}
                <tr className="bg-[var(--bg-surface-2)] border-t border-[var(--border-color)] font-bold">
-                  <td className="py-3 px-4 text-xs text-[var(--text-primary)]">{t('anl.total')}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.beginningBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.incoming)}</td>
-                  <td className="py-3 px-4 text-xs text-blue-700 text-right font-mono">{formatNumber(tableTotals.actualExpense)}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.endBalance)}</td>
-                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(tableTotals.salesRevenue)}</td>
-                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono">{formatNumber(tableTotals.markupVal)}</td>
-                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{tableTotals.markupPercent}%</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] sticky left-0 z-10 bg-[var(--bg-surface-2)]">{t('anl.total')}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.beginningBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.incoming)}</td>
+                  <td className="py-3 px-4 text-xs text-blue-700 text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.actualExpense)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.endBalance)}</td>
+                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.salesRevenue)}</td>
+                  <td className="py-3 px-4 text-xs text-emerald-700 text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.markupVal)}</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono whitespace-nowrap">{tableTotals.markupPercent}%</td>
                   {showTransfers && (
                       <>
-                        <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.transfersIn)}</td>
-                        <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono">{formatNumber(tableTotals.transfersOut)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.transfersIn)}</td>
+                        <td className="py-3 px-4 text-xs text-[var(--text-primary)] text-right font-mono whitespace-nowrap">{formatNumber(tableTotals.transfersOut)}</td>
                       </>
                   )}
                </tr>
@@ -434,6 +434,12 @@ const Dashboard: React.FC = () => {
               </div>
           )}
 
+          {!chartData.dailyChartData.some(d => d.sales > 0 || d.cost > 0) ? (
+            <div className="flex h-[300px] w-full flex-col items-center justify-center gap-2 text-center">
+              <p className="text-sm font-semibold text-[var(--text-secondary)]">{t('dash.no_data')}</p>
+              <p className="text-xs text-[var(--text-muted)]">{t('dash.no_data.hint')}</p>
+            </div>
+          ) : (
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               {chartMode === 'daily' ? (
@@ -562,6 +568,7 @@ const Dashboard: React.FC = () => {
               )}
             </ResponsiveContainer>
           </div>
+          )}
         </div>
       </div>
     </div>
