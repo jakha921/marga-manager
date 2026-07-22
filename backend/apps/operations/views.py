@@ -1,6 +1,6 @@
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.db.models import Count, Sum
+from django.db.models import Count, Max, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers as drf_serializers
@@ -281,7 +281,29 @@ class KitchenReportView(APIView):
                 )
             }
 
-        beginning_map = _agg_by_kitchen(qs.filter(type=OperationEntry.Type.DAILY, date=date_from))
+        def _balance_by_kitchen(on_or_before):
+            """Остаток кухни: сумма последней DAILY-записи не позже указанной даты.
+
+            Fallback нужен, потому что остаток фиксируется не каждый день —
+            без него границы диапазона без записей дают нулевые остатки
+            и бессмысленную отрицательную маржу.
+            """
+            latest_dates = (
+                qs.filter(type=OperationEntry.Type.DAILY, date__lte=on_or_before)
+                .values("kitchen")
+                .annotate(last_date=Max("date"))
+            )
+            # ponytail: по запросу на кухню; лимит кухонь в тарифе <= 10 — норм
+            return {
+                row["kitchen"]: qs.filter(
+                    type=OperationEntry.Type.DAILY,
+                    kitchen=row["kitchen"],
+                    date=row["last_date"],
+                ).aggregate(total=Coalesce(Sum("price"), ZERO))["total"]
+                for row in latest_dates
+            }
+
+        beginning_map = _balance_by_kitchen(date_from)
         incoming_map = _agg_by_kitchen(
             qs.filter(
                 type=OperationEntry.Type.INCOMING,
@@ -289,7 +311,7 @@ class KitchenReportView(APIView):
                 date__lte=date_to,
             )
         )
-        end_balance_map = _agg_by_kitchen(qs.filter(type=OperationEntry.Type.DAILY, date=date_to))
+        end_balance_map = _balance_by_kitchen(date_to)
         transfers_out_map = _agg_by_kitchen(
             qs.filter(
                 type=OperationEntry.Type.TRANSFER,

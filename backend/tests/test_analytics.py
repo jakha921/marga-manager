@@ -259,6 +259,33 @@ class TestKitchenReport:
         response = tenant_admin_client.get("/api/analytics/kitchen-report/")
         assert response.status_code == 400
 
+    def test_balance_falls_back_to_latest_daily(self, tenant_admin_client, org, kitchen, product):
+        """Если на границах диапазона нет DAILY-записи, берётся последняя известная."""
+        from datetime import date as date_cls
+
+        OperationEntry.objects.create(
+            type="DAILY",
+            date=date_cls(2026, 6, 25),
+            time=time(8, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=100,
+            unit="kg",
+            price=500000,
+            organization=org,
+        )
+
+        # Диапазон 06-28..06-30: DAILY-записей внутри и на границах нет
+        response = tenant_admin_client.get(
+            "/api/analytics/kitchen-report/?date_from=2026-06-28&date_to=2026-06-30"
+        )
+        assert response.status_code == 200
+        k_data = next(k for k in response.data["kitchens"] if k["kitchen_id"] == kitchen.id)
+        assert Decimal(str(k_data["beginning_balance"])) == Decimal("500000")
+        assert Decimal(str(k_data["end_balance"])) == Decimal("500000")
+        # Остатки равны, движения нет — расход нулевой, а не отрицательный
+        assert Decimal(str(k_data["actual_expense"])) == Decimal("0")
+
     def test_kitchen_filter(self, tenant_admin_client, org, kitchen, kitchen2, product):
         today = timezone.now().date()
         OperationEntry.objects.create(
