@@ -8,4 +8,9 @@ export const organizationsService = {
   create: (data: Record<string, unknown>) => apiClient.post('/organizations/', data),
   update: (id: string | number, data: Record<string, unknown>) => apiClient.patch(`/organizations/${id}/`, data),
   delete: (id: string | number) => apiClient.delete(`/organizations/${id}/`),
+  extendSubscription: (id: string | number, days: number) =>
+    apiClient.post<{ planExpiresAt: string; status: string }>(
+      `/organizations/${id}/extend_subscription/`,
+      { days }
+    ),
 };

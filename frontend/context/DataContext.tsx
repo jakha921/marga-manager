@@ -14,6 +14,7 @@ interface DataContextType {
   organizations: Organization[];
   addOrganization: (org: Omit<Organization, 'id' | 'createdAt'>) => void;
   updateOrganization: (id: string | number, updates: Partial<Organization>) => void;
+  deleteOrganization: (id: string | number) => Promise<void>;
 
   // User Management Data
   users: User[];
@@ -195,6 +196,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const deleteOrganization = useCallback(async (id: string | number) => {
+    await organizationsService.delete(id);
+    setAllOrgs(prev => prev.filter(o => String(o.id) !== String(id)));
+  }, []);
+
   const addUser = useCallback(async (data: Omit<User, 'id' | 'createdAt'>) => {
     try {
       const { data: newUser } = await usersService.create(data as Record<string, unknown>);
@@ -358,6 +364,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     organizations: allOrgs,
     addOrganization,
     updateOrganization,
+    deleteOrganization,
 
     // Users
     users: allUsers,
@@ -391,7 +398,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     deleteOperation,
     fetchFilteredOperations,
   }), [
-    allOrgs, addOrganization, updateOrganization,
+    allOrgs, addOrganization, updateOrganization, deleteOrganization,
     allUsers, addUser, updateUser, deleteUser,
     currentOrganization, allKitchens, allProducts, allCategories, allOperations,
     stats, subscription, loading, initialized,

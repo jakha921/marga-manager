@@ -8,13 +8,15 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.core.audit import create_audit_log
 from apps.core.mixins import TenantQuerySetMixin
-from apps.core.permissions import IsTenantAdmin
+from apps.core.permissions import IsSuperAdmin, IsTenantAdmin
 
-from .models import Order, PlanConfig
+from .models import AuditLog, Order, PlanConfig
 from .serializers import (
     OrderDetailSerializer,
     OrderSerializer,
+    PlanConfigAdminSerializer,
     PlanConfigSerializer,
 )
 
@@ -40,13 +42,46 @@ class PlanConfigListView(generics.ListAPIView):
         return response
 
 
+class PlanConfigAdminViewSet(viewsets.ModelViewSet):
+    """Управление тарифами из React-админки. Только SUPER_ADMIN."""
+
+    queryset = PlanConfig.objects.order_by("plan")
+    serializer_class = PlanConfigAdminSerializer
+    permission_classes = [IsSuperAdmin]
+    http_method_names = ["get", "patch", "head", "options"]
+    pagination_class = None
+
+    def perform_update(self, serializer):
+        old = {
+            "price": serializer.instance.price,
+            "max_kitchens": serializer.instance.max_kitchens,
+            "max_users": serializer.instance.max_users,
+            "is_active": serializer.instance.is_active,
+        }
+        instance = serializer.save()
+        create_audit_log(
+            AuditLog.EventType.PLAN_CHANGE,
+            actor=self.request.user,
+            target_type="PlanConfig",
+            target_id=instance.id,
+            old_value=old,
+            new_value={
+                "price": instance.price,
+                "max_kitchens": instance.max_kitchens,
+                "max_users": instance.max_users,
+                "is_active": instance.is_active,
+            },
+            metadata={"reason": "plan_config_update", "plan": instance.plan},
+        )
+
+
 class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
     """CRUD для заказов на подписку. Только TENANT_ADMIN."""
 
     queryset = Order.objects.select_related("organization", "created_by").all()
     permission_classes = [IsTenantAdmin]
     http_method_names = ["get", "post", "head", "options"]
-    filterset_fields = ["status", "target_plan"]
+    filterset_fields = ["status", "target_plan", "organization"]
 
     def get_permissions(self):
         # Billing must stay reachable for suspended owners so they can pay.
@@ -135,9 +170,6 @@ class SubscriptionListView(TenantQuerySetMixin, ListAPIView):
 from django_filters.rest_framework import DjangoFilterBackend  # noqa: E402
 from rest_framework.filters import OrderingFilter  # noqa: E402
 
-from apps.core.permissions import IsSuperAdmin  # noqa: E402
-
-from .models import AuditLog  # noqa: E402
 from .serializers import AuditLogSerializer  # noqa: E402
 
 

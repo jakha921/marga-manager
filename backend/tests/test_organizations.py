@@ -203,6 +203,51 @@ class TestOrganizationLimits:
 
 
 @pytest.mark.django_db
+class TestExtendSubscription:
+    def test_super_admin_extends_expired_org(self, super_admin_client, org):
+        from django.utils import timezone
+
+        org.status = "SUSPENDED"
+        org.plan_expires_at = timezone.now() - timezone.timedelta(days=5)
+        org.save(update_fields=["status", "plan_expires_at"])
+
+        resp = super_admin_client.post(
+            f"/api/organizations/{org.id}/extend_subscription/", {"days": 30}, format="json"
+        )
+        assert resp.status_code == 200
+        org.refresh_from_db()
+        assert org.status == "ACTIVE"
+        # Истёкшая подписка продлевается от «сейчас», а не от прошлой даты
+        assert org.plan_expires_at > timezone.now() + timezone.timedelta(days=29)
+
+    def test_extend_adds_to_future_expiry(self, super_admin_client, org):
+        from django.utils import timezone
+
+        future = timezone.now() + timezone.timedelta(days=10)
+        org.plan_expires_at = future
+        org.save(update_fields=["plan_expires_at"])
+
+        resp = super_admin_client.post(
+            f"/api/organizations/{org.id}/extend_subscription/", {"days": 30}, format="json"
+        )
+        assert resp.status_code == 200
+        org.refresh_from_db()
+        assert abs((org.plan_expires_at - (future + timezone.timedelta(days=30))).seconds) < 5
+
+    def test_tenant_admin_cannot_extend(self, tenant_admin_client, org):
+        resp = tenant_admin_client.post(
+            f"/api/organizations/{org.id}/extend_subscription/", {"days": 30}, format="json"
+        )
+        assert resp.status_code == 403
+
+    def test_invalid_days_rejected(self, super_admin_client, org):
+        resp = super_admin_client.post(
+            f"/api/organizations/{org.id}/extend_subscription/", {"days": 9999}, format="json"
+        )
+        assert resp.status_code == 400
+
+
+@pytest.mark.django_db
 class TestSuspendedOrgBlocking:
     def test_suspended_org_api_blocked_for_tenant_admin(self, tenant_admin_client, org):
         org.status = "SUSPENDED"

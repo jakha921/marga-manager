@@ -17,17 +17,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор пользователя."""
+    """Сериализатор пользователя. Пароль опционален — задан, значит меняем."""
 
     organization_id = serializers.IntegerField(
         source="organization.id", read_only=True, default=None
     )
+    password = serializers.CharField(write_only=True, required=False, min_length=8)
 
     class Meta:
         model = User
         fields = [
             "id",
             "username",
+            "password",
             "full_name",
             "role",
             "organization_id",
@@ -35,6 +37,26 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
         ]
         read_only_fields = ["date_joined"]
+
+    def validate_password(self, value: str) -> str:
+        from django.contrib.auth.password_validation import (
+            validate_password as django_validate_password,
+        )
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        try:
+            django_validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        user = super().update(instance, validated_data)
+        if password:
+            user.set_password(password)
+            user.save(update_fields=["password"])
+        return user
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

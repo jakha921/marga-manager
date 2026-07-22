@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { organizationsService } from '../../api/services/organizations';
+import { paymentsService } from '../../api/services/payments';
 import AdminLayout from '../../components/AdminLayout';
-import type { OrganizationDetail as OrgDetailType } from '../../types';
+import type { OrganizationDetail as OrgDetailType, SubscriptionOrder } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
+import { formatNumber } from '../../utils';
 
 type TabKey = 'info' | 'kitchens' | 'products' | 'users' | 'payments' | 'edit';
 
@@ -38,6 +40,8 @@ const OrganizationDetail: React.FC = () => {
   const [editForm, setEditForm] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
+  const [orders, setOrders] = useState<SubscriptionOrder[]>([]);
+  const [extending, setExtending] = useState(false);
 
   const fetchOrg = async () => {
     if (!id) return;
@@ -52,6 +56,26 @@ const OrganizationDetail: React.FC = () => {
   };
 
   useEffect(() => { fetchOrg(); }, [id]);
+
+  useEffect(() => {
+    if (activeTab === 'payments' && id) {
+      paymentsService.getOrders({ organization: id, page_size: '50' })
+        .then(res => setOrders(res.data.results || []))
+        .catch(() => setOrders([]));
+    }
+  }, [activeTab, id]);
+
+  const handleExtend = async () => {
+    if (!id || extending) return;
+    if (!confirm(`Продлить подписку «${org?.name}» на 30 дней?`)) return;
+    setExtending(true);
+    try {
+      await organizationsService.extendSubscription(id, 30);
+      await fetchOrg();
+    } finally {
+      setExtending(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!id) return;
@@ -172,10 +196,53 @@ const OrganizationDetail: React.FC = () => {
         )}
 
         {activeTab === 'payments' && (
-          <div style={{ background: '#1e293b', borderRadius: 8, padding: 24 }}>
-            <div style={{ fontSize: 14, color: '#94a3b8' }}>Plan: <strong style={{ color: '#f1f5f9' }}>{org.plan}</strong></div>
-            <div style={{ fontSize: 14, color: '#94a3b8', marginTop: 8 }}>
-              Expires: <strong style={{ color: '#f1f5f9' }}>{org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString() : '—'}</strong>
+          <div style={{ display: 'grid', gap: 16 }}>
+            <div style={{ background: '#1e293b', borderRadius: 8, padding: 24, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 24 }}>
+              <div>
+                <div style={{ fontSize: 14, color: '#94a3b8' }}>Plan: <strong style={{ color: '#f1f5f9' }}>{org.plan}</strong></div>
+                <div style={{ fontSize: 14, color: '#94a3b8', marginTop: 8 }}>
+                  Expires: <strong style={{ color: '#f1f5f9' }}>{org.planExpiresAt ? new Date(org.planExpiresAt).toLocaleDateString('ru-RU') : '—'}</strong>
+                </div>
+              </div>
+              <button
+                onClick={handleExtend}
+                disabled={extending}
+                style={{ padding: '10px 20px', borderRadius: 8, background: '#22c55e', color: '#0f172a', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}
+              >
+                {extending ? '…' : '+30 дней'}
+              </button>
+            </div>
+
+            <div style={{ background: '#1e293b', borderRadius: 8, padding: 16, overflowX: 'auto' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Заказы</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <thead>
+                  <tr>
+                    {['Дата', 'План', 'Сумма (UZS)', 'Статус'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '6px 10px', color: '#64748b', fontSize: 12, borderBottom: '1px solid #334155' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map(o => (
+                    <tr key={o.id}>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #273244', whiteSpace: 'nowrap' }}>{o.createdAt ? new Date(o.createdAt).toLocaleDateString('ru-RU') : '—'}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #273244' }}>{o.targetPlan}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #273244', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{formatNumber(Math.round((o.amount || 0) / 100))}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #273244' }}>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 600,
+                          background: o.status === 'PAID' ? 'rgba(34,197,94,0.15)' : o.status === 'PENDING' ? 'rgba(234,179,8,0.15)' : 'rgba(148,163,184,0.15)',
+                          color: o.status === 'PAID' ? '#22c55e' : o.status === 'PENDING' ? '#eab308' : '#94a3b8',
+                        }}>{o.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                  {orders.length === 0 && (
+                    <tr><td colSpan={4} style={{ padding: 14, color: '#64748b' }}>Заказов пока нет</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

@@ -14,6 +14,25 @@ class PlanConfigSerializer(serializers.ModelSerializer):
         return obj.price // 100
 
 
+class PlanConfigAdminSerializer(serializers.ModelSerializer):
+    """Управление тарифами из React-админки (SUPER_ADMIN)."""
+
+    price_uzs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PlanConfig
+        fields = ["id", "plan", "price", "price_uzs", "max_kitchens", "max_users", "is_active"]
+        read_only_fields = ["plan"]
+
+    def get_price_uzs(self, obj) -> int:
+        return obj.price // 100
+
+    def validate_price(self, value: int) -> int:
+        if value < 0:
+            raise serializers.ValidationError("Цена не может быть отрицательной.")
+        return value
+
+
 class PaymeTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymeTransaction

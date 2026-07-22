@@ -16,8 +16,8 @@ export const paymentsService = {
   createOrder: (data: CreateOrderData) =>
     apiClient.post<SubscriptionOrder>('/payments/orders/', data),
 
-  getOrders: () =>
-    apiClient.get<{ results: SubscriptionOrder[] }>('/payments/orders/'),
+  getOrders: (params?: Record<string, string>) =>
+    apiClient.get<{ results: SubscriptionOrder[] }>('/payments/orders/', { params }),
 
   getOrder: (id: number) =>
     apiClient.get<SubscriptionOrder>(`/payments/orders/${id}/`),
@@ -27,4 +27,21 @@ export const paymentsService = {
 
   getPlans: () =>
     apiClient.get<PlanConfig[]>('/payments/plans/'),
+
+  // SUPER_ADMIN: управление тарифами
+  getPlanConfigs: () =>
+    apiClient.get<AdminPlanConfig[]>('/payments/plan-configs/'),
+
+  updatePlanConfig: (id: number, data: Partial<AdminPlanConfig>) =>
+    apiClient.patch<AdminPlanConfig>(`/payments/plan-configs/${id}/`, data),
 };
+
+export interface AdminPlanConfig {
+  id: number;
+  plan: string;
+  price: number;
+  priceUzs: number;
+  maxKitchens: number;
+  maxUsers: number;
+  isActive: boolean;
+}

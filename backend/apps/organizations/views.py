@@ -64,6 +64,44 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                 new_value={"status": new_status},
             )
 
+    @action(detail=True, methods=["post"], permission_classes=[IsSuperAdmin])
+    def extend_subscription(self, request, pk=None):
+        """POST /api/organizations/{id}/extend_subscription/ {days: 30} — ручное продление."""
+        from django.utils import timezone
+
+        org = self.get_object()
+        try:
+            days = int(request.data.get("days", 30))
+        except (TypeError, ValueError):
+            days = 0
+        if not 1 <= days <= 365:
+            return Response({"detail": "days должен быть от 1 до 365."}, status=400)
+
+        now = timezone.now()
+        base = org.plan_expires_at if org.plan_expires_at and org.plan_expires_at > now else now
+        old_expires = org.plan_expires_at
+        org.plan_expires_at = base + timezone.timedelta(days=days)
+        update_fields = ["plan_expires_at", "updated_at"]
+        if org.status == Organization.Status.SUSPENDED:
+            org.status = Organization.Status.ACTIVE
+            update_fields.append("status")
+        org.save(update_fields=update_fields)
+
+        create_audit_log(
+            AuditLog.EventType.PLAN_CHANGE,
+            actor=request.user,
+            organization=org,
+            target_type="Organization",
+            target_id=org.id,
+            old_value={"plan_expires_at": str(old_expires) if old_expires else None},
+            new_value={"plan_expires_at": str(org.plan_expires_at)},
+            metadata={"reason": "manual_extension", "days": days},
+        )
+        return Response(
+            {"plan_expires_at": org.plan_expires_at, "status": org.status},
+            status=200,
+        )
+
     @action(detail=True, methods=["get"], permission_classes=[IsSuperAdmin])
     def detail_view(self, request, pk=None):
         """GET /api/organizations/{id}/detail_view/ — детальный вид для SUPER_ADMIN."""

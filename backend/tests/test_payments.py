@@ -456,6 +456,25 @@ class TestOrderAPI:
             == 1
         )
 
+    def test_super_admin_sees_all_orders_with_org_filter(
+        self, super_admin_client, org, org2, tenant_admin
+    ):
+        Order.objects.create(
+            organization=org, target_plan="PRO", amount=58_900_000, created_by=tenant_admin
+        )
+        Order.objects.create(
+            organization=org2, target_plan="BASIC", amount=29_900_000, created_by=tenant_admin
+        )
+
+        all_resp = super_admin_client.get("/api/payments/orders/")
+        assert all_resp.status_code == 200
+        assert all_resp.data["count"] >= 2
+
+        filtered = super_admin_client.get(f"/api/payments/orders/?organization={org2.id}")
+        assert filtered.status_code == 200
+        assert filtered.data["count"] == 1
+        assert all(o["organization_id"] == org2.id for o in filtered.data["results"])
+
     def test_kitchen_user_cannot_create_order(self, kitchen_user_client):
         resp = kitchen_user_client.post(
             "/api/payments/orders/",
@@ -999,3 +1018,58 @@ class TestAuditLogAPI:
         super_admin_client.patch(f"/api/organizations/{org.id}/", {"status": "SUSPENDED"})
         after = AuditLog.objects.filter(event_type=AuditLog.EventType.ORG_SUSPENDED).count()
         assert after == before + 1
+
+
+@pytest.mark.django_db
+class TestPlanConfigAdmin:
+    """Управление тарифами из React-админки."""
+
+    def _ensure_config(self):
+        from apps.payments.models import PlanConfig
+
+        cfg, _ = PlanConfig.objects.get_or_create(
+            plan="PRO",
+            defaults={"price": 58_900_000, "max_kitchens": 10, "max_users": 50, "is_active": True},
+        )
+        return cfg
+
+    def test_tenant_admin_forbidden(self, tenant_admin_client):
+        self._ensure_config()
+        assert tenant_admin_client.get("/api/payments/plan-configs/").status_code == 403
+
+    def test_super_admin_lists_and_updates(self, super_admin_client):
+        cfg = self._ensure_config()
+        listing = super_admin_client.get("/api/payments/plan-configs/")
+        assert listing.status_code == 200
+
+        resp = super_admin_client.patch(
+            f"/api/payments/plan-configs/{cfg.id}/",
+            {"price": 65_000_000, "max_kitchens": 12},
+            format="json",
+        )
+        assert resp.status_code == 200
+        cfg.refresh_from_db()
+        assert cfg.price == 65_000_000
+        assert cfg.max_kitchens == 12
+
+    def test_update_invalidates_public_cache(self, super_admin_client, api_client):
+        cfg = self._ensure_config()
+        # Прогреть публичный кэш
+        first = api_client.get("/api/payments/plans/")
+        assert first.status_code == 200
+
+        super_admin_client.patch(
+            f"/api/payments/plan-configs/{cfg.id}/", {"price": 70_000_000}, format="json"
+        )
+        fresh = api_client.get("/api/payments/plans/")
+        pro = next(p for p in fresh.data if p["plan"] == "PRO")
+        assert pro["price"] == 70_000_000
+
+    def test_plan_name_is_read_only(self, super_admin_client):
+        cfg = self._ensure_config()
+        resp = super_admin_client.patch(
+            f"/api/payments/plan-configs/{cfg.id}/", {"plan": "ENTERPRISE"}, format="json"
+        )
+        assert resp.status_code == 200
+        cfg.refresh_from_db()
+        assert cfg.plan == "PRO"

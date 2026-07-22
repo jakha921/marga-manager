@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, ClipboardList, LogOut, Menu, X } from 'lucide-react';
+import { Building2, ClipboardList, CreditCard, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -16,6 +16,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const navItems = [
     { to: '/admin', label: 'Organizations', icon: Building2 },
+    { to: '/admin/plans', label: t('admin.plans_tab'), icon: CreditCard },
     { to: '/admin/audit-log', label: t('admin.audit_log'), icon: ClipboardList },
   ];
 

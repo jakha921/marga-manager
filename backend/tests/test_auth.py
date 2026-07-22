@@ -226,6 +226,44 @@ class TestUserCRUD:
         resp = tenant_admin_client.delete(f"/api/users/{kitchen_user.id}/")
         assert resp.status_code == 204
 
+    def test_update_with_password_changes_it(self, tenant_admin_client, api_client, kitchen_user):
+        resp = tenant_admin_client.patch(
+            f"/api/users/{kitchen_user.id}/",
+            {"password": "newsecurepass1"},
+        )
+        assert resp.status_code == 200
+        assert "password" not in resp.data
+
+        old_login = api_client.post(
+            "/api/auth/login/",
+            {"username": kitchen_user.username, "password": "pass123"},
+        )
+        assert old_login.status_code == 401
+        new_login = api_client.post(
+            "/api/auth/login/",
+            {"username": kitchen_user.username, "password": "newsecurepass1"},
+        )
+        assert new_login.status_code == 200
+
+    def test_update_without_password_keeps_it(self, tenant_admin_client, api_client, kitchen_user):
+        resp = tenant_admin_client.patch(
+            f"/api/users/{kitchen_user.id}/",
+            {"full_name": "Same Password"},
+        )
+        assert resp.status_code == 200
+        login = api_client.post(
+            "/api/auth/login/",
+            {"username": kitchen_user.username, "password": "pass123"},
+        )
+        assert login.status_code == 200
+
+    def test_update_with_short_password_rejected(self, tenant_admin_client, kitchen_user):
+        resp = tenant_admin_client.patch(
+            f"/api/users/{kitchen_user.id}/",
+            {"password": "short"},
+        )
+        assert resp.status_code == 400
+
 
 @pytest.mark.django_db
 class TestUserLimitEnforcement:

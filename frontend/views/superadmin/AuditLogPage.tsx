@@ -3,6 +3,7 @@ import AdminLayout from '../../components/AdminLayout';
 import auditLogsService from '../../api/services/auditLogs';
 import type { AuditLogEntry } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
+import { useData } from '../../context/DataContext';
 
 const EVENT_COLORS: Record<string, string> = {
   PLAN_CHANGE: '#818cf8',
@@ -30,12 +31,15 @@ const AuditLogPage: React.FC = () => {
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
   const [filterEvent, setFilterEvent] = useState('');
+  const [filterOrg, setFilterOrg] = useState('');
+  const { organizations } = useData();
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await auditLogsService.getAll({
         ...(filterEvent ? { eventType: filterEvent } : {}),
+        ...(filterOrg ? { organization: filterOrg } : {}),
         page,
       });
       setLogs(res.data.results);
@@ -43,7 +47,7 @@ const AuditLogPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, filterEvent]);
+  }, [page, filterEvent, filterOrg]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -64,6 +68,16 @@ const AuditLogPage: React.FC = () => {
             <option value="">{t('admin.audit.all_events')}</option>
             {Object.keys(EVENT_COLORS).map(k => (
               <option key={k} value={k}>{k}</option>
+            ))}
+          </select>
+          <select
+            value={filterOrg}
+            onChange={e => { setFilterOrg(e.target.value); setPage(1); }}
+            style={{ padding: '8px 12px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14 }}
+          >
+            <option value="">{t('admin.audit.all_orgs')}</option>
+            {organizations.map(o => (
+              <option key={o.id} value={String(o.id)}>{o.name}</option>
             ))}
           </select>
         </div>

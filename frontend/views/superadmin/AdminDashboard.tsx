@@ -13,9 +13,10 @@ import { SubscriptionPlan, Organization, User as UserType, UserRole } from '../.
 import { formatNumber } from '../../utils';
 
 const AdminDashboard: React.FC = () => {
-  const { organizations, addOrganization, updateOrganization, users, addUser, updateUser, deleteUser } = useData();
+  const { organizations, addOrganization, updateOrganization, deleteOrganization, users, addUser, updateUser, deleteUser } = useData();
   const { logout } = useAuth();
   const [suspendConfirm, setSuspendConfirm] = useState<{ org: Organization; action: 'suspend' | 'unsuspend' } | null>(null);
+  const [deleteOrgConfirm, setDeleteOrgConfirm] = useState<Organization | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,8 +87,9 @@ const AdminDashboard: React.FC = () => {
     if (!editingUserId && !userForm.password) return;
 
     if (editingUserId) {
-        const { password: _password, organizationId: _organizationId, ...updates } = userForm;
-        updateUser(editingUserId, updates);
+        const { password, organizationId: _organizationId, ...updates } = userForm;
+        // Пустой пароль = не менять
+        updateUser(editingUserId, password ? { ...updates, password } : updates);
     } else {
         const { organizationId: _organizationId, ...createData } = userForm;
         addUser({ ...createData, organization: selectedOrgId } as unknown as UserType);
@@ -231,6 +233,9 @@ const AdminDashboard: React.FC = () => {
                                 <PlayCircle size={16} />
                               </button>
                             )}
+                            <button onClick={() => setDeleteOrgConfirm(org)} className="p-2 hover:bg-slate-700 rounded-lg text-red-400 hover:text-white transition-colors" title="Delete">
+                                <Trash2 size={16} />
+                            </button>
                           </div>
                        </td>
                     </tr>
@@ -356,6 +361,24 @@ const AdminDashboard: React.FC = () => {
             </div>
          </div>
       </Modal>
+
+      {/* Delete Org Confirm */}
+      {deleteOrgConfirm && (
+        <Modal isOpen onClose={() => setDeleteOrgConfirm(null)} title="Удалить организацию?">
+          <p style={{ marginBottom: 20, color: '#94a3b8' }}>
+            Организация «{deleteOrgConfirm.name}» будет скрыта (мягкое удаление — данные сохраняются в базе). Пользователи потеряют доступ.
+          </p>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <Button onClick={() => setDeleteOrgConfirm(null)}>Отмена</Button>
+            <Button
+              variant="danger"
+              onClick={async () => { await deleteOrganization(deleteOrgConfirm.id); setDeleteOrgConfirm(null); }}
+            >
+              Удалить
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       {/* Suspend Confirm */}
       {suspendConfirm && (
