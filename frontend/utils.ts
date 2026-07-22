@@ -23,6 +23,17 @@ export const formatNumber = (num: number): string => {
   return num.toLocaleString('ru-RU').replace(/\u00A0/g, ' ');
 };
 
+// For editable inputs: thousands grouped by spaces, DOT as decimal separator.
+// Never use formatNumber (ru-RU comma) for values fed back into inputs —
+// input handlers strip commas and inflate the number 10-100x.
+export const formatInputNumber = (num: number): string => {
+  if (typeof num !== 'number' || isNaN(num)) return '';
+  const rounded = Math.round(num * 100) / 100;
+  const [int, dec] = String(rounded).split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return dec ? `${grouped}.${dec}` : grouped;
+};
+
 export const parseNumber = (str: string): number => {
   if (!str) return 0;
   // Remove spaces and replace comma with dot if user typed comma

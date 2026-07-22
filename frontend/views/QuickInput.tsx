@@ -9,11 +9,20 @@ import { OperationType, OperationEntry } from '../types';
 import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { formatDate, formatNumber, parseNumber } from '../utils';
+import { formatDate, formatNumber, formatInputNumber, parseNumber } from '../utils';
 import { Clock, CheckCircle2, Zap, Search, Filter, ScanLine, Edit2, Trash2, Calendar, MapPin, DollarSign, Package, Sigma, ChevronDown, Download } from 'lucide-react';
 import { operationsService } from '../api/services/operations';
 import { analyticsService } from '../api/services/analytics';
 import { OperationsSummaryResponse } from '../types';
+
+// Comma must become a dot BEFORE stripping non-numeric chars: autofilled/legacy
+// values may contain "4 500,5" and stripping the comma turns it into 45005.
+const sanitizeAndFormat = (val: string): { raw: string; formatted: string } => {
+  const raw = val.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+  const parts = raw.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return { raw, formatted: parts.join('.') };
+};
 
 const QuickInput: React.FC = () => {
   const { products, kitchens, addOperation, updateOperation, deleteOperation, fetchFilteredOperations } = useData();
@@ -118,14 +127,14 @@ const QuickInput: React.FC = () => {
             if (data.unitPrice) {
                 const unitPriceNum = parseFloat(data.unitPrice);
                 if (!isNaN(unitPriceNum)) {
-                    newPrice = formatNumber(unitPriceNum);
+                    newPrice = formatInputNumber(unitPriceNum);
                 }
             }
             setUnitPrice(prev => {
                 if (prev !== newPrice) {
                     if (quantity) {
                         const sum = Math.round(parseNumber(quantity) * parseNumber(newPrice) * 100) / 100;
-                        setTotalSum(sum ? formatNumber(sum) : '');
+                        setTotalSum(sum ? formatInputNumber(sum) : '');
                     }
                     return newPrice;
                 }
@@ -136,74 +145,53 @@ const QuickInput: React.FC = () => {
   }, [selectedProduct, opType]);
 
   const handleQuantityChange = (val: string) => {
-      // Allow only numbers and decimal point
-      const rawVal = val.replace(/[^0-9.]/g, '');
-      setQuantity(rawVal);
+      // Quantity stays ungrouped: it is parsed with Number() on submit
+      const { raw } = sanitizeAndFormat(val);
+      setQuantity(raw);
 
-      const parsedQty = parseFloat(rawVal);
+      const parsedQty = parseNumber(raw);
       const parsedPrice = parseNumber(unitPrice);
 
-      if (parsedPrice && !isNaN(parsedQty)) {
+      if (parsedPrice && parsedQty) {
           const sum = Math.round(parsedQty * parsedPrice * 100) / 100;
-          setTotalSum(sum ? formatNumber(sum) : '');
+          setTotalSum(sum ? formatInputNumber(sum) : '');
       }
   };
 
   const handleUnitPriceChange = (val: string) => {
-      // Remove non-numeric chars except dot
-      const raw = val.replace(/[^0-9.]/g, '');
+      const { raw, formatted } = sanitizeAndFormat(val);
       if (!raw) {
           setUnitPrice('');
           setTotalSum('');
           return;
       }
-      
-      // Format for display
-      const num = parseFloat(raw);
-      const formatted = formatNumber(num);
-      
-      // If user is typing decimal, don't format yet or it messes up
-      // Actually, simple formatNumber removes decimals if not handled carefully
-      // Let's just use the raw input for now but formatted display logic is tricky with standard input
-      // BETTER APPROACH: Just format on blur? User said "while typing".
-      // Let's try to format as they type but keep cursor position is hard.
-      // Simplified: Just use space separation for thousands.
-      
-      // Custom formatter that preserves partial input
-      const parts = raw.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-      const newVal = parts.join('.');
-      
-      setUnitPrice(newVal);
-      
-      const parsedQty = parseFloat(quantity);
-      const parsedPrice = parseFloat(raw);
-      
-      if (!isNaN(parsedQty) && !isNaN(parsedPrice)) {
+
+      setUnitPrice(formatted);
+
+      const parsedQty = parseNumber(quantity);
+      const parsedPrice = parseNumber(raw);
+
+      if (parsedQty && parsedPrice) {
           const sum = Math.round(parsedQty * parsedPrice * 100) / 100;
-          setTotalSum(formatNumber(sum));
+          setTotalSum(formatInputNumber(sum));
       }
   };
 
   const handleTotalSumChange = (val: string) => {
-      const raw = val.replace(/[^0-9.]/g, '');
+      const { raw, formatted } = sanitizeAndFormat(val);
       if (!raw) {
           setTotalSum('');
           return;
       }
 
-      const parts = raw.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-      const newVal = parts.join('.');
-      
-      setTotalSum(newVal);
-      
-      const parsedQty = parseFloat(quantity);
-      const parsedSum = parseFloat(raw);
-      
-      if (!isNaN(parsedQty) && parsedQty !== 0 && !isNaN(parsedSum)) {
-          const price = parsedSum / parsedQty;
-          setUnitPrice(price ? formatNumber(price) : '');
+      setTotalSum(formatted);
+
+      const parsedQty = parseNumber(quantity);
+      const parsedSum = parseNumber(raw);
+
+      if (parsedQty && parsedSum) {
+          const price = Math.round((parsedSum / parsedQty) * 100) / 100;
+          setUnitPrice(price ? formatInputNumber(price) : '');
       }
   };
 
@@ -266,11 +254,9 @@ const QuickInput: React.FC = () => {
     const uPrice = op.price && op.quantity ? (op.price / op.quantity) : 0;
     
     // Initialize formatted strings
-    setEditQtyStr(op.quantity ? formatNumber(op.quantity) : '');
-    setEditUnitPriceStr(uPrice ? formatNumber(uPrice) : '');
-    setEditTotalPriceStr(op.price ? formatNumber(op.price) : '');
-    
-    setEditUnitPriceStr(uPrice ? formatNumber(uPrice) : '');
+    setEditQtyStr(op.quantity ? formatInputNumber(op.quantity) : '');
+    setEditUnitPriceStr(uPrice ? formatInputNumber(uPrice) : '');
+    setEditTotalPriceStr(op.price ? formatInputNumber(op.price) : '');
     setIsEditModalOpen(true);
   };
 
@@ -279,63 +265,47 @@ const QuickInput: React.FC = () => {
   };
 
   const handleEditQtyChange = (val: string) => {
-      const raw = val.replace(/[^0-9.]/g, '');
-      
-      // Format with spaces
-      const parts = raw.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-      const formatted = parts.join('.');
-      
+      const { raw, formatted } = sanitizeAndFormat(val);
       setEditQtyStr(formatted);
-      
-      const qty = parseFloat(raw);
+
+      const qty = parseNumber(raw);
       const uPrice = parseNumber(editUnitPriceStr);
-      
-      setEditFormData(prev => ({ ...prev, quantity: isNaN(qty) ? 0 : qty }));
-      
-      if (!isNaN(qty) && uPrice !== undefined) {
-          const total = qty * uPrice;
+
+      setEditFormData(prev => ({ ...prev, quantity: qty }));
+
+      if (qty) {
+          const total = Math.round(qty * uPrice * 100) / 100;
           setEditFormData(prev => ({ ...prev, price: total }));
-          setEditTotalPriceStr(formatNumber(total));
+          setEditTotalPriceStr(formatInputNumber(total));
       }
   };
 
   const handleEditUnitPriceChange = (val: string) => {
-      const raw = val.replace(/[^0-9.]/g, '');
-      
-      const parts = raw.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-      const formatted = parts.join('.');
-      
+      const { raw, formatted } = sanitizeAndFormat(val);
       setEditUnitPriceStr(formatted);
-      
-      const uPrice = parseFloat(raw);
+
+      const uPrice = parseNumber(raw);
       const qty = editFormData.quantity || 0;
-      
-      if (!isNaN(uPrice)) {
-          const total = qty * uPrice;
+
+      if (raw) {
+          const total = Math.round(qty * uPrice * 100) / 100;
           setEditFormData(prev => ({ ...prev, price: total }));
-          setEditTotalPriceStr(formatNumber(total));
+          setEditTotalPriceStr(formatInputNumber(total));
       }
   };
 
   const handleEditTotalPriceChange = (val: string) => {
-      const raw = val.replace(/[^0-9.]/g, '');
-      
-      const parts = raw.split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-      const formatted = parts.join('.');
-      
+      const { raw, formatted } = sanitizeAndFormat(val);
       setEditTotalPriceStr(formatted);
-      
-      const total = parseFloat(raw);
-      const qty = editFormData.quantity || 0;
-      
-      setEditFormData(prev => ({ ...prev, price: isNaN(total) ? 0 : total }));
 
-      if (!isNaN(total) && qty > 0) {
-          const uPrice = total / qty;
-          setEditUnitPriceStr(formatNumber(uPrice));
+      const total = parseNumber(raw);
+      const qty = editFormData.quantity || 0;
+
+      setEditFormData(prev => ({ ...prev, price: total }));
+
+      if (total && qty > 0) {
+          const uPrice = Math.round((total / qty) * 100) / 100;
+          setEditUnitPriceStr(formatInputNumber(uPrice));
       }
   };
 
