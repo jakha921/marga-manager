@@ -57,7 +57,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.avg_monthly': 'Avg monthly',
     'dash.from': 'From',
     'dash.main_table': 'Main Table',
-    'dash.sales_cost_dynamics': 'Sales and Cost Dynamics',
+    'dash.sales_cost_dynamics': 'Sales and Purchases',
 
     // Quick Input
     'qi.title': 'Data Entry',
@@ -395,12 +395,13 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.chart.daily': 'Daily',
     'dash.chart.cumulative': 'Cumulative',
     'dash.chart.sales': 'Sales',
-    'dash.chart.cost': 'Cost',
+    'dash.chart.cost': 'Purchases',
     'dash.chart.cum_sales': 'Cumulative Sales',
-    'dash.chart.cum_cost': 'Cumulative Cost',
+    'dash.chart.cum_cost': 'Cumulative Purchases',
     'dash.chart.product': 'By Product',
-    'dash.chart.prod_expense': 'Product Expense',
-    'dash.chart.margin': 'Margin',
+    'dash.chart.prod_expense': 'Product consumption',
+    'dash.chart.margin': 'Daily difference',
+    'dash.chart.prod_hint': 'Consumption is calculated on days when a stock balance was recorded.',
 
     // Products — category modal
     'prod.manage_cat': 'Manage Categories',
@@ -494,7 +495,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.avg_monthly': 'Сред. месяц',
     'dash.from': 'С',
     'dash.main_table': 'Главная таблица',
-    'dash.sales_cost_dynamics': 'Динамика продаж и себестоимости',
+    'dash.sales_cost_dynamics': 'Продажи и закупки',
 
     // Quick Input
     'qi.title': 'Ввод данных',
@@ -832,12 +833,13 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.chart.daily': 'День',
     'dash.chart.cumulative': 'Накопительный',
     'dash.chart.sales': 'Продажи',
-    'dash.chart.cost': 'Расходы',
+    'dash.chart.cost': 'Закупки',
     'dash.chart.cum_sales': 'Накоп. Продажи',
-    'dash.chart.cum_cost': 'Накоп. Расходы',
+    'dash.chart.cum_cost': 'Накоп. закупки',
     'dash.chart.product': 'По продуктам',
-    'dash.chart.prod_expense': 'Расход продукта',
-    'dash.chart.margin': 'Маржа',
+    'dash.chart.prod_expense': 'Расход продукта (кол-во)',
+    'dash.chart.margin': 'Разница за день',
+    'dash.chart.prod_hint': 'Расход считается в дни, когда зафиксирован остаток.',
 
     // Products — category modal
     'prod.manage_cat': 'Управление категориями',
@@ -931,7 +933,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.avg_monthly': 'O\'rtacha oylik',
     'dash.from': 'Dan',
     'dash.main_table': 'Asosiy jadval',
-    'dash.sales_cost_dynamics': 'Sotish va tannarx dinamikasi',
+    'dash.sales_cost_dynamics': 'Sotuv va xaridlar',
 
     // Quick Input
     'qi.title': 'Ma\'lumot kiritish',
@@ -1269,12 +1271,13 @@ const translations: Record<Language, Record<string, string>> = {
     'dash.chart.daily': 'Kunlik',
     'dash.chart.cumulative': 'Yig\'indili',
     'dash.chart.sales': 'Sotuv',
-    'dash.chart.cost': 'Xarajat',
+    'dash.chart.cost': 'Xaridlar',
     'dash.chart.cum_sales': 'Jami Sotuv',
-    'dash.chart.cum_cost': 'Jami Xarajat',
+    'dash.chart.cum_cost': 'Jami xaridlar',
     'dash.chart.product': 'Mahsulotlar bo\'yicha',
-    'dash.chart.prod_expense': 'Mahsulot xarajati',
-    'dash.chart.margin': 'Marja',
+    'dash.chart.prod_expense': 'Mahsulot sarfi (miqdor)',
+    'dash.chart.margin': 'Kunlik farq',
+    'dash.chart.prod_hint': "Sarf qoldiq qayd etilgan kunlarda hisoblanadi.",
 
     // Products — category modal
     'prod.manage_cat': 'Kategoriyalarni boshqarish',

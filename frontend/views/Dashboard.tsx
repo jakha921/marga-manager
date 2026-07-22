@@ -154,74 +154,55 @@ const Dashboard: React.FC = () => {
         return { date: item.date, sales: runningSales, cost: runningCost };
     });
 
-    // Product Expense Chart Data
+    // Расход продукта. Остатки фиксируются не каждый день, поэтому расход
+    // считается интервалами между записями остатков и приписывается дню записи:
+    // расход = прошлый остаток + приходы интервала + трансферы_к_нам
+    //          − трансферы_от_нас − текущий остаток
+    // (та же формула, что в серверном kitchen-report).
     const productChartData: { date: string; value: number }[] = [];
 
     if (selectedProductId) {
         const pStart = new Date(prodHistStart);
         const pEnd = new Date(prodHistEnd);
 
-        const getBalance = (dateStr: string) => {
-            return operations
-                .filter(op =>
-                    String(op.productId) === selectedProductId &&
-                    op.type === 'DAILY' &&
-                    op.date === dateStr &&
-                    (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
-                )
-                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
-        };
+        const prodOps = operations.filter(op => String(op.productId) === selectedProductId);
+        const inKitchen = (op: typeof prodOps[number], field: 'kitchenId' | 'toKitchenId' = 'kitchenId') =>
+            prodHistKitchen === 'all' || String(op[field]) === prodHistKitchen;
 
-        const getIncoming = (dateStr: string) => {
-            return operations
-                .filter(op =>
-                    String(op.productId) === selectedProductId &&
-                    op.type === 'INCOMING' &&
-                    op.date === dateStr &&
-                    (prodHistKitchen === 'all' || String(op.kitchenId) === prodHistKitchen)
-                )
-                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
-        };
+        const balanceByDate = new Map<string, number>();
+        prodOps
+            .filter(op => op.type === 'DAILY' && inKitchen(op))
+            .forEach(op => balanceByDate.set(op.date, (balanceByDate.get(op.date) || 0) + (Number(op.quantity) || 0)));
+        const balanceDates = [...balanceByDate.keys()].sort();
 
-        const getTransferOut = (dateStr: string) => {
-            if (prodHistKitchen === 'all') return 0;
-            return operations
-                .filter(op =>
-                    String(op.productId) === selectedProductId &&
-                    op.type === 'TRANSFER' &&
-                    op.date === dateStr &&
-                    String(op.kitchenId) === prodHistKitchen
-                )
-                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
-        };
-
-        const getTransferIn = (dateStr: string) => {
-            if (prodHistKitchen === 'all') return 0;
-            return operations
-                .filter(op =>
-                    String(op.productId) === selectedProductId &&
-                    op.type === 'TRANSFER' &&
-                    op.date === dateStr &&
-                    String(op.toKitchenId) === prodHistKitchen
-                )
-                .reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
-        };
+        const sumInterval = (
+            type: string,
+            afterExclusive: string,
+            toInclusive: string,
+            field: 'kitchenId' | 'toKitchenId' = 'kitchenId'
+        ) =>
+            prodOps
+                .filter(op => op.type === type && op.date > afterExclusive && op.date <= toInclusive && inKitchen(op, field))
+                .reduce((acc, op) => acc + (Number(op.quantity) || 0), 0);
 
         for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
             const dateStr = d.toISOString().split('T')[0];
-            const prevD = new Date(d);
-            prevD.setDate(prevD.getDate() - 1);
-            const prevDateStr = prevD.toISOString().split('T')[0];
+            let consumption = 0;
 
-            const prevBalance = getBalance(prevDateStr);
-            const currBalance = getBalance(dateStr);
-            const incoming = getIncoming(dateStr);
-            const transferOut = getTransferOut(dateStr);
-            const transferIn = getTransferIn(dateStr);
-
-            let consumption = prevBalance + incoming - currBalance;
-            if (prodHistKitchen !== 'all') {
-                consumption = consumption + transferOut - transferIn;
+            if (balanceByDate.has(dateStr)) {
+                // Последняя запись остатка ДО этого дня — база интервала
+                const prevDate = [...balanceDates].reverse().find(bd => bd < dateStr);
+                if (prevDate) {
+                    const incoming = sumInterval('INCOMING', prevDate, dateStr);
+                    consumption =
+                        (balanceByDate.get(prevDate) || 0) + incoming - (balanceByDate.get(dateStr) || 0);
+                    if (prodHistKitchen !== 'all') {
+                        const transferOut = sumInterval('TRANSFER', prevDate, dateStr, 'kitchenId');
+                        const transferIn = sumInterval('TRANSFER', prevDate, dateStr, 'toKitchenId');
+                        consumption = consumption + transferIn - transferOut;
+                    }
+                }
+                // Первая запись остатка: базы нет, расход неизвестен — оставляем 0
             }
 
             productChartData.push({ date: formatDate(dateStr), value: consumption });
@@ -416,7 +397,8 @@ const Dashboard: React.FC = () => {
 
           {/* Product Chart Filters */}
           {chartMode === 'product' && (
-              <div className="flex flex-col sm:flex-row items-end gap-4 mb-6 bg-[var(--bg-surface-2)] p-4 rounded-2xl border border-[var(--border-light)]">
+              <div className="mb-6">
+              <div className="flex flex-col sm:flex-row items-end gap-4 bg-[var(--bg-surface-2)] p-4 rounded-2xl border border-[var(--border-light)]">
                   <div className="w-full sm:w-64">
                       <Select
                           label={t('qi.product')}
@@ -449,6 +431,8 @@ const Dashboard: React.FC = () => {
                           onChange={e => setProdHistEnd(e.target.value)}
                       />
                   </div>
+              </div>
+              <p className="mt-2 px-1 text-xs text-[var(--text-muted)]">{t('dash.chart.prod_hint')}</p>
               </div>
           )}
 
