@@ -80,11 +80,20 @@ class UserViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet)
     def perform_create(self, serializer):
         user = self.request.user
         org = user.organization
-        if user.role != "SUPER_ADMIN" and org and not org.can_add_user():
+        if user.role != "SUPER_ADMIN" and org:
+            from django.db import transaction
             from rest_framework.exceptions import PermissionDenied
 
-            raise PermissionDenied(f"Достигнут лимит пользователей ({org.max_users}).")
-        super().perform_create(serializer)
+            from apps.organizations.models import Organization
+
+            # Блокировка строки организации делает проверку лимита и insert атомарными
+            with transaction.atomic():
+                locked = Organization.objects.select_for_update().get(pk=org.pk)
+                if not locked.can_add_user():
+                    raise PermissionDenied(f"Достигнут лимит пользователей ({locked.max_users}).")
+                super().perform_create(serializer)
+        else:
+            super().perform_create(serializer)
         instance = serializer.instance
         logger.info("User created: %s by %s", instance.username, user.username)
         create_audit_log(

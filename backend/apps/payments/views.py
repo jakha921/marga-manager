@@ -1,6 +1,7 @@
 import base64
 
 from django.conf import settings
+from django.db import transaction
 from rest_framework import generics, viewsets
 from rest_framework import serializers as drf_serializers
 from rest_framework.decorators import action
@@ -57,16 +58,23 @@ class OrderViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
         return OrderSerializer
 
     def create(self, request, *args, **kwargs):
+        from apps.organizations.models import Organization
+
         target_plan = request.data.get("target_plan")
-        existing = Order.objects.filter(
-            organization=request.user.organization,
-            status__in=[Order.Status.PENDING, Order.Status.PAYING],
-            target_plan=target_plan,
-        ).first()
-        if existing:
-            serializer = self.get_serializer(existing)
-            return Response(serializer.data)
-        return super().create(request, *args, **kwargs)
+        with transaction.atomic():
+            # Блокировка строки организации сериализует создание заказов внутри org:
+            # два параллельных POST не создадут два PENDING-заказа на один план
+            if request.user.organization_id:
+                Organization.objects.select_for_update().get(pk=request.user.organization_id)
+            existing = Order.objects.filter(
+                organization=request.user.organization,
+                status__in=[Order.Status.PENDING, Order.Status.PAYING],
+                target_plan=target_plan,
+            ).first()
+            if existing:
+                serializer = self.get_serializer(existing)
+                return Response(serializer.data)
+            return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         serializer.save(

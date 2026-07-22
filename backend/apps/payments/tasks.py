@@ -40,31 +40,34 @@ def check_expiring_subscriptions_task():
 
 @shared_task(name="apps.payments.tasks.downgrade_expired_subscriptions_task")
 def downgrade_expired_subscriptions_task():
+    from django.db import transaction
     from django.utils import timezone
 
     from apps.organizations.models import Organization
     from apps.payments.models import AuditLog
 
-    expired_orgs = Organization.objects.filter(
-        plan_expires_at__lt=timezone.now(),
-        status=Organization.Status.ACTIVE,
-    )
-
     suspended = 0
-    for org in expired_orgs:
-        old_status = org.status
-        org.status = Organization.Status.SUSPENDED
-        org.save(update_fields=["status", "updated_at"])
-        AuditLog.objects.create(
-            event_type=AuditLog.EventType.ORG_SUSPENDED,
-            organization=org,
-            target_type="Organization",
-            target_id=org.id,
-            old_value={"status": old_status},
-            new_value={"status": org.status},
-            metadata={"reason": "subscription_expired"},
+    with transaction.atomic():
+        # select_for_update: параллельный запуск задачи не даст двойной suspend
+        # и дублей AuditLog (Postgres перепроверяет WHERE после снятия блокировки)
+        expired_orgs = Organization.objects.select_for_update().filter(
+            plan_expires_at__lt=timezone.now(),
+            status=Organization.Status.ACTIVE,
         )
-        logger.info("Suspended expired org=%s", org.id)
-        suspended += 1
+        for org in expired_orgs:
+            old_status = org.status
+            org.status = Organization.Status.SUSPENDED
+            org.save(update_fields=["status", "updated_at"])
+            AuditLog.objects.create(
+                event_type=AuditLog.EventType.ORG_SUSPENDED,
+                organization=org,
+                target_type="Organization",
+                target_id=org.id,
+                old_value={"status": old_status},
+                new_value={"status": org.status},
+                metadata={"reason": "subscription_expired"},
+            )
+            logger.info("Suspended expired org=%s", org.id)
+            suspended += 1
 
     return {"suspended": suspended}

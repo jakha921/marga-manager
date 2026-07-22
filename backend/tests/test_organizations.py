@@ -179,6 +179,28 @@ class TestOrganizationLimits:
             )
         assert org.can_add_user() is False
 
+    def test_user_limit_enforced_via_api(self, tenant_admin_client, org):
+        org.max_users = org.users.count()
+        org.save()
+
+        response = tenant_admin_client.post(
+            "/api/users/",
+            {"username": "over_limit", "password": "pass12345", "role": "KITCHEN_USER"},
+            format="json",
+        )
+        assert response.status_code == 403
+
+    def test_user_created_below_limit_via_api(self, tenant_admin_client, org):
+        org.max_users = org.users.count() + 1
+        org.save()
+
+        response = tenant_admin_client.post(
+            "/api/users/",
+            {"username": "within_limit", "password": "pass12345", "role": "KITCHEN_USER"},
+            format="json",
+        )
+        assert response.status_code == 201
+
 
 @pytest.mark.django_db
 class TestSuspendedOrgBlocking:

@@ -435,6 +435,27 @@ class TestOrderAPI:
         assert data["targetPlan"] == "ENTERPRISE"
         assert data["status"] == "PENDING"
 
+    def test_duplicate_order_returns_existing(self, tenant_admin_client, org, settings):
+        settings.PAYME_MERCHANT_ID = "test_merchant"
+        settings.PAYME_CHECKOUT_URL = "https://test.paycom.uz"
+        settings.PAYME_CALLBACK_URL = "http://localhost:3000"
+        payload = {"target_plan": "ENTERPRISE", "amount": 19_900_000}
+
+        first = tenant_admin_client.post("/api/payments/orders/", payload, format="json")
+        assert first.status_code == 201
+
+        second = tenant_admin_client.post("/api/payments/orders/", payload, format="json")
+        assert second.status_code == 200
+        assert second.json()["id"] == first.json()["id"]
+        assert (
+            Order.objects.filter(
+                organization=org,
+                target_plan="ENTERPRISE",
+                status__in=[Order.Status.PENDING, Order.Status.PAYING],
+            ).count()
+            == 1
+        )
+
     def test_kitchen_user_cannot_create_order(self, kitchen_user_client):
         resp = kitchen_user_client.post(
             "/api/payments/orders/",
@@ -848,6 +869,29 @@ class TestSubscriptionLogic:
         assert org.plan == "PRO"
         assert org.status == "SUSPENDED"
         assert result["suspended"] >= 1
+
+    def test_expired_task_rerun_creates_single_audit_log(self, org):
+        from django.utils import timezone
+
+        from apps.payments.models import AuditLog
+        from apps.payments.tasks import downgrade_expired_subscriptions_task
+
+        org.plan = "PRO"
+        org.status = "ACTIVE"
+        org.plan_expires_at = timezone.now() - timezone.timedelta(minutes=1)
+        org.save()
+
+        downgrade_expired_subscriptions_task()
+        downgrade_expired_subscriptions_task()
+
+        assert (
+            AuditLog.objects.filter(
+                event_type=AuditLog.EventType.ORG_SUSPENDED,
+                organization=org,
+                metadata__reason="subscription_expired",
+            ).count()
+            == 1
+        )
 
     def test_expired_task_keeps_unexpired_org_active(self, org):
         from django.utils import timezone

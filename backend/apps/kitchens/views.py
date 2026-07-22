@@ -1,9 +1,11 @@
+from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 
 from apps.core.audit import create_audit_log
 from apps.core.mixins import TenantCreateMixin, TenantQuerySetMixin
 from apps.core.permissions import IsTenantAdminOrReadOnly
+from apps.organizations.models import Organization
 from apps.payments.models import AuditLog
 
 from .models import Kitchen
@@ -21,9 +23,15 @@ class KitchenViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewS
 
     def perform_create(self, serializer):
         org = self.request.user.organization
-        if self.request.user.role != "SUPER_ADMIN" and org and not org.can_add_kitchen():
-            raise PermissionDenied(f"Достигнут лимит кухонь ({org.max_kitchens}).")
-        super().perform_create(serializer)
+        if self.request.user.role != "SUPER_ADMIN" and org:
+            # Блокировка строки организации делает проверку лимита и insert атомарными
+            with transaction.atomic():
+                locked = Organization.objects.select_for_update().get(pk=org.pk)
+                if not locked.can_add_kitchen():
+                    raise PermissionDenied(f"Достигнут лимит кухонь ({locked.max_kitchens}).")
+                super().perform_create(serializer)
+        else:
+            super().perform_create(serializer)
         instance = serializer.instance
         create_audit_log(
             AuditLog.EventType.KITCHEN_CREATED,
