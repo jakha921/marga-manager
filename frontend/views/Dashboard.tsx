@@ -4,7 +4,8 @@ import { useData } from '../context/DataContext';
 import { useLanguage } from '../context/LanguageContext';
 
 import { formatDate, formatNumber, formatCompactNumber } from '../utils';
-import { Filter, Download, TrendingUp, Calendar as CalendarIcon, BarChart3, LineChart, PieChart } from 'lucide-react';
+import { Filter, Download, TrendingUp, Calendar as CalendarIcon, BarChart3, LineChart, PieChart, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import Select from '../components/Select';
 import Input from '../components/Input';
@@ -38,7 +39,7 @@ const ChartTooltip = React.memo(({ active, payload, label }: {
 });
 
 const Dashboard: React.FC = () => {
-  const { stats, operations, kitchens, products } = useData();
+  const { stats, operations, kitchens, products, subscription } = useData();
   const { t } = useLanguage();
   // Helper to get current month range
   const getCurrentMonthRange = () => {
@@ -55,6 +56,7 @@ const Dashboard: React.FC = () => {
   const [startDate, setStartDate] = useState(() => localStorage.getItem('dash_start') || currentStart);
   const [endDate, setEndDate] = useState(() => localStorage.getItem('dash_end') || currentEnd);
   const [chartMode, setChartMode] = useState<'daily' | 'cumulative' | 'product'>('daily');
+  const [showProUpsell, setShowProUpsell] = useState(false);
 
   // Product Chart specific filters
   const [prodHistStart, setProdHistStart] = useState(() => localStorage.getItem('dash_prod_start') || currentStart);
@@ -70,6 +72,11 @@ const Dashboard: React.FC = () => {
   useEffect(() => localStorage.setItem('dash_kitchen', selectedKitchen), [selectedKitchen]);
   useEffect(() => localStorage.setItem('dash_start', startDate), [startDate]);
   useEffect(() => localStorage.setItem('dash_end', endDate), [endDate]);
+
+  const isBasicPlan = subscription === 'BASIC';
+  // Порог истории Basic: сервер всё равно клемпит, тут только предупреждение
+  const basicCutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().split('T')[0];
+  const historyClamped = isBasicPlan && startDate < basicCutoff;
   useEffect(() => localStorage.setItem('dash_prod_start', prodHistStart), [prodHistStart]);
   useEffect(() => localStorage.setItem('dash_prod_end', prodHistEnd), [prodHistEnd]);
   useEffect(() => localStorage.setItem('dash_prod_id', selectedProductId), [selectedProductId]);
@@ -284,6 +291,17 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Basic: история ограничена 30 днями (сервер клемпит, тут предупреждение) */}
+      {historyClamped && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          <Lock size={16} className="shrink-0" />
+          <span className="flex-1">{t('plan.history_limit')}</span>
+          <Link to="/settings" className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700">
+            {t('plan.upgrade_cta')}
+          </Link>
+        </div>
+      )}
+
       {/* 2. Detailed Department Analytics Table */}
       <div className="bg-[var(--bg-surface)] rounded-3xl shadow-card border border-[var(--border-light)] overflow-hidden">
         <div className="p-6 border-b border-[var(--border-light)] flex items-center justify-between">
@@ -387,10 +405,10 @@ const Dashboard: React.FC = () => {
                  {t('dash.chart.cumulative')}
                </button>
                <button
-                 onClick={() => setChartMode('product')}
+                 onClick={() => isBasicPlan ? setShowProUpsell(true) : setChartMode('product')}
                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartMode === 'product' ? 'bg-white shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-slate-700'}`}
                >
-                 <PieChart size={14} />
+                 {isBasicPlan ? <Lock size={14} /> : <PieChart size={14} />}
                  {t('dash.chart.product')}
                </button>
             </div>
@@ -571,6 +589,35 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Апселл: «По продуктам» доступен в Pro */}
+      {showProUpsell && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowProUpsell(false)} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-[var(--bg-surface)] p-6 text-center shadow-xl">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <Lock size={22} />
+            </div>
+            <h3 className="font-display text-lg font-bold">{t('plan.pro_feature.title')}</h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{t('plan.pro_feature.product_chart')}</p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowProUpsell(false)}
+                className="flex-1 rounded-xl border border-[var(--border-color)] px-4 py-2.5 text-sm font-semibold text-[var(--text-secondary)]"
+              >
+                {t('plan.upsell.later')}
+              </button>
+              <Link
+                to="/settings"
+                className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                {t('plan.upgrade_cta')}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -259,6 +259,44 @@ class TestKitchenReport:
         response = tenant_admin_client.get("/api/analytics/kitchen-report/")
         assert response.status_code == 400
 
+    def test_basic_plan_history_clamped_to_30_days(
+        self, tenant_admin_client, org, kitchen, product
+    ):
+        """BASIC не видит операции старше 30 дней; PRO видит."""
+        from django.utils import timezone as tz
+
+        old_date = tz.localdate() - tz.timedelta(days=45)
+        OperationEntry.objects.create(
+            type="SALE",
+            date=old_date,
+            time=time(12, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=1,
+            unit="kg",
+            price=99999,
+            organization=org,
+        )
+
+        org.plan = "BASIC"
+        org.save(update_fields=["plan"])
+        resp = tenant_admin_client.get(f"/api/operations/?date_from={old_date}&page_size=50")
+        assert resp.status_code == 200
+        assert all(o["price"] != "99999.00" for o in resp.data["results"])
+
+        report = tenant_admin_client.get(
+            f"/api/analytics/kitchen-report/?date_from={old_date}&date_to={tz.localdate()}"
+        )
+        k_data = next(k for k in report.data["kitchens"] if k["kitchen_id"] == kitchen.id)
+        assert Decimal(str(k_data["sales_revenue"])) == Decimal("0")
+
+        org.plan = "PRO"
+        org.save(update_fields=["plan"])
+        resp = tenant_admin_client.get(f"/api/operations/?date_from={old_date}&page_size=50")
+        assert any(
+            o["price"] == 99999 or str(o["price"]) == "99999.00" for o in resp.data["results"]
+        )
+
     def test_balance_falls_back_to_latest_daily(self, tenant_admin_client, org, kitchen, product):
         """Если на границах диапазона нет DAILY-записи, берётся последняя известная."""
         from datetime import date as date_cls

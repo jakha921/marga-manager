@@ -8,7 +8,7 @@ export const OPERATION_TYPES = [
 ] as const;
 
 export const PLAN_LIMITS: Record<SubscriptionPlan, { kitchens: number | string; users: number | string }> = {
-  BASIC: { kitchens: 3, users: 10 },
+  BASIC: { kitchens: 1, users: 10 },
   PRO: { kitchens: 10, users: 50 },
   ENTERPRISE: { kitchens: 'Unlimited', users: 'Unlimited' },
 };

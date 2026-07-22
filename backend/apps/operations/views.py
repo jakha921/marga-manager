@@ -1,8 +1,10 @@
+from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.db.models import Count, Max, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import serializers as drf_serializers
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -20,6 +22,28 @@ from .serializers import OperationEntrySerializer
 
 ZERO = Decimal("0")
 
+BASIC_HISTORY_DAYS = 30
+
+
+def _basic_history_cutoff(user):
+    """Порог глубины истории для тарифа BASIC (None — без ограничений).
+
+    Ограничение фичи тарифа: Basic видит последние 30 дней,
+    Pro и SUPER_ADMIN — всю историю.
+    """
+    org = getattr(user, "organization", None)
+    if user.role == "SUPER_ADMIN" or org is None or org.plan != "BASIC":
+        return None
+    return timezone.localdate() - timedelta(days=BASIC_HISTORY_DAYS)
+
+
+def _clamp_date_from(user, date_from):
+    """Не даёт date_from уйти глубже порога тарифа BASIC."""
+    cutoff = _basic_history_cutoff(user)
+    if cutoff is None or not date_from:
+        return date_from
+    return max(str(date_from), cutoff.isoformat())
+
 
 class OperationViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelViewSet):
     """CRUD операций."""
@@ -31,6 +55,13 @@ class OperationViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelVie
     permission_classes = [IsKitchenUserOrAbove]
     filterset_class = OperationEntryFilter
     search_fields = ["product__name"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        cutoff = _basic_history_cutoff(self.request.user)
+        if cutoff is not None:
+            qs = qs.filter(date__gte=cutoff)
+        return qs
 
     @action(detail=False, url_path="last-incoming/(?P<product_id>[^/.]+)")
     def last_incoming(self, request, product_id=None):
@@ -157,7 +188,6 @@ class DashboardView(APIView):
     permission_classes = [IsKitchenUserOrAbove]
 
     def get(self, request):
-        from django.utils import timezone
 
         today = timezone.now().date()
         user = request.user
@@ -246,6 +276,9 @@ class KitchenReportView(APIView):
         kitchen_filter = request.query_params.get("kitchen")
         user = request.user
         qs = _get_tenant_qs(user)
+        # Тариф BASIC видит отчёты только за последние 30 дней
+        date_from = _clamp_date_from(user, date_from)
+        date_to = max(str(date_to), date_from) if date_to else date_to
 
         # Кухни для отчёта
         kitchens_qs = Kitchen.objects.all()
@@ -498,6 +531,9 @@ class OperationsSummaryView(APIView):
 
     def get(self, request):
         qs = _get_tenant_qs(request.user)
+        cutoff = _basic_history_cutoff(request.user)
+        if cutoff is not None:
+            qs = qs.filter(date__gte=cutoff)
 
         # Фильтры
         op_type = request.query_params.get("type")

@@ -124,6 +124,24 @@ const Kitchens: React.FC = () => {
         </div>
       </div>
 
+      {/* Upsell в момент боли: лимит кухонь почти/полностью исчерпан */}
+      {subscription === 'BASIC' && kitchens.length >= maxKitchens * 0.8 && (
+        <div className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold ${
+          canAddKitchen ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-red-200 bg-red-50 text-red-800'
+        }`}>
+          <AlertTriangle size={16} className="shrink-0" />
+          <span className="flex-1">
+            {canAddKitchen ? t('plan.limit_near') : t('plan.limit_reached')} ({kitchens.length}/{maxKitchens})
+          </span>
+          <button
+            onClick={() => setIsUpgradeModalOpen(true)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white ${canAddKitchen ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'}`}
+          >
+            {t('plan.upgrade_cta')}
+          </button>
+        </div>
+      )}
+
       <div className="bg-[var(--bg-surface)] p-2.5 rounded-2xl shadow-card flex flex-col sm:flex-row items-center justify-between gap-4 border border-[var(--border-light)]">
         <div className="flex items-center gap-2 w-full sm:w-auto px-2">
            <Input 

@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import Select from '../components/Select';
 import Modal from '../components/Modal';
 import {
   Users,
@@ -20,8 +19,6 @@ import {
   Crown,
   AlertTriangle,
   Building2,
-  DollarSign,
-  Package,
   Save
 } from 'lucide-react';
 import { User as UserType, SubscriptionPlan, Organization } from '../types';
@@ -122,7 +119,8 @@ const Settings: React.FC = () => {
   };
 
   const handleSaveUser = () => {
-    if (!userForm.username || !userForm.password || !userForm.fullName) return;
+    if (!userForm.username || !userForm.fullName) return;
+    if (!editingUserId && !userForm.password) return; // пароль обязателен только при создании
     if (!currentOrganization) return;
 
     const userData = {
@@ -138,7 +136,8 @@ const Settings: React.FC = () => {
     }
 
     if (editingUserId) {
-        updateUser(editingUserId, userForm);
+        const { password, ...rest } = userForm;
+        updateUser(editingUserId, password ? userForm : rest);
     } else {
         addUser(userData);
     }
@@ -282,6 +281,22 @@ const Settings: React.FC = () => {
         {/* USERS TAB */}
         {activeTab === 'users' && (
            <div className="space-y-6">
+              {currentOrganization?.plan === 'BASIC' && tenantUsers.length >= maxUsers * 0.8 && (
+                <div className={`flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold ${
+                  canAddUser ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-red-200 bg-red-50 text-red-800'
+                }`}>
+                  <AlertTriangle size={16} className="shrink-0" />
+                  <span className="flex-1">
+                    {canAddUser ? t('plan.limit_near_users') : t('plan.limit_reached_users')} ({tenantUsers.length}/{maxUsers})
+                  </span>
+                  <button
+                    onClick={() => setActiveTab('billing')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white ${canAddUser ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    {t('plan.upgrade_cta')}
+                  </button>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                  <div>
                     <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{t('set.tab.users')}</h2>
@@ -556,57 +571,8 @@ const Settings: React.FC = () => {
                  </div>
               </div>
 
-              {/* Section 2: Finance */}
-              <div className="bg-[var(--bg-surface-2)] p-6 rounded-2xl border border-[var(--border-light)] space-y-6">
-                 <div className="flex items-center gap-3 text-[var(--text-primary)] font-bold border-b border-[var(--border-color)] pb-2 mb-4">
-                    <DollarSign size={20} className="text-[var(--text-muted)]" />
-                    {t('set.gen.finance')}
-                 </div>
-                 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Select 
-                       label={t('set.gen.currency')}
-                       options={[
-                         { value: 'UZS', label: 'Uzbek So\'m (UZS)' },
-                         { value: 'USD', label: 'US Dollar (USD)' },
-                         { value: 'EUR', label: 'Euro (EUR)' }
-                       ]}
-                       value={genForm.currency || 'UZS'}
-                       onChange={e => setGenForm({...genForm, currency: e.target.value})}
-                       className="bg-[var(--bg-surface)]"
-                    />
-                    <Input 
-                      label={t('set.gen.tax')} 
-                      type="number"
-                      value={genForm.taxRate || ''} 
-                      onChange={e => setGenForm({...genForm, taxRate: Number(e.target.value)})}
-                      placeholder="12"
-                      className="bg-[var(--bg-surface)]"
-                    />
-                 </div>
-              </div>
-
-              {/* Section 3: Inventory */}
-              <div className="bg-[var(--bg-surface-2)] p-6 rounded-2xl border border-[var(--border-light)] space-y-6">
-                 <div className="flex items-center gap-3 text-[var(--text-primary)] font-bold border-b border-[var(--border-color)] pb-2 mb-4">
-                    <Package size={20} className="text-[var(--text-muted)]" />
-                    {t('set.gen.inventory')}
-                 </div>
-                 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input 
-                      label={t('set.gen.low_stock')} 
-                      type="number"
-                      value={genForm.lowStockThreshold || ''} 
-                      onChange={e => setGenForm({...genForm, lowStockThreshold: Number(e.target.value)})}
-                      placeholder="10"
-                      className="bg-[var(--bg-surface)]"
-                    />
-                    <div className="flex items-center text-xs text-[var(--text-secondary)] pt-6">
-                       {t('set.threshold_help')}
-                    </div>
-                 </div>
-              </div>
+              {/* Секции «Финансы» и «Склад» скрыты: currency/taxRate/lowStockThreshold
+                  нигде не используются в логике. Поля остаются в БД. */}
            </div>
         )}
       </div>
