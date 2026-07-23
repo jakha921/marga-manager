@@ -55,11 +55,10 @@ class TestSuperAdminFullAccess:
         assert super_admin_client.get(f"/api/operations/{operation.id}/").status_code == 200
 
     def test_analytics(self, super_admin_client, product):
-        assert super_admin_client.get("/api/analytics/dashboard/").status_code == 200
-        assert (
-            super_admin_client.get(f"/api/analytics/product-history/{product.id}/").status_code
-            == 200
+        resp = super_admin_client.get(
+            "/api/analytics/kitchen-report/?date_from=2026-01-01&date_to=2026-01-01"
         )
+        assert resp.status_code == 200
 
 
 @pytest.mark.django_db
@@ -137,11 +136,10 @@ class TestTenantAdminPermissions:
         assert tenant_admin_client.delete(f"/api/operations/{operation.id}/").status_code == 204
 
     def test_analytics(self, tenant_admin_client, product):
-        assert tenant_admin_client.get("/api/analytics/dashboard/").status_code == 200
-        assert (
-            tenant_admin_client.get(f"/api/analytics/product-history/{product.id}/").status_code
-            == 200
+        resp = tenant_admin_client.get(
+            "/api/analytics/kitchen-report/?date_from=2026-01-01&date_to=2026-01-01"
         )
+        assert resp.status_code == 200
 
 
 @pytest.mark.django_db
@@ -215,11 +213,10 @@ class TestKitchenUserPermissions:
         assert kitchen_user_client.delete(f"/api/operations/{operation.id}/").status_code == 204
 
     def test_analytics(self, kitchen_user_client, product):
-        assert kitchen_user_client.get("/api/analytics/dashboard/").status_code == 200
-        assert (
-            kitchen_user_client.get(f"/api/analytics/product-history/{product.id}/").status_code
-            == 200
+        resp = kitchen_user_client.get(
+            "/api/analytics/kitchen-report/?date_from=2026-01-01&date_to=2026-01-01"
         )
+        assert resp.status_code == 200
 
 
 @pytest.mark.django_db
@@ -234,7 +231,7 @@ class TestUnauthenticatedAccess:
             "/api/products/",
             "/api/categories/",
             "/api/operations/",
-            "/api/analytics/dashboard/",
+            "/api/analytics/kitchen-report/?date_from=2026-01-01&date_to=2026-01-01",
             "/api/auth/me/",
         ]
         for url in endpoints:

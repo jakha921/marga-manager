@@ -38,10 +38,13 @@ class PasswordResetRequestCreateSerializer(serializers.Serializer):
         return phone
 
     def create(self, validated_data):
-        return PasswordResetRequest.objects.create(
+        # Дедуп: один телефон не плодит открытые заявки — обновляем существующую.
+        obj, _ = PasswordResetRequest.objects.update_or_create(
             phone=validated_data["phone"],
-            note=validated_data.get("note", ""),
+            status=PasswordResetRequest.Status.PENDING,
+            defaults={"note": validated_data.get("note", "")},
         )
+        return obj
 
 
 class PasswordResetRequestSerializer(serializers.ModelSerializer):

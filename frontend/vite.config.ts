@@ -16,6 +16,14 @@ export default defineConfig(() => {
       },
       build: {
         chunkSizeWarningLimit: 1000,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              // Тяжёлый recharts нужен только на дашборде — отдельным чанком
+              recharts: ['recharts'],
+            },
+          },
+        },
       },
     };
 });

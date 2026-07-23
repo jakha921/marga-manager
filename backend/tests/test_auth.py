@@ -452,3 +452,23 @@ class TestPasswordResetRequest:
             format="json",
         )
         assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+class TestPasswordResetDedup:
+    def test_duplicate_phone_updates_not_duplicates(self, api_client):
+        from apps.accounts.models import PasswordResetRequest
+
+        api_client.post(
+            "/api/auth/password-reset-request/",
+            {"phone": "998901112233", "note": "a"},
+            format="json",
+        )
+        api_client.post(
+            "/api/auth/password-reset-request/",
+            {"phone": "+998 90 111 22 33", "note": "b"},
+            format="json",
+        )
+        pending = PasswordResetRequest.objects.filter(phone="998901112233", status="PENDING")
+        assert pending.count() == 1
+        assert pending.first().note == "b"  # обновлён комментарий

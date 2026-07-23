@@ -1,7 +1,7 @@
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.db.models import Count, Max, Sum
+from django.db.models import Max, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -180,71 +180,6 @@ class OperationViewSet(TenantQuerySetMixin, TenantCreateMixin, viewsets.ModelVie
         )
         response["Content-Disposition"] = "attachment; filename=operations_export.xlsx"
         return response
-
-
-class DashboardView(APIView):
-    """GET /api/analytics/dashboard/ — агрегированные данные."""
-
-    permission_classes = [IsKitchenUserOrAbove]
-
-    def get(self, request):
-
-        today = timezone.now().date()
-        user = request.user
-
-        qs = OperationEntry.objects.all()
-        if user.role != "SUPER_ADMIN":
-            if not user.organization:
-                from rest_framework.exceptions import PermissionDenied
-
-                raise PermissionDenied("Пользователь не привязан к организации.")
-            qs = qs.filter(organization=user.organization)
-
-        today_qs = qs.filter(date=today)
-
-        stats = {
-            "today_entries": today_qs.count(),
-            "incoming_total": (
-                today_qs.filter(type="INCOMING").aggregate(total=Sum("quantity"))["total"] or 0
-            ),
-            "sales_count": today_qs.filter(type="SALE").count(),
-            "sales_total": (
-                today_qs.filter(type="SALE").aggregate(total=Sum("price"))["total"] or 0
-            ),
-            "operations_by_type": list(
-                qs.values("type").annotate(count=Count("id")).order_by("type")
-            ),
-        }
-        return Response(stats)
-
-
-class ProductHistoryView(APIView):
-    """GET /api/analytics/product-history/<product_id>/ — история по дням."""
-
-    permission_classes = [IsKitchenUserOrAbove]
-
-    def get(self, request, product_id):
-        user = request.user
-
-        if user.role != "SUPER_ADMIN":
-            if not user.organization:
-                from rest_framework.exceptions import PermissionDenied
-
-                raise PermissionDenied("Пользователь не привязан к организации.")
-            get_object_or_404(Product, pk=product_id, organization=user.organization)
-        else:
-            get_object_or_404(Product, pk=product_id)
-
-        qs = OperationEntry.objects.filter(product_id=product_id)
-        if user.role != "SUPER_ADMIN":
-            qs = qs.filter(organization=user.organization)
-
-        history = (
-            qs.values("date", "type")
-            .annotate(total_quantity=Sum("quantity"), count=Count("id"))
-            .order_by("date")
-        )
-        return Response(list(history))
 
 
 def _get_tenant_qs(user):

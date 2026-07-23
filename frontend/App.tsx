@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './views/Dashboard';
@@ -10,13 +10,15 @@ import Settings from './views/Settings';
 import Login from './views/Login';
 import Register from './views/Register';
 import Onboarding from './views/Onboarding';
-import Landing from './views/Landing';
-import AdminDashboard from './views/superadmin/AdminDashboard';
-import OrganizationDetail from './views/superadmin/OrganizationDetail';
-import AuditLogPage from './views/superadmin/AuditLogPage';
-import PlanConfigPage from './views/superadmin/PlanConfigPage';
-import PasswordResetsPage from './views/superadmin/PasswordResetsPage';
 import OrgSuspended from './views/OrgSuspended';
+// Лениво: лендинг (только для гостей) и админка (только SUPER_ADMIN) —
+// не грузятся обычным клиентом, уменьшают начальный бандл.
+const Landing = lazy(() => import('./views/Landing'));
+const AdminDashboard = lazy(() => import('./views/superadmin/AdminDashboard'));
+const OrganizationDetail = lazy(() => import('./views/superadmin/OrganizationDetail'));
+const AuditLogPage = lazy(() => import('./views/superadmin/AuditLogPage'));
+const PlanConfigPage = lazy(() => import('./views/superadmin/PlanConfigPage'));
+const PasswordResetsPage = lazy(() => import('./views/superadmin/PasswordResetsPage'));
 import { DataProvider } from './context/DataContext';
 import { useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -56,7 +58,11 @@ const RootRoute: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    return <Landing />;
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[var(--bg-primary)]" />}>
+        <Landing />
+      </Suspense>
+    );
   }
 
   if (userRole === 'SUPER_ADMIN') {
@@ -94,16 +100,18 @@ const App: React.FC = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               
-              {/* Super Admin Routes */}
+              {/* Super Admin Routes (лениво загружаемые) */}
               <Route path="/admin/*" element={
                 <SuperAdminRoute>
-                   <Routes>
-                      <Route path="/" element={<AdminDashboard />} />
-                      <Route path="/organizations/:id" element={<OrganizationDetail />} />
-                      <Route path="/plans" element={<PlanConfigPage />} />
-                      <Route path="/password-resets" element={<PasswordResetsPage />} />
-                      <Route path="/audit-log" element={<AuditLogPage />} />
-                   </Routes>
+                   <Suspense fallback={<div className="min-h-screen" style={{ background: '#0f172a' }} />}>
+                     <Routes>
+                        <Route path="/" element={<AdminDashboard />} />
+                        <Route path="/organizations/:id" element={<OrganizationDetail />} />
+                        <Route path="/plans" element={<PlanConfigPage />} />
+                        <Route path="/password-resets" element={<PasswordResetsPage />} />
+                        <Route path="/audit-log" element={<AuditLogPage />} />
+                     </Routes>
+                   </Suspense>
                 </SuperAdminRoute>
               } />
 

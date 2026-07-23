@@ -1,21 +1,13 @@
 from django.urls import path
 
 from .views import (
-    DashboardView,
     KitchenReportView,
     OperationsSummaryView,
     ProductConsumptionView,
-    ProductHistoryView,
     SalesChartView,
 )
 
 urlpatterns = [
-    path("dashboard/", DashboardView.as_view(), name="analytics-dashboard"),
-    path(
-        "product-history/<int:product_id>/",
-        ProductHistoryView.as_view(),
-        name="analytics-product-history",
-    ),
     path("sales-chart/", SalesChartView.as_view(), name="analytics-sales-chart"),
     path(
         "product-consumption/<int:product_id>/",
