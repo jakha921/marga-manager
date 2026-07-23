@@ -13,4 +13,8 @@ export const organizationsService = {
       `/organizations/${id}/extend_subscription/`,
       { days }
     ),
+  listWithDeleted: () =>
+    apiClient.get('/organizations/', { params: { include_deleted: 'true', page_size: '500' } }),
+  restore: (id: string | number) =>
+    apiClient.post(`/organizations/${id}/restore/`),
 };

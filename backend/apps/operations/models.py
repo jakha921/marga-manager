@@ -1,9 +1,9 @@
 from django.db import models
 
-from apps.core.models import TenantModel
+from apps.core.models import SoftDeleteModel, TenantModel
 
 
-class OperationEntry(TenantModel):
+class OperationEntry(TenantModel, SoftDeleteModel):
     """Запись операции (приход, расход, перемещение, продажа)."""
 
     class Type(models.TextChoices):

@@ -65,7 +65,9 @@ class TestOperationCRUD:
     def test_delete_operation(self, tenant_admin_client, operation):
         response = tenant_admin_client.delete(f"/api/operations/{operation.id}/")
         assert response.status_code == 204
+        # Мягкое удаление: скрыто из .objects, но запись сохранена в БД (audit trail)
         assert not OperationEntry.objects.filter(id=operation.id).exists()
+        assert OperationEntry.all_objects.filter(id=operation.id, deleted_at__isnull=False).exists()
 
 
 @pytest.mark.django_db

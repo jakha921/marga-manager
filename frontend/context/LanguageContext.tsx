@@ -290,6 +290,8 @@ const translations: Record<Language, Record<string, string>> = {
     'landing.faq.a3': 'Each organization works with its own isolated data. Access is limited to your staff by roles.',
     'landing.faq.q4': 'Can I export my data?',
     'landing.faq.a4': 'Yes, reports and operation history can be exported to Excel at any time.',
+    'landing.enterprise.note': 'Need a corporate plan with more branches and users?',
+    'landing.enterprise.cta': 'Contact us',
 
     // SaaS
     'saas.plan.basic': 'Basic Plan',
@@ -442,6 +444,9 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.act.suspend': 'Suspend',
     'admin.act.activate': 'Activate',
     'admin.act.delete': 'Delete',
+    'admin.trash': 'Trash',
+    'admin.trash_empty': 'No deleted organizations.',
+    'admin.restore': 'Restore',
     'prod.btn.categories': 'Categories',
     'admin.event_type': 'Event Type',
     'admin.actor': 'Actor',
@@ -740,6 +745,8 @@ const translations: Record<Language, Record<string, string>> = {
     'landing.faq.a3': 'Каждая организация работает со своими изолированными данными. Доступ есть только у ваших сотрудников по ролям.',
     'landing.faq.q4': 'Можно ли выгрузить данные?',
     'landing.faq.a4': 'Да, отчёты и историю операций можно выгрузить в Excel в любой момент.',
+    'landing.enterprise.note': 'Нужен корпоративный тариф с большим числом филиалов и сотрудников?',
+    'landing.enterprise.cta': 'Свяжитесь с нами',
 
     // SaaS
     'saas.plan.basic': 'Базовый тариф',
@@ -892,6 +899,9 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.act.suspend': 'Приостановить',
     'admin.act.activate': 'Активировать',
     'admin.act.delete': 'Удалить',
+    'admin.trash': 'Корзина',
+    'admin.trash_empty': 'Удалённых организаций нет.',
+    'admin.restore': 'Восстановить',
     'prod.btn.categories': 'Категории',
     'admin.event_type': 'Тип события',
     'admin.actor': 'Инициатор',
@@ -1190,6 +1200,8 @@ const translations: Record<Language, Record<string, string>> = {
     'landing.faq.a3': 'Har bir tashkilot o\'z ma\'lumotlari bilan alohida ishlaydi. Kirish faqat xodimlaringizga rollar bo\'yicha beriladi.',
     'landing.faq.q4': 'Ma\'lumotlarni yuklab olsam bo\'ladimi?',
     'landing.faq.a4': 'Ha, hisobotlar va amallar tarixini istalgan payt Excelga yuklab olish mumkin.',
+    'landing.enterprise.note': "Ko'proq filial va xodim uchun korporativ tarif kerakmi?",
+    'landing.enterprise.cta': "Biz bilan bog'laning",
 
     // SaaS
     'saas.plan.basic': 'Basic rejasi',
@@ -1342,6 +1354,9 @@ const translations: Record<Language, Record<string, string>> = {
     'admin.act.suspend': "To'xtatish",
     'admin.act.activate': 'Faollashtirish',
     'admin.act.delete': "O'chirish",
+    'admin.trash': 'Savat',
+    'admin.trash_empty': "O'chirilgan tashkilotlar yo'q.",
+    'admin.restore': 'Tiklash',
     'prod.btn.categories': 'Kategoriyalar',
     'admin.event_type': 'Voqea turi',
     'admin.actor': 'Muallif',

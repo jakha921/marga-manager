@@ -16,6 +16,9 @@ import type { Language } from '../context/LanguageContext';
 // Заполните перед продакшеном — выдуманные отзывы и контакты публиковать нельзя.
 const CONTACTS = { telegram: '', phone: '', email: '' };
 const TESTIMONIALS: { name: string; role: string; text: string }[] = [];
+// Корпоративный тариф «по запросу»: впишите реальный контакт (Telegram/тел./email).
+// Пока пусто — строка «Свяжитесь» не показывается.
+const ENTERPRISE_CONTACT = '';
 
 const LANGS: Language[] = ['uz', 'ru', 'en'];
 
@@ -422,6 +425,20 @@ const Landing: React.FC = () => {
             ))}
           </div>
           <p className="mg-mono mt-4 text-xs" style={{ color: MUTED }}>{t('landing.cta.note')}</p>
+          {ENTERPRISE_CONTACT && (
+            <p className="mt-3 text-sm" style={{ color: MUTED }}>
+              {t('landing.enterprise.note')}{' '}
+              <a
+                href={ENTERPRISE_CONTACT.startsWith('http') ? ENTERPRISE_CONTACT : `tel:${ENTERPRISE_CONTACT.replace(/\s/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold underline"
+                style={{ color: PEN }}
+              >
+                {t('landing.enterprise.cta')}
+              </a>
+            </p>
+          )}
         </div>
       </section>
 

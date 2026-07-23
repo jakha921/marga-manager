@@ -1,4 +1,5 @@
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -37,12 +38,43 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         return OrganizationSerializer
 
     def get_queryset(self):
-        qs = super().get_queryset()
         user = self.request.user
+        # SUPER_ADMIN с ?include_deleted=true видит и удалённые (для восстановления)
+        if (
+            user.role == "SUPER_ADMIN"
+            and self.request.query_params.get("include_deleted") == "true"
+        ):
+            # Корзина: только мягко удалённые организации
+            return (
+                Organization.all_objects.filter(deleted_at__isnull=False)
+                .annotate(
+                    kitchen_count=Count("kitchens", distinct=True),
+                    user_count=Count("users", distinct=True),
+                )
+                .order_by("id")
+            )
+        qs = super().get_queryset()
         if user.role == "SUPER_ADMIN":
             return qs
         # TENANT_ADMIN видит только свою организацию
         return qs.filter(pk=user.organization_id)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsSuperAdmin])
+    def restore(self, request, pk=None):
+        """POST /api/organizations/{id}/restore/ — вернуть мягко удалённую организацию."""
+        org = get_object_or_404(Organization.all_objects, pk=pk)
+        if org.deleted_at is None:
+            return Response({"detail": "Организация не удалена."}, status=400)
+        org.restore()
+        create_audit_log(
+            AuditLog.EventType.ORG_UNSUSPENDED,
+            actor=request.user,
+            organization=org,
+            target_type="Organization",
+            target_id=org.id,
+            metadata={"reason": "restored"},
+        )
+        return Response({"detail": "restored", "id": org.id}, status=200)
 
     def perform_update(self, serializer):
         old_status = serializer.instance.status

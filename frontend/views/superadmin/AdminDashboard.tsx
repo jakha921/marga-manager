@@ -19,6 +19,27 @@ const AdminDashboard: React.FC = () => {
   const { t } = useLanguage();
   const [suspendConfirm, setSuspendConfirm] = useState<{ org: Organization; action: 'suspend' | 'unsuspend' } | null>(null);
   const [deleteOrgConfirm, setDeleteOrgConfirm] = useState<Organization | null>(null);
+  const [deletedOrgs, setDeletedOrgs] = useState<Organization[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
+
+  const loadTrash = async () => {
+    const next = !showTrash;
+    setShowTrash(next);
+    if (next) {
+      try {
+        const { data } = await organizationsService.listWithDeleted();
+        // Эндпоинт возвращает только мягко удалённые организации
+        setDeletedOrgs((data.results || data) as Organization[]);
+      } catch {
+        setDeletedOrgs([]);
+      }
+    }
+  };
+
+  const handleRestore = async (id: string | number) => {
+    await organizationsService.restore(id);
+    setDeletedOrgs(prev => prev.filter(o => String(o.id) !== String(id)));
+  };
   
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -181,12 +202,38 @@ const AdminDashboard: React.FC = () => {
                       onChange={e => setSearchTerm(e.target.value)}
                     />
                  </div>
+                 <button onClick={loadTrash} className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border ${showTrash ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-900 text-slate-300 border-slate-700 hover:text-white'}`}>
+                    <Trash2 size={16} /> {t('admin.trash')}
+                 </button>
                  <button onClick={handleCreateOrg} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
                     <Plus size={16} /> {t('admin.new_tenant')}
                  </button>
               </div>
            </div>
-           
+
+           {showTrash && (
+             <div className="border-b border-slate-700 bg-slate-900/40 px-6 py-4">
+               <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('admin.trash')}</div>
+               {deletedOrgs.length === 0 ? (
+                 <div className="text-sm text-slate-500">{t('admin.trash_empty')}</div>
+               ) : (
+                 <div className="space-y-2">
+                   {deletedOrgs.map(o => (
+                     <div key={o.id} className="flex items-center justify-between rounded-lg bg-slate-800 px-4 py-2.5">
+                       <div>
+                         <span className="font-bold text-white">{o.name}</span>
+                         <span className="ml-2 text-xs text-slate-500">{o.contactName}</span>
+                       </div>
+                       <button onClick={() => handleRestore(o.id)} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">
+                         {t('admin.restore')}
+                       </button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+           )}
+
            <div className="overflow-x-auto">
            <table className="w-full text-left">
               <thead>

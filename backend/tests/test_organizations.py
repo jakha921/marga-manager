@@ -203,6 +203,34 @@ class TestOrganizationLimits:
 
 
 @pytest.mark.django_db
+class TestOrganizationRestore:
+    def test_super_admin_restores_deleted_org(self, super_admin_client, org):
+        from apps.organizations.models import Organization
+
+        org.delete()  # soft-delete
+        assert Organization.objects.filter(id=org.id).count() == 0
+
+        resp = super_admin_client.post(f"/api/organizations/{org.id}/restore/")
+        assert resp.status_code == 200
+        assert Organization.objects.filter(id=org.id).count() == 1
+
+    def test_include_deleted_lists_only_soft_deleted(self, super_admin_client, org, org2):
+        org2.delete()
+        active = super_admin_client.get("/api/organizations/")
+        trash = super_admin_client.get("/api/organizations/?include_deleted=true")
+        active_ids = {o["id"] for o in active.data["results"]}
+        trash_ids = {o["id"] for o in trash.data["results"]}
+        assert org2.id not in active_ids  # удалённая исчезла из обычного списка
+        assert trash_ids == {org2.id}  # корзина содержит только удалённую
+
+    def test_tenant_admin_cannot_restore(self, tenant_admin_client, org):
+        org_id = org.id
+        org.delete()
+        resp = tenant_admin_client.post(f"/api/organizations/{org_id}/restore/")
+        assert resp.status_code in (403, 404)
+
+
+@pytest.mark.django_db
 class TestExtendSubscription:
     def test_super_admin_extends_expired_org(self, super_admin_client, org):
         from django.utils import timezone
