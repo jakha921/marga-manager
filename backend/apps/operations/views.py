@@ -684,7 +684,11 @@ class ProductConsumptionView(APIView):
         def sum_interval(op_type, after_excl, to_incl, by_to_kitchen=False):
             f = qs.filter(type=op_type, date__gt=after_excl, date__lte=to_incl)
             if specific_kitchen:
-                f = f.filter(to_kitchen_id=kitchen) if by_to_kitchen else f.filter(kitchen_id=kitchen)
+                f = (
+                    f.filter(to_kitchen_id=kitchen)
+                    if by_to_kitchen
+                    else f.filter(kitchen_id=kitchen)
+                )
             return f.aggregate(total=Coalesce(Sum("quantity"), ZERO))["total"]
 
         from datetime import date as date_cls
@@ -702,7 +706,9 @@ class ProductConsumptionView(APIView):
                     value = balance_by_date[prev] + incoming - balance_by_date[d]
                     if specific_kitchen:
                         t_out = sum_interval(OperationEntry.Type.TRANSFER, prev, d)
-                        t_in = sum_interval(OperationEntry.Type.TRANSFER, prev, d, by_to_kitchen=True)
+                        t_in = sum_interval(
+                            OperationEntry.Type.TRANSFER, prev, d, by_to_kitchen=True
+                        )
                         value = value + t_in - t_out
             series.append({"date": d.isoformat(), "value": value})
             d += timedelta(days=1)
