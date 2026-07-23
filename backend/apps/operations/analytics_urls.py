@@ -4,7 +4,9 @@ from .views import (
     DashboardView,
     KitchenReportView,
     OperationsSummaryView,
+    ProductConsumptionView,
     ProductHistoryView,
+    SalesChartView,
 )
 
 urlpatterns = [
@@ -13,6 +15,12 @@ urlpatterns = [
         "product-history/<int:product_id>/",
         ProductHistoryView.as_view(),
         name="analytics-product-history",
+    ),
+    path("sales-chart/", SalesChartView.as_view(), name="analytics-sales-chart"),
+    path(
+        "product-consumption/<int:product_id>/",
+        ProductConsumptionView.as_view(),
+        name="analytics-product-consumption",
     ),
     path("kitchen-report/", KitchenReportView.as_view(), name="analytics-kitchen-report"),
     path(

@@ -13,4 +13,14 @@ export const analyticsService = {
     }),
   getOperationsSummary: (params?: Record<string, string>) =>
     apiClient.get('/analytics/operations-summary/', { params }),
+  getSalesChart: (params: Record<string, string>) =>
+    apiClient.get<{ series: { date: string; sales: number; purchases: number }[] }>(
+      '/analytics/sales-chart/',
+      { params }
+    ),
+  getProductConsumption: (productId: string | number, params: Record<string, string>) =>
+    apiClient.get<{ series: { date: string; value: number }[] }>(
+      `/analytics/product-consumption/${productId}/`,
+      { params }
+    ),
 };

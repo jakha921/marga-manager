@@ -39,7 +39,7 @@ const ChartTooltip = React.memo(({ active, payload, label }: {
 });
 
 const Dashboard: React.FC = () => {
-  const { stats, operations, kitchens, products, subscription } = useData();
+  const { stats, kitchens, products, subscription } = useData();
   const { t } = useLanguage();
   // Helper to get current month range
   const getCurrentMonthRange = () => {
@@ -67,6 +67,10 @@ const Dashboard: React.FC = () => {
   // Server-side kitchen report state
   const [reportData, setReportData] = useState<KitchenReportResponse | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
+
+  // Графики считаются на сервере (не из кэша 1000 операций)
+  const [salesSeries, setSalesSeries] = useState<{ date: string; sales: number; purchases: number }[]>([]);
+  const [prodSeries, setProdSeries] = useState<{ date: string; value: number }[]>([]);
 
   // Save filters to localStorage
   useEffect(() => localStorage.setItem('dash_kitchen', selectedKitchen), [selectedKitchen]);
@@ -103,6 +107,25 @@ const Dashboard: React.FC = () => {
     fetchReport();
   }, [startDate, endDate, selectedKitchen]);
 
+  // Дневные продажи/закупки для графиков «Kunlik» и «Yig'indili»
+  useEffect(() => {
+    const params: Record<string, string> = { date_from: startDate, date_to: endDate };
+    if (selectedKitchen !== 'all') params.kitchen = selectedKitchen;
+    analyticsService.getSalesChart(params)
+      .then(({ data }) => setSalesSeries(data.series))
+      .catch(() => setSalesSeries([]));
+  }, [startDate, endDate, selectedKitchen]);
+
+  // Расход выбранного продукта (график «Mahsulotlar bo'yicha»)
+  useEffect(() => {
+    if (!selectedProductId) { setProdSeries([]); return; }
+    const params: Record<string, string> = { date_from: prodHistStart, date_to: prodHistEnd };
+    if (prodHistKitchen !== 'all') params.kitchen = prodHistKitchen;
+    analyticsService.getProductConsumption(selectedProductId, params)
+      .then(({ data }) => setProdSeries(data.series))
+      .catch(() => setProdSeries([]));
+  }, [selectedProductId, prodHistStart, prodHistEnd, prodHistKitchen]);
+
   // Displayed table data from server
   const displayedTableStats = reportData?.kitchens ?? [];
   const tableTotals = reportData?.totals ?? {
@@ -110,107 +133,29 @@ const Dashboard: React.FC = () => {
     salesRevenue: 0, markupVal: 0, markupPercent: 0, transfersIn: 0, transfersOut: 0,
   };
 
-  // Charts still computed on client (use operations from context)
+  // Графики строятся из серверных рядов (устойчиво к росту числа операций).
   const chartData = useMemo(() => {
-    const filteredOps = operations.filter(op => {
-      const opDate = new Date(op.date);
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const matchesDate = opDate >= start && opDate <= end;
-      const matchesKitchen = selectedKitchen === 'all' || String(op.kitchenId) === selectedKitchen;
-      return matchesDate && matchesKitchen;
-    });
-
-    // Daily Sales vs Cost chart
-    const chartMap = new Map<string, { sales: number; cost: number }>();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        chartMap.set(d.toISOString().split('T')[0], { sales: 0, cost: 0 });
-    }
-
-    filteredOps.filter(op => op.type === 'SALE').forEach(op => {
-       const curr = chartMap.get(op.date) || { sales: 0, cost: 0 };
-       chartMap.set(op.date, { ...curr, sales: curr.sales + (Number(op.price) || 0) });
-    });
-
-    filteredOps.filter(op => op.type === 'INCOMING').forEach(op => {
-        const curr = chartMap.get(op.date) || { sales: 0, cost: 0 };
-        chartMap.set(op.date, { ...curr, cost: curr.cost + (Number(op.price) || 0) });
-    });
-
-    const dailyChartData = Array.from(chartMap.entries()).map(([date, val]) => ({
-        date: formatDate(date),
-        sales: val.sales,
-        cost: val.cost
+    const dailyChartData = salesSeries.map(r => ({
+      date: formatDate(r.date),
+      sales: Number(r.sales) || 0,
+      cost: Number(r.purchases) || 0,
     }));
 
     let runningSales = 0;
     let runningCost = 0;
     const cumulativeChartData = dailyChartData.map(item => {
-        runningSales += item.sales;
-        runningCost += item.cost;
-        return { date: item.date, sales: runningSales, cost: runningCost };
+      runningSales += item.sales;
+      runningCost += item.cost;
+      return { date: item.date, sales: runningSales, cost: runningCost };
     });
 
-    // Расход продукта. Остатки фиксируются не каждый день, поэтому расход
-    // считается интервалами между записями остатков и приписывается дню записи:
-    // расход = прошлый остаток + приходы интервала + трансферы_к_нам
-    //          − трансферы_от_нас − текущий остаток
-    // (та же формула, что в серверном kitchen-report).
-    const productChartData: { date: string; value: number }[] = [];
-
-    if (selectedProductId) {
-        const pStart = new Date(prodHistStart);
-        const pEnd = new Date(prodHistEnd);
-
-        const prodOps = operations.filter(op => String(op.productId) === selectedProductId);
-        const inKitchen = (op: typeof prodOps[number], field: 'kitchenId' | 'toKitchenId' = 'kitchenId') =>
-            prodHistKitchen === 'all' || String(op[field]) === prodHistKitchen;
-
-        const balanceByDate = new Map<string, number>();
-        prodOps
-            .filter(op => op.type === 'DAILY' && inKitchen(op))
-            .forEach(op => balanceByDate.set(op.date, (balanceByDate.get(op.date) || 0) + (Number(op.quantity) || 0)));
-        const balanceDates = [...balanceByDate.keys()].sort();
-
-        const sumInterval = (
-            type: string,
-            afterExclusive: string,
-            toInclusive: string,
-            field: 'kitchenId' | 'toKitchenId' = 'kitchenId'
-        ) =>
-            prodOps
-                .filter(op => op.type === type && op.date > afterExclusive && op.date <= toInclusive && inKitchen(op, field))
-                .reduce((acc, op) => acc + (Number(op.quantity) || 0), 0);
-
-        for (let d = new Date(pStart); d <= pEnd; d.setDate(d.getDate() + 1)) {
-            const dateStr = d.toISOString().split('T')[0];
-            let consumption = 0;
-
-            if (balanceByDate.has(dateStr)) {
-                // Последняя запись остатка ДО этого дня — база интервала
-                const prevDate = [...balanceDates].reverse().find(bd => bd < dateStr);
-                if (prevDate) {
-                    const incoming = sumInterval('INCOMING', prevDate, dateStr);
-                    consumption =
-                        (balanceByDate.get(prevDate) || 0) + incoming - (balanceByDate.get(dateStr) || 0);
-                    if (prodHistKitchen !== 'all') {
-                        const transferOut = sumInterval('TRANSFER', prevDate, dateStr, 'kitchenId');
-                        const transferIn = sumInterval('TRANSFER', prevDate, dateStr, 'toKitchenId');
-                        consumption = consumption + transferIn - transferOut;
-                    }
-                }
-                // Первая запись остатка: базы нет, расход неизвестен — оставляем 0
-            }
-
-            productChartData.push({ date: formatDate(dateStr), value: consumption });
-        }
-    }
+    const productChartData = prodSeries.map(r => ({
+      date: formatDate(r.date),
+      value: Number(r.value) || 0,
+    }));
 
     return { dailyChartData, cumulativeChartData, productChartData };
-  }, [operations, selectedKitchen, startDate, endDate, prodHistStart, prodHistEnd, selectedProductId, prodHistKitchen]);
+  }, [salesSeries, prodSeries]);
 
   const showTransfers = kitchens.length > 1;
 

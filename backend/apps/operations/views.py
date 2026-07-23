@@ -567,3 +567,144 @@ class OperationsSummaryView(APIView):
                 "count": count,
             }
         )
+
+
+class SalesChartView(APIView):
+    """GET /api/analytics/sales-chart/ — дневные продажи и закупки за период.
+
+    Считается на сервере (не из клиентского кэша 1000 операций), поэтому
+    не «недосчитывает» после роста числа операций. Возвращает плотный ряд
+    по всем дням диапазона.
+    """
+
+    permission_classes = [IsKitchenUserOrAbove]
+
+    def get(self, request):
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        if not date_from or not date_to:
+            raise drf_serializers.ValidationError(
+                {"detail": "Параметры date_from и date_to обязательны."}
+            )
+
+        user = request.user
+        # Тариф BASIC видит только последние 30 дней
+        date_from = _clamp_date_from(user, date_from)
+        if date_to < date_from:
+            date_to = date_from
+
+        qs = _get_tenant_qs(user).filter(date__gte=date_from, date__lte=date_to)
+        kitchen = request.query_params.get("kitchen")
+        if kitchen and kitchen != "all":
+            qs = qs.filter(kitchen_id=kitchen)
+
+        by_date = {}
+        for row in (
+            qs.filter(type=OperationEntry.Type.SALE)
+            .values("date")
+            .annotate(total=Coalesce(Sum("price"), ZERO))
+        ):
+            by_date.setdefault(row["date"], {})["sales"] = row["total"]
+        for row in (
+            qs.filter(type=OperationEntry.Type.INCOMING)
+            .values("date")
+            .annotate(total=Coalesce(Sum("price"), ZERO))
+        ):
+            by_date.setdefault(row["date"], {})["purchases"] = row["total"]
+
+        from datetime import date as date_cls
+
+        start = date_cls.fromisoformat(str(date_from))
+        end = date_cls.fromisoformat(str(date_to))
+        series = []
+        d = start
+        while d <= end:
+            entry = by_date.get(d, {})
+            series.append(
+                {
+                    "date": d.isoformat(),
+                    "sales": entry.get("sales", ZERO),
+                    "purchases": entry.get("purchases", ZERO),
+                }
+            )
+            d += timedelta(days=1)
+
+        return Response({"series": series})
+
+
+class ProductConsumptionView(APIView):
+    """GET /api/analytics/product-consumption/<product_id>/ — расход продукта.
+
+    Интервальный расчёт: между двумя записями остатка расход =
+    прошлый остаток + приходы интервала (± трансферы для конкретной кухни)
+    − текущий остаток. Значение приписывается дню записи остатка.
+    Считается на сервере целиком, без ограничения кэша.
+    """
+
+    permission_classes = [IsKitchenUserOrAbove]
+
+    def get(self, request, product_id):
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        if not date_from or not date_to:
+            raise drf_serializers.ValidationError(
+                {"detail": "Параметры date_from и date_to обязательны."}
+            )
+
+        user = request.user
+        if user.role != "SUPER_ADMIN":
+            if not user.organization:
+                from rest_framework.exceptions import PermissionDenied
+
+                raise PermissionDenied("Пользователь не привязан к организации.")
+            get_object_or_404(Product, pk=product_id, organization=user.organization)
+        else:
+            get_object_or_404(Product, pk=product_id)
+
+        date_from = _clamp_date_from(user, date_from)
+        if date_to < date_from:
+            date_to = date_from
+
+        kitchen = request.query_params.get("kitchen")
+        specific_kitchen = bool(kitchen and kitchen != "all")
+
+        qs = _get_tenant_qs(user).filter(product_id=product_id)
+        base = qs.filter(kitchen_id=kitchen) if specific_kitchen else qs
+
+        # Остатки по дням (все известные, чтобы найти базу интервала до date_from)
+        balance_by_date = {}
+        for row in (
+            base.filter(type=OperationEntry.Type.DAILY)
+            .values("date")
+            .annotate(total=Coalesce(Sum("quantity"), ZERO))
+        ):
+            balance_by_date[row["date"]] = row["total"]
+        balance_dates = sorted(balance_by_date.keys())
+
+        def sum_interval(op_type, after_excl, to_incl, by_to_kitchen=False):
+            f = qs.filter(type=op_type, date__gt=after_excl, date__lte=to_incl)
+            if specific_kitchen:
+                f = f.filter(to_kitchen_id=kitchen) if by_to_kitchen else f.filter(kitchen_id=kitchen)
+            return f.aggregate(total=Coalesce(Sum("quantity"), ZERO))["total"]
+
+        from datetime import date as date_cls
+
+        start = date_cls.fromisoformat(str(date_from))
+        end = date_cls.fromisoformat(str(date_to))
+        series = []
+        d = start
+        while d <= end:
+            value = ZERO
+            if d in balance_by_date:
+                prev = next((bd for bd in reversed(balance_dates) if bd < d), None)
+                if prev is not None:
+                    incoming = sum_interval(OperationEntry.Type.INCOMING, prev, d)
+                    value = balance_by_date[prev] + incoming - balance_by_date[d]
+                    if specific_kitchen:
+                        t_out = sum_interval(OperationEntry.Type.TRANSFER, prev, d)
+                        t_in = sum_interval(OperationEntry.Type.TRANSFER, prev, d, by_to_kitchen=True)
+                        value = value + t_in - t_out
+            series.append({"date": d.isoformat(), "value": value})
+            d += timedelta(days=1)
+
+        return Response({"series": series})

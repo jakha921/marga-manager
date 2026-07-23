@@ -259,6 +259,90 @@ class TestKitchenReport:
         response = tenant_admin_client.get("/api/analytics/kitchen-report/")
         assert response.status_code == 400
 
+    def test_sales_chart_dense_series(self, tenant_admin_client, org, kitchen, product):
+        OperationEntry.objects.create(
+            type="SALE",
+            date="2026-06-29",
+            time=time(12, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=1,
+            unit="kg",
+            price=5000,
+            organization=org,
+        )
+        OperationEntry.objects.create(
+            type="INCOMING",
+            date="2026-06-29",
+            time=time(9, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=2,
+            unit="kg",
+            price=8000,
+            organization=org,
+        )
+        resp = tenant_admin_client.get(
+            "/api/analytics/sales-chart/?date_from=2026-06-28&date_to=2026-06-30"
+        )
+        assert resp.status_code == 200
+        series = {r["date"]: r for r in resp.data["series"]}
+        assert len(series) == 3  # плотный ряд по всем дням
+        assert Decimal(str(series["2026-06-29"]["sales"])) == Decimal("5000")
+        assert Decimal(str(series["2026-06-29"]["purchases"])) == Decimal("8000")
+        assert Decimal(str(series["2026-06-28"]["sales"])) == Decimal("0")
+
+    def test_product_consumption_interval(self, tenant_admin_client, org, kitchen, product):
+        # Остаток 100 (25-го), приход 20 (28-го), остаток 80 (30-го) → расход 40
+        OperationEntry.objects.create(
+            type="DAILY",
+            date="2026-06-25",
+            time=time(8, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=100,
+            unit="kg",
+            price=0,
+            organization=org,
+        )
+        OperationEntry.objects.create(
+            type="INCOMING",
+            date="2026-06-28",
+            time=time(9, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=20,
+            unit="kg",
+            price=0,
+            organization=org,
+        )
+        OperationEntry.objects.create(
+            type="DAILY",
+            date="2026-06-30",
+            time=time(20, 0),
+            kitchen=kitchen,
+            product=product,
+            quantity=80,
+            unit="kg",
+            price=0,
+            organization=org,
+        )
+        resp = tenant_admin_client.get(
+            f"/api/analytics/product-consumption/{product.id}/"
+            "?date_from=2026-06-25&date_to=2026-06-30"
+        )
+        assert resp.status_code == 200
+        series = {r["date"]: Decimal(str(r["value"])) for r in resp.data["series"]}
+        assert series["2026-06-25"] == Decimal("0")  # первая запись — базы нет
+        assert series["2026-06-30"] == Decimal("40")  # 100 + 20 - 80
+
+    def test_product_consumption_tenant_isolation(self, tenant_admin_client, product_other_org):
+        resp = tenant_admin_client.get(
+            f"/api/analytics/product-consumption/{product_other_org.id}/"
+            "?date_from=2026-06-01&date_to=2026-06-30"
+        )
+        assert resp.status_code == 404
+
     def test_basic_plan_history_clamped_to_30_days(
         self, tenant_admin_client, org, kitchen, product
     ):
