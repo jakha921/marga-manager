@@ -1,11 +1,20 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import User
+from .models import PasswordResetRequest, User
+from .utils import looks_like_phone, normalize_phone
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """JWT токен с ролью и org_id в claims."""
+    """JWT токен с ролью и org_id в claims. Логин по телефону нормализуется."""
+
+    def validate(self, attrs):
+        # Владельцы входят по телефону: "+998 90 123 45 67" -> "998901234567".
+        # Демо-логины (admin/dev/cook) содержат буквы и остаются как есть.
+        login = attrs.get(self.username_field, "")
+        if looks_like_phone(login):
+            attrs[self.username_field] = normalize_phone(login)
+        return super().validate(attrs)
 
     @classmethod
     def get_token(cls, user):
@@ -14,6 +23,52 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["org_id"] = str(user.organization_id) if user.organization_id else None
         token["full_name"] = user.full_name
         return token
+
+
+class PasswordResetRequestCreateSerializer(serializers.Serializer):
+    """Публичная заявка на сброс пароля (без аутентификации)."""
+
+    phone = serializers.CharField(max_length=30)
+    note = serializers.CharField(max_length=300, required=False, allow_blank=True)
+
+    def validate_phone(self, value: str) -> str:
+        phone = normalize_phone(value)
+        if not 7 <= len(phone) <= 15:
+            raise serializers.ValidationError("Введите корректный номер телефона.")
+        return phone
+
+    def create(self, validated_data):
+        return PasswordResetRequest.objects.create(
+            phone=validated_data["phone"],
+            note=validated_data.get("note", ""),
+        )
+
+
+class PasswordResetRequestSerializer(serializers.ModelSerializer):
+    """Заявка для админа: телефон, статус, найден ли пользователь."""
+
+    user_exists = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PasswordResetRequest
+        fields = [
+            "id",
+            "phone",
+            "note",
+            "status",
+            "created_at",
+            "resolved_at",
+            "user_exists",
+            "user_full_name",
+        ]
+
+    def get_user_exists(self, obj) -> bool:
+        return User.objects.filter(username=obj.phone).exists()
+
+    def get_user_full_name(self, obj) -> str:
+        user = User.objects.filter(username=obj.phone).first()
+        return user.full_name if user else ""
 
 
 class UserSerializer(serializers.ModelSerializer):

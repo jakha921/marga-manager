@@ -5,7 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
-import { ChefHat, Lock, User, Globe } from 'lucide-react';
+import Modal from '../components/Modal';
+import { authService } from '../api/services/auth';
+import { ChefHat, Lock, Phone, Globe, CheckCircle2 } from 'lucide-react';
 
 const Login: React.FC = () => {
   const showDemoCredentials = import.meta.env.DEV;
@@ -17,6 +19,36 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Заявка на сброс пароля
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetPhone, setResetPhone] = useState('');
+  const [resetNote, setResetNote] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetDone, setResetDone] = useState(false);
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError('');
+    setResetLoading(true);
+    try {
+      await authService.requestPasswordReset(resetPhone, resetNote);
+      setResetDone(true);
+    } catch {
+      setResetError(t('reset.error'));
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const closeReset = () => {
+    setResetOpen(false);
+    setResetDone(false);
+    setResetPhone('');
+    setResetNote('');
+    setResetError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,23 +97,36 @@ const Login: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label={t('auth.username')}
-            icon={<User size={18} />}
+            label={t('auth.phone')}
+            type="tel"
+            inputMode="tel"
+            autoComplete="username"
+            icon={<Phone size={18} />}
             value={username}
             onChange={e => setUsername(e.target.value)}
-            placeholder="admin"
+            placeholder="+998 90 123 45 67"
           />
-          <Input
-            label={t('auth.password')}
-            type="password"
-            icon={<Lock size={18} />}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
+          <div>
+            <Input
+              label={t('auth.password')}
+              type="password"
+              autoComplete="current-password"
+              icon={<Lock size={18} />}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              onClick={() => setResetOpen(true)}
+              className="mt-2 text-xs font-semibold text-[var(--text-secondary)] underline hover:text-[var(--text-primary)]"
+            >
+              {t('reset.forgot')}
+            </button>
+          </div>
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl text-center">
+            <div role="alert" className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl text-center">
               {error}
             </div>
           )}
@@ -90,6 +135,47 @@ const Login: React.FC = () => {
             {isLoading ? '...' : t('auth.signin')}
           </Button>
         </form>
+
+        <Modal isOpen={resetOpen} onClose={closeReset} title={t('reset.title')}>
+          {resetDone ? (
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <CheckCircle2 size={26} />
+              </div>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">{t('reset.done_title')}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t('reset.done_text')}</p>
+              <Button onClick={closeReset} fullWidth>{t('reset.close')}</Button>
+            </div>
+          ) : (
+            <form onSubmit={handleResetSubmit} className="space-y-4">
+              <p className="text-sm text-[var(--text-secondary)]">{t('reset.desc')}</p>
+              <Input
+                label={t('auth.phone')}
+                type="tel"
+                inputMode="tel"
+                icon={<Phone size={18} />}
+                value={resetPhone}
+                onChange={e => setResetPhone(e.target.value)}
+                placeholder="+998 90 123 45 67"
+                required
+              />
+              <Input
+                label={t('reset.note')}
+                value={resetNote}
+                onChange={e => setResetNote(e.target.value)}
+                placeholder={t('reset.note_ph')}
+              />
+              {resetError && (
+                <div role="alert" className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl text-center">
+                  {resetError}
+                </div>
+              )}
+              <Button type="submit" fullWidth disabled={resetLoading || !resetPhone}>
+                {resetLoading ? '...' : t('reset.submit')}
+              </Button>
+            </form>
+          )}
+        </Modal>
 
         <div className="mt-6 text-center text-sm text-[var(--text-secondary)]">
           {t('register.no_account')}{' '}

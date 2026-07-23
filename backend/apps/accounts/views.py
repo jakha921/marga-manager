@@ -1,18 +1,22 @@
 import logging
 
+from django.utils import timezone
 from rest_framework import generics, permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.core.audit import create_audit_log
 from apps.core.mixins import TenantCreateMixin, TenantQuerySetMixin
-from apps.core.permissions import IsTenantAdmin
+from apps.core.permissions import IsSuperAdmin, IsTenantAdmin
 from apps.payments.models import AuditLog
 
-from .models import User
+from .models import PasswordResetRequest, User
 from .serializers import (
     CustomTokenObtainPairSerializer,
     MeSerializer,
+    PasswordResetRequestCreateSerializer,
+    PasswordResetRequestSerializer,
     RegisterSerializer,
     UserCreateSerializer,
     UserSerializer,
@@ -39,6 +43,63 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 "Login failed: user=%s ip=%s status=%s", username, ip, response.status_code
             )
         return response
+
+
+class PasswordResetRequestCreateView(generics.CreateAPIView):
+    """POST /api/auth/password-reset-request/ — публичная заявка на сброс пароля."""
+
+    serializer_class = PasswordResetRequestCreateSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [SignupRateThrottle]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # Не раскрываем, существует ли пользователь — единый ответ.
+        return Response(
+            {"detail": "Заявка принята. Администратор свяжется с вами."},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class PasswordResetRequestViewSet(viewsets.ReadOnlyModelViewSet):
+    """Заявки на сброс пароля — только SUPER_ADMIN. Обработка через resolve."""
+
+    queryset = PasswordResetRequest.objects.all()
+    serializer_class = PasswordResetRequestSerializer
+    permission_classes = [IsSuperAdmin]
+    filterset_fields = ["status"]
+
+    @action(detail=True, methods=["post"])
+    def resolve(self, request, pk=None):
+        """POST /{id}/resolve/ {new_password} — задать пароль пользователю и закрыть заявку."""
+        reset = self.get_object()
+        new_password = request.data.get("new_password", "")
+        if len(new_password) < 8:
+            return Response({"detail": "Пароль должен быть не короче 8 символов."}, status=400)
+
+        user = User.objects.filter(username=reset.phone).first()
+        if not user:
+            return Response({"detail": "Пользователь с таким телефоном не найден."}, status=404)
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+        reset.status = PasswordResetRequest.Status.RESOLVED
+        reset.resolved_at = timezone.now()
+        reset.resolved_by = request.user
+        reset.save(update_fields=["status", "resolved_at", "resolved_by"])
+
+        create_audit_log(
+            AuditLog.EventType.USER_UPDATED,
+            actor=request.user,
+            organization=user.organization,
+            target_type="User",
+            target_id=user.id,
+            metadata={"reason": "password_reset_request", "request_id": reset.id},
+        )
+        return Response({"detail": "Пароль сброшен."}, status=200)
 
 
 class MeView(generics.RetrieveAPIView):

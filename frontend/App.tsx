@@ -15,6 +15,7 @@ import AdminDashboard from './views/superadmin/AdminDashboard';
 import OrganizationDetail from './views/superadmin/OrganizationDetail';
 import AuditLogPage from './views/superadmin/AuditLogPage';
 import PlanConfigPage from './views/superadmin/PlanConfigPage';
+import PasswordResetsPage from './views/superadmin/PasswordResetsPage';
 import OrgSuspended from './views/OrgSuspended';
 import { DataProvider } from './context/DataContext';
 import { useData } from './context/DataContext';
@@ -100,6 +101,7 @@ const App: React.FC = () => {
                       <Route path="/" element={<AdminDashboard />} />
                       <Route path="/organizations/:id" element={<OrganizationDetail />} />
                       <Route path="/plans" element={<PlanConfigPage />} />
+                      <Route path="/password-resets" element={<PasswordResetsPage />} />
                       <Route path="/audit-log" element={<AuditLogPage />} />
                    </Routes>
                 </SuperAdminRoute>

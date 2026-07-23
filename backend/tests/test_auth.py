@@ -314,3 +314,141 @@ class TestUserLimitEnforcement:
             },
         )
         assert response.status_code == 201
+
+
+@pytest.mark.django_db
+class TestPhoneLogin:
+    def test_login_by_phone_with_formatting(self, api_client, org):
+        User.objects.create_user(
+            username="998901112233",
+            password="ownerpass1",
+            role="TENANT_ADMIN",
+            full_name="Phone Owner",
+            organization=org,
+        )
+        # Ввод с +, пробелами — нормализуется к цифрам
+        resp = api_client.post(
+            "/api/auth/login/",
+            {"username": "+998 90 111 22 33", "password": "ownerpass1"},
+        )
+        assert resp.status_code == 200
+        assert "access" in resp.data
+
+    def test_demo_username_login_still_works(self, api_client, tenant_admin):
+        # Логин с буквами (не телефон) не нормализуется
+        resp = api_client.post(
+            "/api/auth/login/",
+            {"username": "tenantadmin", "password": "pass123"},
+        )
+        assert resp.status_code == 200
+
+    def test_register_rejects_duplicate_normalized_phone(self, api_client, org):
+        User.objects.create_user(username="998905556677", password="x", organization=org)
+        resp = api_client.post(
+            "/api/auth/register/",
+            {
+                "organizationName": "Dup Cafe",
+                "ownerName": "Dup",
+                "phone": "+998 90 555 66 77",
+                "password": "securepass123",
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+class TestPasswordResetRequest:
+    def test_public_can_submit_request(self, api_client):
+        resp = api_client.post(
+            "/api/auth/password-reset-request/",
+            {"phone": "+998 90 123 45 67", "note": "Забыл пароль"},
+            format="json",
+        )
+        assert resp.status_code == 201
+        from apps.accounts.models import PasswordResetRequest
+
+        req = PasswordResetRequest.objects.get()
+        assert req.phone == "998901234567"  # нормализован
+        assert req.status == "PENDING"
+
+    def test_invalid_phone_rejected(self, api_client):
+        resp = api_client.post("/api/auth/password-reset-request/", {"phone": "123"}, format="json")
+        assert resp.status_code == 400
+
+    def test_super_admin_lists_requests(self, super_admin_client, api_client):
+        api_client.post(
+            "/api/auth/password-reset-request/",
+            {"phone": "998901234567"},
+            format="json",
+        )
+        resp = super_admin_client.get("/api/auth/password-reset-requests/")
+        assert resp.status_code == 200
+        assert resp.data["count"] == 1
+
+    def test_tenant_admin_cannot_list(self, tenant_admin_client):
+        resp = tenant_admin_client.get("/api/auth/password-reset-requests/")
+        assert resp.status_code == 403
+
+    def test_resolve_sets_new_password(self, super_admin_client, api_client, org):
+        target = User.objects.create_user(
+            username="998907778899",
+            password="oldpass1",
+            role="TENANT_ADMIN",
+            organization=org,
+        )
+        api_client.post(
+            "/api/auth/password-reset-request/",
+            {"phone": "+998 90 777 88 99"},
+            format="json",
+        )
+        from apps.accounts.models import PasswordResetRequest
+
+        req = PasswordResetRequest.objects.get()
+        resp = super_admin_client.post(
+            f"/api/auth/password-reset-requests/{req.id}/resolve/",
+            {"new_password": "brandnewpass1"},
+            format="json",
+        )
+        assert resp.status_code == 200
+        req.refresh_from_db()
+        assert req.status == "RESOLVED"
+        # Старый пароль больше не работает, новый работает
+        old = api_client.post(
+            "/api/auth/login/", {"username": "998907778899", "password": "oldpass1"}
+        )
+        assert old.status_code == 401
+        new = api_client.post(
+            "/api/auth/login/", {"username": "998907778899", "password": "brandnewpass1"}
+        )
+        assert new.status_code == 200
+        target.refresh_from_db()
+
+    def test_resolve_short_password_rejected(self, super_admin_client, api_client, org):
+        User.objects.create_user(username="998900000000", password="x", organization=org)
+        api_client.post(
+            "/api/auth/password-reset-request/", {"phone": "998900000000"}, format="json"
+        )
+        from apps.accounts.models import PasswordResetRequest
+
+        req = PasswordResetRequest.objects.get()
+        resp = super_admin_client.post(
+            f"/api/auth/password-reset-requests/{req.id}/resolve/",
+            {"new_password": "short"},
+            format="json",
+        )
+        assert resp.status_code == 400
+
+    def test_resolve_unknown_phone_404(self, super_admin_client, api_client):
+        api_client.post(
+            "/api/auth/password-reset-request/", {"phone": "998911112222"}, format="json"
+        )
+        from apps.accounts.models import PasswordResetRequest
+
+        req = PasswordResetRequest.objects.get()
+        resp = super_admin_client.post(
+            f"/api/auth/password-reset-requests/{req.id}/resolve/",
+            {"new_password": "somepass12"},
+            format="json",
+        )
+        assert resp.status_code == 404
