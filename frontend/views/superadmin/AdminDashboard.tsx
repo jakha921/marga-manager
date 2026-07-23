@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import Modal from '../../components/Modal';
 import Input from '../../components/Input';
@@ -15,6 +16,7 @@ import { formatNumber } from '../../utils';
 const AdminDashboard: React.FC = () => {
   const { organizations, addOrganization, updateOrganization, deleteOrganization, users, addUser, updateUser, deleteUser } = useData();
   const { logout } = useAuth();
+  const { t } = useLanguage();
   const [suspendConfirm, setSuspendConfirm] = useState<{ org: Organization; action: 'suspend' | 'unsuspend' } | null>(null);
   const [deleteOrgConfirm, setDeleteOrgConfirm] = useState<Organization | null>(null);
   
@@ -138,28 +140,28 @@ const AdminDashboard: React.FC = () => {
            <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg"><Building2 size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Tenants</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('admin.m.tenants')}</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{totalTenants}</div>
            </div>
            <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg"><DollarSign size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">MRR (UZS)</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('admin.m.mrr')}</span>
               </div>
               <div className="text-3xl font-display font-bold text-white whitespace-nowrap">{formatNumber(mrr)}</div>
            </div>
            <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Activity size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Rate</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('admin.m.active')}</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{Math.round((activeTenants/totalTenants)*100)}%</div>
            </div>
            <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700">
               <div className="flex items-center gap-3 mb-2">
                  <div className="p-2 bg-purple-500/20 text-purple-400 rounded-lg"><Users size={20} /></div>
-                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Licensed Users</span>
+                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('admin.m.licensed')}</span>
               </div>
               <div className="text-3xl font-display font-bold text-white">{totalUsers}</div>
            </div>
@@ -168,19 +170,19 @@ const AdminDashboard: React.FC = () => {
         {/* Tenants Table */}
         <div className="bg-slate-800 rounded-3xl border border-slate-700 overflow-hidden">
            <div className="p-6 border-b border-slate-700 flex flex-wrap justify-between items-center gap-3">
-              <h2 className="text-xl font-bold font-display text-white">Organizations</h2>
+              <h2 className="text-xl font-bold font-display text-white">{t('admin.orgs')}</h2>
               <div className="flex flex-wrap gap-3">
                  <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                       className="bg-slate-900 border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
-                      placeholder="Search tenants..."
+                      placeholder={t('admin.search_tenants')}
                       value={searchTerm}
                       onChange={e => setSearchTerm(e.target.value)}
                     />
                  </div>
                  <button onClick={handleCreateOrg} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
-                    <Plus size={16} /> New Tenant
+                    <Plus size={16} /> {t('admin.new_tenant')}
                  </button>
               </div>
            </div>
@@ -218,22 +220,22 @@ const AdminDashboard: React.FC = () => {
                        </td>
                        <td className="p-5 text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => handleManageUsers(org.id)} className="p-2 hover:bg-slate-700 rounded-lg text-blue-400 hover:text-white transition-colors" title="Manage Users">
+                            <button onClick={() => handleManageUsers(org.id)} className="p-2 hover:bg-slate-700 rounded-lg text-blue-400 hover:text-white transition-colors" title={t('admin.act.users')}>
                                 <Users size={16} />
                             </button>
-                            <button onClick={() => handleEditOrg(org)} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors" title="Edit Org">
+                            <button onClick={() => handleEditOrg(org)} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors" title={t('admin.act.edit')}>
                                 <Edit2 size={16} />
                             </button>
                             {org.status === 'ACTIVE' ? (
-                              <button onClick={() => setSuspendConfirm({ org, action: 'suspend' })} className="p-2 hover:bg-slate-700 rounded-lg text-orange-400 hover:text-white transition-colors" title="Suspend">
+                              <button onClick={() => setSuspendConfirm({ org, action: 'suspend' })} className="p-2 hover:bg-slate-700 rounded-lg text-orange-400 hover:text-white transition-colors" title={t('admin.act.suspend')}>
                                 <PauseCircle size={16} />
                               </button>
                             ) : (
-                              <button onClick={() => setSuspendConfirm({ org, action: 'unsuspend' })} className="p-2 hover:bg-slate-700 rounded-lg text-green-400 hover:text-white transition-colors" title="Activate">
+                              <button onClick={() => setSuspendConfirm({ org, action: 'unsuspend' })} className="p-2 hover:bg-slate-700 rounded-lg text-green-400 hover:text-white transition-colors" title={t('admin.act.activate')}>
                                 <PlayCircle size={16} />
                               </button>
                             )}
-                            <button onClick={() => setDeleteOrgConfirm(org)} className="p-2 hover:bg-slate-700 rounded-lg text-red-400 hover:text-white transition-colors" title="Delete">
+                            <button onClick={() => setDeleteOrgConfirm(org)} className="p-2 hover:bg-slate-700 rounded-lg text-red-400 hover:text-white transition-colors" title={t('admin.act.delete')}>
                                 <Trash2 size={16} />
                             </button>
                           </div>
