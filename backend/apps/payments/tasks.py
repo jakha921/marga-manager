@@ -44,9 +44,17 @@ def downgrade_expired_subscriptions_task():
     from django.utils import timezone
 
     from apps.organizations.models import Organization
-    from apps.payments.models import AuditLog
+    from apps.payments.models import AuditLog, Order, PlanConfig
+
+    def _basic_limits():
+        try:
+            basic = PlanConfig.objects.get(plan=Organization.Plan.BASIC, is_active=True)
+            return basic.max_kitchens, basic.max_users
+        except PlanConfig.DoesNotExist:
+            return 1, 10
 
     suspended = 0
+    downgraded = 0
     with transaction.atomic():
         # select_for_update: параллельный запуск задачи не даст двойной suspend
         # и дублей AuditLog (Postgres перепроверяет WHERE после снятия блокировки)
@@ -55,6 +63,38 @@ def downgrade_expired_subscriptions_task():
             status=Organization.Status.ACTIVE,
         )
         for org in expired_orgs:
+            has_paid = Order.objects.filter(organization=org, status=Order.Status.PAID).exists()
+
+            # Никогда не платили + тариф выше Basic → закончился триал:
+            # мягко переводим на Basic (бесплатный минимум), не блокируем.
+            if not has_paid and org.plan != Organization.Plan.BASIC:
+                old_plan = org.plan
+                org.plan = Organization.Plan.BASIC
+                org.max_kitchens, org.max_users = _basic_limits()
+                org.plan_expires_at = None
+                org.save(
+                    update_fields=[
+                        "plan",
+                        "max_kitchens",
+                        "max_users",
+                        "plan_expires_at",
+                        "updated_at",
+                    ]
+                )
+                AuditLog.objects.create(
+                    event_type=AuditLog.EventType.PLAN_CHANGE,
+                    organization=org,
+                    target_type="Organization",
+                    target_id=org.id,
+                    old_value={"plan": old_plan},
+                    new_value={"plan": org.plan},
+                    metadata={"reason": "trial_ended"},
+                )
+                logger.info("Trial ended, downgraded org=%s to BASIC", org.id)
+                downgraded += 1
+                continue
+
+            # Платившие клиенты с истёкшей подпиской → приостановка.
             old_status = org.status
             org.status = Organization.Status.SUSPENDED
             org.save(update_fields=["status", "updated_at"])
@@ -70,4 +110,4 @@ def downgrade_expired_subscriptions_task():
             logger.info("Suspended expired org=%s", org.id)
             suspended += 1
 
-    return {"suspended": suspended}
+    return {"suspended": suspended, "downgraded": downgraded}

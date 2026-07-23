@@ -139,20 +139,22 @@ class RegisterSerializer(serializers.Serializer):
             slug = f"{base_slug}-{counter}"
             counter += 1
 
+        # Триал даёт полный тариф Pro на 14 дней — чтобы после окончания
+        # переход на Basic ощущался как потеря (сильный драйвер оплаты).
         try:
-            basic = PlanConfig.objects.get(plan=Organization.Plan.BASIC, is_active=True)
-            max_kitchens = basic.max_kitchens
-            max_users = basic.max_users
+            pro = PlanConfig.objects.get(plan=Organization.Plan.PRO, is_active=True)
+            max_kitchens = pro.max_kitchens
+            max_users = pro.max_users
         except PlanConfig.DoesNotExist:
-            max_kitchens = 3
-            max_users = 10
+            max_kitchens = 10
+            max_users = 50
 
         now = timezone.now()
         with transaction.atomic():
             org = Organization.objects.create(
                 name=validated_data["organization_name"],
                 slug=slug,
-                plan=Organization.Plan.BASIC,
+                plan=Organization.Plan.PRO,
                 status=Organization.Status.ACTIVE,
                 max_kitchens=max_kitchens,
                 max_users=max_users,

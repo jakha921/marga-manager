@@ -48,7 +48,8 @@ class TestRegister:
         assert user.full_name == "Ali Valiyev"
         assert org.name == "New Cafe"
         assert org.phone == "998901234567"
-        assert org.plan == Organization.Plan.BASIC
+        # Регистрация даёт триал на тарифе Pro
+        assert org.plan == Organization.Plan.PRO
         assert org.status == Organization.Status.ACTIVE
         assert org.mrr == 0
         assert org.plan_expires_at is not None
@@ -106,7 +107,7 @@ class TestRegister:
         assert response.status_code == 201
         user = User.objects.get(username="998905554433")
         assert user.role == User.Role.TENANT_ADMIN
-        assert user.organization.plan == Organization.Plan.BASIC
+        assert user.organization.plan == Organization.Plan.PRO
         assert user.organization.status == Organization.Status.ACTIVE
 
     def test_login_nonexistent_user(self, api_client):

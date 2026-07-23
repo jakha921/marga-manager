@@ -873,28 +873,20 @@ class TestSubscriptionLogic:
 
         assert org.plan_expires_at >= current_expiry + timezone.timedelta(days=30)
 
-    def test_expired_task_suspends_unpaid_org(self, org):
-        from django.utils import timezone
-
-        from apps.payments.tasks import downgrade_expired_subscriptions_task
-
-        org.plan = "PRO"
-        org.status = "ACTIVE"
-        org.plan_expires_at = timezone.now() - timezone.timedelta(minutes=1)
-        org.save()
-
-        result = downgrade_expired_subscriptions_task()
-        org.refresh_from_db()
-        assert org.plan == "PRO"
-        assert org.status == "SUSPENDED"
-        assert result["suspended"] >= 1
-
-    def test_expired_task_rerun_creates_single_audit_log(self, org):
+    def test_expired_task_rerun_creates_single_audit_log(self, org, tenant_admin):
         from django.utils import timezone
 
         from apps.payments.models import AuditLog
         from apps.payments.tasks import downgrade_expired_subscriptions_task
 
+        # Оплативший клиент → путь suspend (у неоплаченного триала другой путь)
+        Order.objects.create(
+            organization=org,
+            target_plan="PRO",
+            amount=58_900_000,
+            status=Order.Status.PAID,
+            created_by=tenant_admin,
+        )
         org.plan = "PRO"
         org.status = "ACTIVE"
         org.plan_expires_at = timezone.now() - timezone.timedelta(minutes=1)
@@ -911,6 +903,55 @@ class TestSubscriptionLogic:
             ).count()
             == 1
         )
+
+    def test_trial_ends_downgrades_to_basic_not_suspend(self, org):
+        """Неоплаченный триал Pro по истечении переходит на Basic, а не в suspend."""
+        from django.utils import timezone
+
+        from apps.payments.models import PlanConfig
+
+        PlanConfig.objects.update_or_create(
+            plan="BASIC",
+            defaults={"price": 29_900_000, "max_kitchens": 1, "max_users": 10, "is_active": True},
+        )
+        org.plan = "PRO"
+        org.status = "ACTIVE"
+        org.max_kitchens = 10
+        org.plan_expires_at = timezone.now() - timezone.timedelta(minutes=1)
+        org.save()
+
+        from apps.payments.tasks import downgrade_expired_subscriptions_task
+
+        result = downgrade_expired_subscriptions_task()
+        org.refresh_from_db()
+        assert org.status == "ACTIVE"
+        assert org.plan == "BASIC"
+        assert org.max_kitchens == 1
+        assert org.plan_expires_at is None
+        assert result["downgraded"] >= 1
+
+    def test_paid_customer_lapse_suspends(self, org, tenant_admin):
+        """Оплативший ранее клиент с истёкшей подпиской — в suspend."""
+        from django.utils import timezone
+
+        Order.objects.create(
+            organization=org,
+            target_plan="PRO",
+            amount=58_900_000,
+            status=Order.Status.PAID,
+            created_by=tenant_admin,
+        )
+        org.plan = "PRO"
+        org.status = "ACTIVE"
+        org.plan_expires_at = timezone.now() - timezone.timedelta(minutes=1)
+        org.save()
+
+        from apps.payments.tasks import downgrade_expired_subscriptions_task
+
+        result = downgrade_expired_subscriptions_task()
+        org.refresh_from_db()
+        assert org.status == "SUSPENDED"
+        assert result["suspended"] >= 1
 
     def test_expired_task_keeps_unexpired_org_active(self, org):
         from django.utils import timezone
